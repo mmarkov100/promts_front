@@ -1,12 +1,11 @@
 import 'package:flutter/material.dart';
 import 'widget_app_bar.dart';
 import 'package:promts_application_1/features/chat/view/widgets/widget_chats.dart';
-import 'package:promts_application_1/features/chatbot/view/widgets/widget_chat_bots.dart';
-import 'package:promts_application_1/neuro/view/widget_neuro_button.dart';
+import 'package:promts_application_1/features/neuro/view/widget_neuro_button.dart';
 import 'package:promts_application_1/features/chat/view/widgets/widget_chat_page.dart';
 
 class WidgetMainScreen extends StatefulWidget {
-  const WidgetMainScreen({Key? key}) : super(key: key);
+  const WidgetMainScreen({super.key});
 
   @override
   State<WidgetMainScreen> createState() => _WidgetMainScreenState();
@@ -18,6 +17,7 @@ class _WidgetMainScreenState extends State<WidgetMainScreen> {
   // Флаг, указывающий, нужно ли показывать страницу чата
   bool _showChatPage = false;
 
+  // Поле ввода на главном экране (если ещё нужно)
   final TextEditingController _messageController = TextEditingController();
 
   @override
@@ -27,19 +27,26 @@ class _WidgetMainScreenState extends State<WidgetMainScreen> {
   }
 
   // Открываем страницу чата
-  void _openChat() {
+  void _openChatWithMessage() {
     final text = _messageController.text.trim();
     if (text.isEmpty) return;
-
     print("Отправлено сообщение на главном экране: $text");
     _messageController.clear();
-
     setState(() {
       _showChatPage = true;
     });
   }
 
-  // Возвращаемся обратно к обычному экрану (если нужно)
+  // Открываем страницу чата (при выборе чата)
+  void _openChat(String chatName) {
+    print("Открываем чат: $chatName");
+    _messageController.clear();
+    setState(() {
+      _showChatPage = true;
+    });
+  }
+
+  // Функция для перехода с чата на обычный экран
   void _closeChat() {
     setState(() {
       _showChatPage = false;
@@ -52,10 +59,12 @@ class _WidgetMainScreenState extends State<WidgetMainScreen> {
       key: _scaffoldKey,
 
       // Левый Drawer
-      drawer: const SizedBox(
+      drawer: SizedBox(
         width: 350,
         child: Drawer(
-          child: WidgetChats(),
+          child: WidgetChats(
+            onChatSelected: _openChat,
+          ),
         ),
       ),
 
@@ -64,40 +73,28 @@ class _WidgetMainScreenState extends State<WidgetMainScreen> {
         onMenuPressed: () {
           _scaffoldKey.currentState?.openDrawer();
         },
+        onPromtsPressed: () {
+          _closeChat();
+        },
       ),
 
-      // Если _showChatPage == true, показываем экран чата, иначе обычный экран
+      /// Экран чата
       body: _showChatPage
-          ? Column(
+          ? const Column(
               children: [
                 // Кнопка выбора нейросети + кнопка настроек
-                const Padding(
+                Padding(
                   padding: EdgeInsets.all(16.0),
                   child: WidgetNeuroButton(),
                 ),
-                Container(
-                  color: Colors.grey[300],
-                  child: Row(
-                    children: [
-                      IconButton(
-                        icon: const Icon(Icons.arrow_back),
-                        onPressed: _closeChat,
-                      ),
-                      const Text("Чат с нейросетью"),
-                    ],
-                  ),
-                ),
                 // Сам экран чата
-                const Expanded(
-                  child: WidgetChatPage(),
-                ),
+                Expanded(child: WidgetChatPage()),
               ],
             )
           : _buildMainContent(),
     );
   }
-
-  /// Содержимое обычного экрана
+  /// Обычный экран
   Widget _buildMainContent() {
     return SafeArea(
       child: Column(
@@ -116,10 +113,11 @@ class _WidgetMainScreenState extends State<WidgetMainScreen> {
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
+                    // Текст "абвгд"
                     const Text(
-                      "OABABB",
-                      style: TextStyle(fontSize: 16),
-                      textAlign: TextAlign.center,
+                      "абвгд",
+                      style:
+                          TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                     ),
                     const SizedBox(height: 16),
                     // Строка ввода (ограничение 900 px) + кнопка отправки
@@ -142,7 +140,7 @@ class _WidgetMainScreenState extends State<WidgetMainScreen> {
                           const SizedBox(width: 8),
                           IconButton(
                             icon: const Icon(Icons.send),
-                            onPressed: _openChat,
+                            onPressed: _openChatWithMessage,
                             tooltip: "Отправить",
                           ),
                         ],
