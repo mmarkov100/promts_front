@@ -2,7 +2,10 @@ import 'package:flutter/material.dart';
 
 /// NavigationDrawer, который показывает список чатов пользователя.
 class WidgetChats extends StatefulWidget {
-  const WidgetChats({super.key});
+  // Callback, который передает выбранное имя чата (или его id)
+  final ValueChanged<String> onChatSelected;
+
+  const WidgetChats({super.key, required this.onChatSelected});
 
   @override
   State<WidgetChats> createState() => _WidgetChatsState();
@@ -45,8 +48,6 @@ class _WidgetChatsState extends State<WidgetChats> {
 
   @override
   Widget build(BuildContext context) {
-    // Drawer по умолчанию «накрывает» экран, 
-    // но ширину Drawer мы будем ограничивать в Scaffold (см. далее).
     return SafeArea(
       child: Column(
         children: [
@@ -57,7 +58,6 @@ class _WidgetChatsState extends State<WidgetChats> {
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
           ),
-
           // Строка поиска
           Padding(
             padding: const EdgeInsets.all(8.0),
@@ -85,7 +85,6 @@ class _WidgetChatsState extends State<WidgetChats> {
               ],
             ),
           ),
-
           // Список чатов
           Expanded(
             child: ListView.builder(
@@ -97,8 +96,8 @@ class _WidgetChatsState extends State<WidgetChats> {
                   onTap: () {
                     // Закрываем Drawer
                     Navigator.of(context).pop();
-                    // Доп. логика: переход к экрану чата
-                    print("Открываем чат: $chatName");
+                    // Вызываем callback с именем выбранного чата
+                    widget.onChatSelected(chatName);
                   },
                 );
               },

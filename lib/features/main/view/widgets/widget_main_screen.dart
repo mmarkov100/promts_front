@@ -6,7 +6,7 @@ import 'package:promts_application_1/features/neuro/view/widget_neuro_button.dar
 import 'package:promts_application_1/features/chat/view/widgets/widget_chat_page.dart';
 
 class WidgetMainScreen extends StatefulWidget {
-  const WidgetMainScreen({Key? key}) : super(key: key);
+  const WidgetMainScreen({super.key});
 
   @override
   State<WidgetMainScreen> createState() => _WidgetMainScreenState();
@@ -28,7 +28,7 @@ class _WidgetMainScreenState extends State<WidgetMainScreen> {
   }
 
   // Открываем страницу чата
-  void _openChat() {
+  void _openChatWithMessage() {
     final text = _messageController.text.trim();
     if (text.isEmpty) return;
     print("Отправлено сообщение на главном экране: $text");
@@ -38,7 +38,16 @@ class _WidgetMainScreenState extends State<WidgetMainScreen> {
     });
   }
 
-  // Возвращаемся обратно к обычному экрану (если нужно)
+  // Открываем страницу чата (при выборе чата)
+  void _openChat(String chatName) {
+    print("Открываем чат: $chatName");
+    _messageController.clear();
+    setState(() {
+      _showChatPage = true;
+    });
+  }
+
+  // Функция для перехода с чата на обычный экран
   void _closeChat() {
     setState(() {
       _showChatPage = false;
@@ -51,10 +60,12 @@ class _WidgetMainScreenState extends State<WidgetMainScreen> {
       key: _scaffoldKey,
 
       // Левый Drawer
-      drawer: const SizedBox(
+      drawer: SizedBox(
         width: 350,
         child: Drawer(
-          child: WidgetChats(),
+          child: WidgetChats(
+            onChatSelected: _openChat,
+          ),
         ),
       ),
 
@@ -63,32 +74,22 @@ class _WidgetMainScreenState extends State<WidgetMainScreen> {
         onMenuPressed: () {
           _scaffoldKey.currentState?.openDrawer();
         },
+        onPromtsPressed: () {
+          _closeChat();
+        },
       ),
 
       /// Экран чата
       body: _showChatPage
-          ? Column(
+          ? const Column(
               children: [
                 // Кнопка выбора нейросети + кнопка настроек
-                const Padding(
+                Padding(
                   padding: EdgeInsets.all(16.0),
                   child: WidgetNeuroButton(),
                 ),
-                // Можно добавить кнопку "назад", чтобы закрыть чат
-                Container(
-                  color: Colors.grey[300],
-                  child: Row(
-                    children: [
-                      IconButton(
-                        icon: const Icon(Icons.arrow_back),
-                        onPressed: _closeChat,
-                      ),
-                      const Text("Чат с нейросетью"),
-                    ],
-                  ),
-                ),
                 // Сам экран чата
-                const Expanded(child: WidgetChatPage()),
+                Expanded(child: WidgetChatPage()),
               ],
             )
           : _buildMainContent(),
@@ -141,7 +142,7 @@ class _WidgetMainScreenState extends State<WidgetMainScreen> {
                           const SizedBox(width: 8),
                           IconButton(
                             icon: const Icon(Icons.send),
-                            onPressed: _openChat,
+                            onPressed: _openChatWithMessage,
                             tooltip: "Отправить",
                           ),
                         ],

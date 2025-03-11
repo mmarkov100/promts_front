@@ -2,13 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:promts_application_1/features/user/view/widgets/widget_user_settings.dart';
 import '../../../chatbot/view/widgets/widget_chat_bots.dart';
 
-/// Класс, реализующий AppBar с одним колбэком для левого меню.
+/// AppBar с кнопкой Promts и дополнительным callback для нее.
 class WidgetAppBar extends StatelessWidget implements PreferredSizeWidget {
   final VoidCallback onMenuPressed; // для открытия левого Drawer
+  final VoidCallback onPromtsPressed; // callback для кнопки Promts
 
   const WidgetAppBar({
     super.key,
     required this.onMenuPressed,
+    required this.onPromtsPressed,
   });
 
   @override
@@ -27,9 +29,7 @@ class WidgetAppBar extends StatelessWidget implements PreferredSizeWidget {
           ),
           // Кнопка "Promts"
           TextButton(
-            onPressed: () {
-              // TODO: логика перехода на главный экран
-            },
+            onPressed: onPromtsPressed, // вызываем переданный callback
             child: const Text(
               "Promts",
               style: TextStyle(fontSize: 20, color: Colors.black),
@@ -69,10 +69,7 @@ class WidgetAppBar extends StatelessWidget implements PreferredSizeWidget {
                     "Qwen-Turbo",
                   ],
                   onSave: (updatedData) {
-                    // Здесь обрабатываем новые данные пользователя:
-                    // updatedData['memory'], updatedData['memoryEnabled'], и т.д.
                     print("Новые настройки: $updatedData");
-                    // TODO: отправить изменения на бэкенд
                   },
                 ),
               );
