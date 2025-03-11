@@ -1,0 +1,1056 @@
+﻿// Flutter web plugin registrant file.
+//
+// Generated file. Do not edit.
+//
+
+// @dart = 2.13
+// ignore_for_file: type=lint
+
+import 'package:video_player_web/video_player_web.dart';
+import 'package:flutter_web_plugins/flutter_web_plugins.dart';
+
+void registerPlugins([final Registrar? pluginRegistrar]) {
+  final Registrar registrar = pluginRegistrar ?? webPluginRegistrar;
+  VideoPlayerPlugin.registerWith(registrar);
+  registrar.registerMessageHandler();
+}
+import 'package:flutter/material.dart';
+import 'package:promts_application_1/features/main/view/widget_main_screen.dart';
+
+void main() {
+  runApp(const MyApp());
+}
+
+class MyApp extends StatelessWidget {
+  const MyApp({Key? key}) : super(key: key);
+  
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      debugShowCheckedModeBanner: false,
+      title: 'Promts',
+      theme: ThemeData(
+        primarySwatch: Colors.blue,
+      ),
+      home: const WidgetMainScreen(),
+    );
+  }
+}
+import 'package:flutter/material.dart';
+
+class WidgetChatCreateSettings extends StatefulWidget {
+  final int chatId;              // ID Ñ‡Ð°Ñ‚Ð°
+  final double temperature;      // Ð¢ÐµÐ¼Ð¿ÐµÑ€Ð°Ñ‚ÑƒÑ€Ð° Ñ‡Ð°Ñ‚Ð°
+  final String contextChat;      // ÐšÐ¾Ð½Ñ‚ÐµÐºÑÑ‚ (Ð¿Ñ€Ð°Ð²Ð¸Ð»Ð°) Ñ‡Ð°Ñ‚Ð°
+  final bool useMemory;          // Ð˜ÑÐ¿Ð¾Ð»ÑŒÐ·Ð¾Ð²Ð°Ñ‚ÑŒ Ð»Ð¸ Ð¿Ð°Ð¼ÑÑ‚ÑŒ Ð² Ñ‡Ð°Ñ‚Ðµ?
+  final bool updateMemory;       // ÐœÐ¾Ð¶ÐµÑ‚ Ð»Ð¸ Ñ‡Ð°Ñ‚ Ð¸Ð·Ð¼ÐµÐ½ÑÑ‚ÑŒ Ð¿Ð°Ð¼ÑÑ‚ÑŒ Ð¿Ð¾Ð»ÑŒÐ·Ð¾Ð²Ð°Ñ‚ÐµÐ»Ñ?
+
+  /// ÐšÐ¾Ð»Ð±ÑÐº, ÐºÐ¾Ñ‚Ð¾Ñ€Ñ‹Ð¹ Ð²Ñ‹Ð·Ñ‹Ð²Ð°ÐµÑ‚ÑÑ Ð¿Ñ€Ð¸ Ð½Ð°Ð¶Ð°Ñ‚Ð¸Ð¸ "Ð¡Ð¾Ñ…Ñ€Ð°Ð½Ð¸Ñ‚ÑŒ".
+  /// Ð’Ð¾Ð·Ð²Ñ€Ð°Ñ‰Ð°ÐµÑ‚ Ð²ÑÐµ Ð¾Ð±Ð½Ð¾Ð²Ð»Ñ‘Ð½Ð½Ñ‹Ðµ Ð´Ð°Ð½Ð½Ñ‹Ðµ (Ð² Ð²Ð¸Ð´Ðµ Map) Ð² onSave().
+  final ValueChanged<Map<String, dynamic>> onSave;
+
+  const WidgetChatCreateSettings({
+    Key? key,
+    required this.chatId,
+    required this.temperature,
+    required this.contextChat,
+    required this.useMemory,
+    required this.updateMemory,
+    required this.onSave,
+  }) : super(key: key);
+
+  @override
+  State<WidgetChatCreateSettings> createState() => _WidgetChatCreateSettingsState();
+}
+
+class _WidgetChatCreateSettingsState extends State<WidgetChatCreateSettings> {
+  late double _temperature;
+  late TextEditingController _contextController;
+  late bool _useMemory;
+  late bool _updateMemory;
+
+  @override
+  void initState() {
+    super.initState();
+    _temperature = widget.temperature;
+    _contextController = TextEditingController(text: widget.contextChat);
+    _useMemory = widget.useMemory;
+    _updateMemory = widget.updateMemory;
+  }
+
+  @override
+  void dispose() {
+    _contextController.dispose();
+    super.dispose();
+  }
+
+  void _handleSave() {
+    // Ð¡Ð¾Ð±Ð¸Ñ€Ð°ÐµÐ¼ Ð´Ð°Ð½Ð½Ñ‹Ðµ, ÐºÐ¾Ñ‚Ð¾Ñ€Ñ‹Ðµ Ð½Ð°Ð´Ð¾ ÑÐ¾Ñ…Ñ€Ð°Ð½Ð¸Ñ‚ÑŒ
+    final updatedData = {
+      'chatId': widget.chatId,
+      'temperature': _temperature,
+      'contextChat': _contextController.text,
+      'useMemory': _useMemory,
+      'updateMemory': _updateMemory,
+    };
+    // Ð’Ñ‹Ð·Ñ‹Ð²Ð°ÐµÐ¼ ÐºÐ¾Ð»Ð±ÑÐº, Ð¿ÐµÑ€ÐµÐ´Ð°Ð²Ð°Ñ Ð¾Ð±Ð½Ð¾Ð²Ð»Ñ‘Ð½Ð½Ñ‹Ðµ Ð´Ð°Ð½Ð½Ñ‹Ðµ
+    widget.onSave(updatedData);
+    // Ð—Ð°ÐºÑ€Ñ‹Ð²Ð°ÐµÐ¼ Ð´Ð¸Ð°Ð»Ð¾Ð³
+    Navigator.of(context).pop();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text("Ð¡Ð¾Ð·Ð´Ð°Ð½Ð¸Ðµ Ñ‡Ð°Ñ‚Ð°"),
+      content: SizedBox(
+        width: 400,   // Ð—Ð°Ñ„Ð¸ÐºÑÐ¸Ñ€Ð¾Ð²Ð°Ð½Ð½Ð°Ñ ÑˆÐ¸Ñ€Ð¸Ð½Ð° Ð¾ÐºÐ½Ð°
+        height: 350,  // Ð—Ð°Ñ„Ð¸ÐºÑÐ¸Ñ€Ð¾Ð²Ð°Ð½Ð½Ð°Ñ Ð²Ñ‹ÑÐ¾Ñ‚Ð° Ð¾ÐºÐ½Ð°
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // (1) ID Ñ‡Ð°Ñ‚Ð°
+            Row(
+              children: [
+                const Text("ID Ñ‡Ð°Ñ‚Ð°: "),
+                Text(widget.chatId.toString()),
+              ],
+            ),
+            const SizedBox(height: 8),
+
+            // (2) Ð¢ÐµÐ¼Ð¿ÐµÑ€Ð°Ñ‚ÑƒÑ€Ð° Ñ‡Ð°Ñ‚Ð° (Ð¿Ñ€Ð¸Ð¼ÐµÑ€ Ñ DropdownButton)
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text("Ð¢ÐµÐ¼Ð¿ÐµÑ€Ð°Ñ‚ÑƒÑ€Ð° Ñ‡Ð°Ñ‚Ð°:"),
+                DropdownButton<double>(
+                  value: _temperature,
+                  items: [0.0, 0.5, 1.0, 1.5, 2.0].map((temp) {
+                    return DropdownMenuItem<double>(
+                      value: temp,
+                      child: Text(temp.toString()),
+                    );
+                  }).toList(),
+                  onChanged: (val) {
+                    if (val != null) {
+                      setState(() {
+                        _temperature = val;
+                      });
+                    }
+                  },
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+
+            // (3) ÐšÐ¾Ð½Ñ‚ÐµÐºÑÑ‚ Ñ‡Ð°Ñ‚Ð° (Ð¼Ð½Ð¾Ð³Ð¾ÑÑ‚Ñ€Ð¾Ñ‡Ð½Ð¾Ðµ Ð¿Ð¾Ð»Ðµ)
+            
+            TextField(
+              controller: _contextController,
+              decoration: const InputDecoration(
+                labelText: "ÐšÐ¾Ð½Ñ‚ÐµÐºÑÑ‚ Ñ‡Ð°Ñ‚Ð°",
+                border: OutlineInputBorder(),
+              ),
+              keyboardType: TextInputType.multiline,
+              minLines: 3,
+              maxLines: 5,
+            ),
+            const SizedBox(height: 8),
+
+            // (4) Ð˜ÑÐ¿Ð¾Ð»ÑŒÐ·Ð¾Ð²Ð°Ñ‚ÑŒ Ð»Ð¸ Ð¿Ð°Ð¼ÑÑ‚ÑŒ Ð² Ð´Ð°Ð½Ð½Ð¾Ð¼ Ñ‡Ð°Ñ‚Ðµ?
+            Row(
+              children: [
+                Expanded(child: Text("Ð˜ÑÐ¿Ð¾Ð»ÑŒÐ·Ð¾Ð²Ð°Ñ‚ÑŒ Ð»Ð¸ Ð¿Ð°Ð¼ÑÑ‚ÑŒ Ð² Ñ‡Ð°Ñ‚Ðµ?")),
+                Switch(
+                  value: _useMemory,
+                  onChanged: (val) {
+                    setState(() {
+                      _useMemory = val;
+                    });
+                  },
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+
+            // (5) ÐœÐ¾Ð¶ÐµÑ‚ Ð»Ð¸ Ñ‡Ð°Ñ‚ Ð¸Ð·Ð¼ÐµÐ½ÑÑ‚ÑŒ Ð¿Ð°Ð¼ÑÑ‚ÑŒ?
+            Row(
+              children: [
+                Expanded(child: Text("ÐœÐ¾Ð¶ÐµÑ‚ Ð»Ð¸ Ñ‡Ð°Ñ‚ Ð¸Ð·Ð¼ÐµÐ½ÑÑ‚ÑŒ Ð¿Ð°Ð¼ÑÑ‚ÑŒ Ð¿Ð¾Ð»ÑŒÐ·Ð¾Ð²Ð°Ñ‚ÐµÐ»Ñ?")),
+                Switch(
+                  value: _updateMemory,
+                  onChanged: (val) {
+                    setState(() {
+                      _updateMemory = val;
+                    });
+                  },
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Text("ÐžÑ‚Ð¼ÐµÐ½Ð°"),
+        ),
+        ElevatedButton(
+          onPressed: _handleSave,
+          child: const Text("Ð¡Ð¾Ñ…Ñ€Ð°Ð½Ð¸Ñ‚ÑŒ"),
+        ),
+      ],
+    );
+  }
+}
+import 'package:flutter/material.dart';
+import 'package:promts_application_1/features/user/view/widget_user_settings.dart';
+/// ÐšÐ»Ð°ÑÑ, Ñ€ÐµÐ°Ð»Ð¸Ð·ÑƒÑŽÑ‰Ð¸Ð¹ AppBar Ñ Ð¾Ð´Ð½Ð¸Ð¼ ÐºÐ¾Ð»Ð±ÑÐºÐ¾Ð¼ Ð´Ð»Ñ Ð»ÐµÐ²Ð¾Ð³Ð¾ Ð¼ÐµÐ½ÑŽ.
+class WidgetAppBar extends StatelessWidget implements PreferredSizeWidget {
+  final VoidCallback onMenuPressed; // Ð´Ð»Ñ Ð¾Ñ‚ÐºÑ€Ñ‹Ñ‚Ð¸Ñ Ð»ÐµÐ²Ð¾Ð³Ð¾ Drawer
+
+  const WidgetAppBar({
+    Key? key,
+    required this.onMenuPressed,
+  }) : super(key: key);
+
+  @override
+  Size get preferredSize => const Size.fromHeight(kToolbarHeight);
+
+  @override
+  Widget build(BuildContext context) {
+    return AppBar(
+      automaticallyImplyLeading: false,
+      title: Row(
+        children: [
+          // ÐšÐ½Ð¾Ð¿ÐºÐ° Ð¾Ñ‚ÐºÑ€Ñ‹Ñ‚Ð¸Ñ NavigationDrawer (Ð¸ÐºÐ¾Ð½ÐºÐ° "3 Ð¿Ð¾Ð»Ð¾ÑÐºÐ¸")
+          IconButton(
+            icon: const Icon(Icons.menu),
+            onPressed: onMenuPressed,
+          ),
+          // ÐšÐ½Ð¾Ð¿ÐºÐ° "Promts"
+          TextButton(
+            onPressed: () {
+              // TODO: Ð»Ð¾Ð³Ð¸ÐºÐ° Ð¿ÐµÑ€ÐµÑ…Ð¾Ð´Ð° Ð½Ð° Ð³Ð»Ð°Ð²Ð½Ñ‹Ð¹ ÑÐºÑ€Ð°Ð½
+            },
+            child: const Text(
+              "Promts",
+              style: TextStyle(
+                fontSize: 20,
+                color: Colors.black
+                ),
+            ),
+          ),
+          // Ð¦ÐµÐ½Ñ‚Ñ€ AppBar (Ð½Ð°Ð·Ð²Ð°Ð½Ð¸Ðµ Ñ‡Ð°Ñ‚Ð°)
+          Expanded(
+            child: Text(
+              "ÐžÐ±Ñ‹Ñ‡Ð½Ñ‹Ð¹ Ñ‡Ð°Ñ‚-Ð±Ð¾Ñ‚",
+              textAlign: TextAlign.center,
+              style: const TextStyle(fontWeight: FontWeight.w600),
+            ),
+          ),
+          // ÐšÐ½Ð¾Ð¿ÐºÐ° Ð½Ð°ÑÑ‚Ñ€Ð¾ÐµÐº Ð¿Ð¾Ð»ÑŒÐ·Ð¾Ð²Ð°Ñ‚ÐµÐ»Ñ (Ð¸ÐºÐ¾Ð½ÐºÐ° Ñ‡ÐµÐ»Ð¾Ð²ÐµÑ‡ÐºÐ°)
+IconButton(
+  icon: const Icon(Icons.person),
+  onPressed: () {
+    showDialog(
+      context: context,
+      builder: (_) => WidgetUserSettings(
+        email: "BoberKurwa@rambler.ru",
+        userId: 167491164,
+        balance: 191.61,
+        memoryEnabled: true,
+        aiCanUpdateMemory: true,
+        memory: "Ð˜Ð¼Ñ Ð¿Ð¾Ð»ÑŒÐ·Ð¾Ð²Ð°Ñ‚ÐµÐ»Ñ ÐœÐ°ÐºÑÐ¸Ð¼, Ð¸Ð· ÐŸÐµÑ€Ð¼Ð¸ (Ð¸ Ñ‚.Ð´.)",
+        selectedModel: "DeepSeek V3",
+        availableModels: [
+          "DeepSeek V3",
+          "DeepSeek R1",
+          "YandexGPT 5 Pro",
+          "YandexGPT 5 Lite",
+          "ChatGPT 4o mini",
+          "ChatGPT 4o",
+          "ChatGPT o1",
+          "Qwen-Max",
+          "Qwen-Turbo",
+        ],
+        onSave: (updatedData) {
+          // Ð—Ð´ÐµÑÑŒ Ð¾Ð±Ñ€Ð°Ð±Ð°Ñ‚Ñ‹Ð²Ð°ÐµÐ¼ Ð½Ð¾Ð²Ñ‹Ðµ Ð´Ð°Ð½Ð½Ñ‹Ðµ Ð¿Ð¾Ð»ÑŒÐ·Ð¾Ð²Ð°Ñ‚ÐµÐ»Ñ:
+          // updatedData['memory'], updatedData['memoryEnabled'], Ð¸ Ñ‚.Ð´.
+          print("ÐÐ¾Ð²Ñ‹Ðµ Ð½Ð°ÑÑ‚Ñ€Ð¾Ð¹ÐºÐ¸: $updatedData");
+          // TODO: Ð¾Ñ‚Ð¿Ñ€Ð°Ð²Ð¸Ñ‚ÑŒ Ð¸Ð·Ð¼ÐµÐ½ÐµÐ½Ð¸Ñ Ð½Ð° Ð±ÑÐºÐµÐ½Ð´
+        },
+      ),
+    );
+  },
+),
+
+
+        ],
+      ),
+    );
+  }
+}
+import 'package:flutter/material.dart';
+
+/// NavigationDrawer, ÐºÐ¾Ñ‚Ð¾Ñ€Ñ‹Ð¹ Ð¿Ð¾ÐºÐ°Ð·Ñ‹Ð²Ð°ÐµÑ‚ ÑÐ¿Ð¸ÑÐ¾Ðº Ñ‡Ð°Ñ‚Ð¾Ð² Ð¿Ð¾Ð»ÑŒÐ·Ð¾Ð²Ð°Ñ‚ÐµÐ»Ñ.
+class WidgetChats extends StatefulWidget {
+  const WidgetChats({Key? key}) : super(key: key);
+
+  @override
+  State<WidgetChats> createState() => _WidgetChatsState();
+}
+
+class _WidgetChatsState extends State<WidgetChats> {
+  final TextEditingController _searchController = TextEditingController();
+
+  // Ð¡Ð¿Ð¸ÑÐ¾Ðº Ñ‡Ð°Ñ‚Ð¾Ð² Ð´Ð»Ñ Ð¿Ñ€Ð¸Ð¼ÐµÑ€Ð°
+  final List<String> _chats = [
+    "ÐŸÐµÑ€Ð²Ñ‹Ð¹ Ñ‡Ð°Ñ‚",
+    "Ð’Ñ‚Ð¾Ñ€Ð¾Ð¹ Ñ‡Ð°Ñ‚",
+    "Ð¢Ñ€ÐµÑ‚Ð¸Ð¹ Ñ‡Ð°Ñ‚",
+    "Ð§ÐµÑ‚Ð²Ñ‘Ñ€Ñ‚Ñ‹Ð¹ Ñ‡Ð°Ñ‚",
+  ];
+
+  // Ð ÐµÐ·ÑƒÐ»ÑŒÑ‚Ð°Ñ‚Ñ‹ Ð¿Ð¾Ð¸ÑÐºÐ°
+  List<String> _filteredChats = [];
+
+  @override
+  void initState() {
+    super.initState();
+    // Ð˜Ð·Ð½Ð°Ñ‡Ð°Ð»ÑŒÐ½Ð¾ Ð¿Ð¾ÐºÐ°Ð·Ñ‹Ð²Ð°ÐµÐ¼ Ð²ÑÐµ Ñ‡Ð°Ñ‚Ñ‹
+    _filteredChats = List.from(_chats);
+  }
+
+  // Ð›Ð¾Ð³Ð¸ÐºÐ° Ð¿Ð¾Ð¸ÑÐºÐ°
+  void _searchChats() {
+    final query = _searchController.text.toLowerCase().trim();
+    setState(() {
+      if (query.isEmpty) {
+        _filteredChats = List.from(_chats);
+      } else {
+        _filteredChats = _chats.where((chat) {
+          return chat.toLowerCase().contains(query);
+        }).toList();
+      }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    // Drawer Ð¿Ð¾ ÑƒÐ¼Ð¾Ð»Ñ‡Ð°Ð½Ð¸ÑŽ Â«Ð½Ð°ÐºÑ€Ñ‹Ð²Ð°ÐµÑ‚Â» ÑÐºÑ€Ð°Ð½, 
+    // Ð½Ð¾ ÑˆÐ¸Ñ€Ð¸Ð½Ñƒ Drawer Ð¼Ñ‹ Ð±ÑƒÐ´ÐµÐ¼ Ð¾Ð³Ñ€Ð°Ð½Ð¸Ñ‡Ð¸Ð²Ð°Ñ‚ÑŒ Ð² Scaffold (ÑÐ¼. Ð´Ð°Ð»ÐµÐµ).
+    return SafeArea(
+      child: Column(
+        children: [
+          // Ð—Ð°Ð³Ð¾Ð»Ð¾Ð²Ð¾Ðº (Ð½ÐµÐ¾Ð±ÑÐ·Ð°Ñ‚ÐµÐ»ÑŒÐ½Ð¾)
+          const ListTile(
+            title: Text(
+              "ÐœÐ¾Ð¸ Ñ‡Ð°Ñ‚Ñ‹",
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+          ),
+
+          // Ð¡Ñ‚Ñ€Ð¾ÐºÐ° Ð¿Ð¾Ð¸ÑÐºÐ°
+          Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: Row(
+              children: [
+                // ÐŸÐ¾Ð»Ðµ Ð²Ð²Ð¾Ð´Ð°
+                Expanded(
+                  child: TextField(
+                    controller: _searchController,
+                    decoration: const InputDecoration(
+                      labelText: "ÐŸÐ¾Ð¸ÑÐº Ñ‡Ð°Ñ‚Ð¾Ð²",
+                      border: OutlineInputBorder(),
+                    ),
+                    onChanged: (value) {
+                      _searchChats();
+                    },
+                  ),
+                ),
+                const SizedBox(width: 8),
+                // ÐšÐ½Ð¾Ð¿ÐºÐ° Ð¿Ð¾Ð¸ÑÐºÐ°
+                IconButton(
+                  icon: const Icon(Icons.search),
+                  onPressed: _searchChats,
+                ),
+              ],
+            ),
+          ),
+
+          // Ð¡Ð¿Ð¸ÑÐ¾Ðº Ñ‡Ð°Ñ‚Ð¾Ð²
+          Expanded(
+            child: ListView.builder(
+              itemCount: _filteredChats.length,
+              itemBuilder: (context, index) {
+                final chatName = _filteredChats[index];
+                return ListTile(
+                  title: Text(chatName),
+                  onTap: () {
+                    // Ð—Ð°ÐºÑ€Ñ‹Ð²Ð°ÐµÐ¼ Drawer
+                    Navigator.of(context).pop();
+                    // Ð”Ð¾Ð¿. Ð»Ð¾Ð³Ð¸ÐºÐ°: Ð¿ÐµÑ€ÐµÑ…Ð¾Ð´ Ðº ÑÐºÑ€Ð°Ð½Ñƒ Ñ‡Ð°Ñ‚Ð°
+                    print("ÐžÑ‚ÐºÑ€Ñ‹Ð²Ð°ÐµÐ¼ Ñ‡Ð°Ñ‚: $chatName");
+                  },
+                );
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+import 'package:flutter/material.dart';
+
+/// Ð’Ð¸Ð´Ð¶ÐµÑ‚ Ñ‡Ð°Ñ‚-Ð±Ð¾Ñ‚Ð¾Ð² (endDrawer), Ð² ÐºÐ¾Ñ‚Ð¾Ñ€Ð¾Ð¼ ÐµÑÑ‚ÑŒ:
+///  - ÐšÐ½Ð¾Ð¿ÐºÐ° ÑÐ¾Ð·Ð´Ð°Ð½Ð¸Ñ Ñ‡Ð°Ñ‚-Ð±Ð¾Ñ‚Ð° (ÑÐ»ÐµÐ²Ð°),
+///  - Ð¡Ñ‚Ñ€Ð¾ÐºÐ° Ð¿Ð¾Ð¸ÑÐºÐ° Ð¸ ÐºÐ½Ð¾Ð¿ÐºÐ° Ð¿Ð¾Ð¸ÑÐºÐ°,
+///  - Ð¡Ð¿Ð¸ÑÐ¾Ðº Ñ‡Ð°Ñ‚-Ð±Ð¾Ñ‚Ð¾Ð², ÐºÐ°Ð¶Ð´Ñ‹Ð¹ ÑÐ»ÐµÐ¼ÐµÐ½Ñ‚ Ð¸Ð¼ÐµÐµÑ‚ Ð¸ÐºÐ¾Ð½ÐºÑƒ "!" Ð´Ð»Ñ Ð¿Ñ€Ð¾ÑÐ¼Ð¾Ñ‚Ñ€Ð° Ð¸Ð½Ñ„Ð¾.
+class WidgetChatBots extends StatefulWidget {
+  const WidgetChatBots({Key? key}) : super(key: key);
+
+  @override
+  State<WidgetChatBots> createState() => _WidgetChatBotsState();
+}
+
+class _WidgetChatBotsState extends State<WidgetChatBots> {
+  final TextEditingController _searchController = TextEditingController();
+
+  /// ÐŸÑ€Ð¸Ð¼ÐµÑ€ Ð´Ð°Ð½Ð½Ñ‹Ñ… Ð¾ Ñ‡Ð°Ñ‚-Ð±Ð¾Ñ‚Ð°Ñ… (Ð² Ñ€ÐµÐ°Ð»ÑŒÐ½Ð¾Ð¼ Ð¿Ñ€Ð¸Ð»Ð¾Ð¶ÐµÐ½Ð¸Ð¸ Ð²Ñ‹ Ð¼Ð¾Ð¶ÐµÑ‚Ðµ Ð¿Ð¾Ð»ÑƒÑ‡Ð°Ñ‚ÑŒ Ð¸Ñ… Ñ Ð±ÑÐºÐµÐ½Ð´Ð°).
+  final List<Map<String, dynamic>> _allChatBots = [
+    {
+      "id": 1,
+      "chatBotName": "ÐŸÐ¾Ð¼Ð¾Ñ‰Ð½Ð¸Ðº Ð¿Ð¾ Ð¿Ñ€Ð¾Ð³Ñ€Ð°Ð¼Ð¼Ð¸Ñ€Ð¾Ð²Ð°Ð½Ð¸ÑŽ",
+      "chatBotDesc": "ÐŸÐ¾Ð¼Ð¾Ð³Ð°ÐµÑ‚ Ñ Ð²Ð¾Ð¿Ñ€Ð¾ÑÐ°Ð¼Ð¸ Ð¿Ð¾ Python, Java Ð¸ Ð´Ñ€ÑƒÐ³Ð¸Ð¼ ÑÐ·Ñ‹ÐºÐ°Ð¼.",
+      "messagesToday": 123,
+      "totalMessages": 1000,
+      "isSelectedByRedact": true
+    },
+    {
+      "id": 2,
+      "chatBotName": "Ð¤Ð¸Ð½Ð°Ð½ÑÐ¾Ð²Ñ‹Ð¹ ÑÐ¾Ð²ÐµÑ‚Ð½Ð¸Ðº",
+      "chatBotDesc": "ÐŸÐ¾Ð¼Ð¾Ð³Ð°ÐµÑ‚ Ñ Ð²Ð¾Ð¿Ñ€Ð¾ÑÐ°Ð¼Ð¸ Ð¿Ð¾ Ð¸Ð½Ð²ÐµÑÑ‚Ð¸Ñ†Ð¸ÑÐ¼ Ð¸ Ð±ÑŽÐ´Ð¶ÐµÑ‚Ñƒ.",
+      "messagesToday": 87,
+      "totalMessages": 500,
+      "isSelectedByRedact": false
+    },
+    {
+      "id": 3,
+      "chatBotName": "ÐÐ¾Ð²Ñ‹Ð¹ Ð¿Ð¾Ð¼Ð¾Ñ‰Ð½Ð¸Ðº",
+      "chatBotDesc": "ÐžÐ¿Ð¸ÑÐ°Ð½Ð¸Ðµ Ð½Ð¾Ð²Ð¾Ð³Ð¾ Ð¿Ð¾Ð¼Ð¾Ñ‰Ð½Ð¸ÐºÐ°.",
+      "messagesToday": 0,
+      "totalMessages": 0,
+      "isSelectedByRedact": false
+    },
+  ];
+
+  /// Ð¡Ð¿Ð¸ÑÐ¾Ðº Ð¾Ñ‚Ñ„Ð¸Ð»ÑŒÑ‚Ñ€Ð¾Ð²Ð°Ð½Ð½Ñ‹Ñ… Ñ‡Ð°Ñ‚-Ð±Ð¾Ñ‚Ð¾Ð² (Ð¿Ð¾Ð¸ÑÐº).
+  List<Map<String, dynamic>> _filteredChatBots = [];
+
+  @override
+  void initState() {
+    super.initState();
+    // Ð˜Ð·Ð½Ð°Ñ‡Ð°Ð»ÑŒÐ½Ð¾ Ð¿Ð¾ÐºÐ°Ð·Ñ‹Ð²Ð°ÐµÐ¼ Ð²ÑÐµÑ… Ñ‡Ð°Ñ‚-Ð±Ð¾Ñ‚Ð¾Ð²
+    _filteredChatBots = List.from(_allChatBots);
+  }
+
+  /// Ð›Ð¾Ð³Ð¸ÐºÐ° Ð¿Ð¾Ð¸ÑÐºÐ° Ñ‡Ð°Ñ‚-Ð±Ð¾Ñ‚Ð¾Ð²
+  void _searchChatBots() {
+    final query = _searchController.text.trim().toLowerCase();
+    setState(() {
+      if (query.isEmpty) {
+        _filteredChatBots = List.from(_allChatBots);
+      } else {
+        _filteredChatBots = _allChatBots.where((bot) {
+          final name = bot["chatBotName"]?.toString().toLowerCase() ?? "";
+          return name.contains(query);
+        }).toList();
+      }
+    });
+  }
+
+  /// Ð¡Ð¾Ð·Ð´Ð°Ð½Ð¸Ðµ Ð½Ð¾Ð²Ð¾Ð³Ð¾ Ñ‡Ð°Ñ‚-Ð±Ð¾Ñ‚Ð° (Ð¿Ð¾ÐºÐ° Ð¿Ñ€Ð¾ÑÑ‚Ð¾ Ð¿Ñ€Ð¸Ð¼ÐµÑ€)
+  void _createChatBot() {
+    // Ð—Ð°ÐºÑ€Ñ‹Ð²Ð°ÐµÐ¼ Drawer
+    Navigator.of(context).pop();
+    // TODO: Ð·Ð´ÐµÑÑŒ Ð»Ð¾Ð³Ð¸ÐºÐ° Ð´Ð»Ñ ÑÐºÑ€Ð°Ð½Ð° ÑÐ¾Ð·Ð´Ð°Ð½Ð¸Ñ Ñ‡Ð°Ñ‚-Ð±Ð¾Ñ‚Ð°
+    print("ÐžÑ‚ÐºÑ€Ñ‹Ñ‚ÑŒ ÑÐºÑ€Ð°Ð½ ÑÐ¾Ð·Ð´Ð°Ð½Ð¸Ñ Ð½Ð¾Ð²Ð¾Ð³Ð¾ Ñ‡Ð°Ñ‚-Ð±Ð¾Ñ‚Ð°");
+  }
+
+  /// ÐŸÑ€Ð¾ÑÐ¼Ð¾Ñ‚Ñ€ Ð¸Ð½Ñ„Ð¾Ñ€Ð¼Ð°Ñ†Ð¸Ð¸ Ð¾ Ñ‡Ð°Ñ‚-Ð±Ð¾Ñ‚Ðµ (Ð¸ÐºÐ¾Ð½ÐºÐ° "!")
+  void _showBotInfo(Map<String, dynamic> bot) {
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: Text(bot["chatBotName"] ?? "Ð§Ð°Ñ‚-Ð±Ð¾Ñ‚"),
+        content: Text(bot["chatBotDesc"] ?? "Ð‘ÐµÐ· Ð¾Ð¿Ð¸ÑÐ°Ð½Ð¸Ñ"),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text("Ð—Ð°ÐºÑ€Ñ‹Ñ‚ÑŒ"),
+          ),
+        ],
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return SafeArea(
+      child: Column(
+        children: [
+          // Ð—Ð°Ð³Ð¾Ð»Ð¾Ð²Ð¾Ðº (Ð½ÐµÐ¾Ð±ÑÐ·Ð°Ñ‚ÐµÐ»ÑŒÐ½Ð¾)
+          const ListTile(
+            title: Text(
+              "Ð¡Ð¿Ð¸ÑÐ¾Ðº Ñ‡Ð°Ñ‚-Ð±Ð¾Ñ‚Ð¾Ð²",
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+          ),
+          // Ð¡Ñ‚Ñ€Ð¾ÐºÐ° Ð¿Ð¾Ð¸ÑÐºÐ° + ÐºÐ½Ð¾Ð¿ÐºÐ° ÑÐ¾Ð·Ð´Ð°Ð½Ð¸Ñ Ñ‡Ð°Ñ‚-Ð±Ð¾Ñ‚Ð° + ÐºÐ½Ð¾Ð¿ÐºÐ° Ð¿Ð¾Ð¸ÑÐºÐ°
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8.0),
+            child: Row(
+              children: [
+                // (5.3) ÐšÐ½Ð¾Ð¿ÐºÐ° ÑÐ¾Ð·Ð´Ð°Ð½Ð¸Ñ ÑÐ²Ð¾ÐµÐ³Ð¾ Ñ‡Ð°Ñ‚-Ð±Ð¾Ñ‚Ð° (ÑÐ»ÐµÐ²Ð°)
+                ElevatedButton(
+                  onPressed: _createChatBot,
+                  child: const Text("Ð¡Ð¾Ð·Ð´Ð°Ñ‚ÑŒ Ñ‡Ð°Ñ‚-Ð±Ð¾Ñ‚Ð°"),
+                ),
+                const SizedBox(width: 8),
+                // (5.1) Ð¡Ñ‚Ñ€Ð¾ÐºÐ° Ð¿Ð¾Ð¸ÑÐºÐ° Ñ‡Ð°Ñ‚Ð¾Ð² Ð¿Ð¾ Ð½Ð°Ð·Ð²Ð°Ð½Ð¸ÑŽ
+                Expanded(
+                  child: TextField(
+                    controller: _searchController,
+                    decoration: const InputDecoration(
+                      labelText: "ÐŸÐ¾Ð¸ÑÐº Ñ‡Ð°Ñ‚-Ð±Ð¾Ñ‚Ð¾Ð²",
+                      border: OutlineInputBorder(),
+                    ),
+                    onChanged: (value) => _searchChatBots(),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                // (5.1.1) ÐšÐ½Ð¾Ð¿ÐºÐ° Ð¿Ð¾Ð¸ÑÐºÐ°
+                IconButton(
+                  icon: const Icon(Icons.search),
+                  onPressed: _searchChatBots,
+                ),
+              ],
+            ),
+          ),
+          // (5.2) Ð¡Ð¿Ð¸ÑÐ¾Ðº Ñ‡Ð°Ñ‚-Ð±Ð¾Ñ‚Ð¾Ð²
+          Expanded(
+            child: ListView.builder(
+              itemCount: _filteredChatBots.length,
+              itemBuilder: (context, index) {
+                final bot = _filteredChatBots[index];
+                return ListTile(
+                  title: Text(bot["chatBotName"] ?? "Ð‘ÐµÐ· Ð½Ð°Ð·Ð²Ð°Ð½Ð¸Ñ"),
+                  subtitle: Text(bot["chatBotDesc"] ?? "Ð‘ÐµÐ· Ð¾Ð¿Ð¸ÑÐ°Ð½Ð¸Ñ"),
+                  // (5.2.1) ÐšÐ½Ð¾Ð¿ÐºÐ° Ð´Ð»Ñ Ð¿Ñ€Ð¾ÑÐ¼Ð¾Ñ‚Ñ€Ð° Ð¸Ð½Ñ„Ð¾Ñ€Ð¼Ð°Ñ†Ð¸Ð¸ Ð¾ Ñ‡Ð°Ñ‚-Ð±Ð¾Ñ‚Ðµ (Ð¸ÐºÐ¾Ð½ÐºÐ° "!")
+                  trailing: IconButton(
+                    icon: const Icon(Icons.info_outline),
+                    onPressed: () => _showBotInfo(bot),
+                  ),
+                  onTap: () {
+                    // Ð—Ð°ÐºÑ€Ñ‹Ð²Ð°ÐµÐ¼ Drawer
+                    Navigator.of(context).pop();
+                    // TODO: Ð»Ð¾Ð³Ð¸ÐºÐ° Ð¾Ñ‚ÐºÑ€Ñ‹Ñ‚Ð¸Ñ/Ð¸ÑÐ¿Ð¾Ð»ÑŒÐ·Ð¾Ð²Ð°Ð½Ð¸Ñ Ð²Ñ‹Ð±Ñ€Ð°Ð½Ð½Ð¾Ð³Ð¾ Ñ‡Ð°Ñ‚-Ð±Ð¾Ñ‚Ð°
+                    print("Ð’Ñ‹Ð±Ñ€Ð°Ð½ Ñ‡Ð°Ñ‚-Ð±Ð¾Ñ‚: ${bot["chatBotName"]}");
+                  },
+                );
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+import 'package:flutter/material.dart';
+import 'widget_app_bar.dart';
+import 'widget_chats.dart';
+import 'widget_neuro_button.dart';
+import 'widget_chat_bots.dart';
+import 'widget_snack_bar.dart';
+
+class WidgetMainScreen extends StatefulWidget {
+  const WidgetMainScreen({Key? key}) : super(key: key);
+
+  @override
+  _WidgetMainScreenState createState() => _WidgetMainScreenState();
+}
+
+class _WidgetMainScreenState extends State<WidgetMainScreen> {
+  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
+  final TextEditingController _messageController = TextEditingController();
+
+  @override
+
+  
+  void dispose() {
+    _messageController.dispose();
+    super.dispose();
+  }
+
+  void _sendMessage() {
+    final text = _messageController.text;
+    print("ÐžÑ‚Ð¿Ñ€Ð°Ð²Ð»ÐµÐ½Ð¾ ÑÐ¾Ð¾Ð±Ñ‰ÐµÐ½Ð¸Ðµ: $text");
+    _messageController.clear();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      key: _scaffoldKey,
+
+      // Ð›ÐµÐ²Ñ‹Ð¹ Drawer (ÑÐ¿Ð¸ÑÐ¾Ðº Ñ‡Ð°Ñ‚Ð¾Ð²)
+      drawer: SizedBox(
+        width: 350,
+        child: Drawer(
+          child: WidgetChats(),
+        ),
+      ),
+
+      // ÐŸÑ€Ð°Ð²Ñ‹Ð¹ Drawer (ÑÐ¿Ð¸ÑÐ¾Ðº Ñ‡Ð°Ñ‚-Ð±Ð¾Ñ‚Ð¾Ð²) - ÐµÑÐ»Ð¸ Ð±Ð¾Ð»ÑŒÑˆÐµ Ð½Ðµ Ð½ÑƒÐ¶ÐµÐ½, Ð¼Ð¾Ð¶ÐµÑ‚Ðµ ÑƒÐ´Ð°Ð»Ð¸Ñ‚ÑŒ
+      endDrawer: SizedBox(
+        width: 350,
+        child: Drawer(
+          child: WidgetChatBots(),
+        ),
+      ),
+
+      // AppBar c Ð¾Ð´Ð½Ð¸Ð¼ ÐºÐ¾Ð»Ð±ÑÐºÐ¾Ð¼
+      appBar: WidgetAppBar(
+        onMenuPressed: () {
+          // ÐžÑ‚ÐºÑ€Ñ‹Ð²Ð°ÐµÐ¼ Ð»ÐµÐ²Ñ‹Ð¹ Drawer
+          _scaffoldKey.currentState?.openDrawer();
+        },
+      ),
+
+      body: SafeArea(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // ÐšÐ½Ð¾Ð¿ÐºÐ° Ð²Ñ‹Ð±Ð¾Ñ€Ð° Ð½ÐµÐ¹Ñ€Ð¾ÑÐµÑ‚Ð¸ + ÐºÐ½Ð¾Ð¿ÐºÐ° Ð½Ð°ÑÑ‚Ñ€Ð¾ÐµÐº
+            Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: WidgetNeuroButton(),
+            ),
+            // ÐžÑÐ½Ð¾Ð²Ð½Ð°Ñ Ñ‡Ð°ÑÑ‚ÑŒ ÑÐºÑ€Ð°Ð½Ð°
+            Expanded(
+              child: Center(
+                child: Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      // Ð¢ÐµÐºÑÑ‚ "Ð°Ð±Ð²Ð³Ð´"
+                      const Text(
+                        "Ð°Ð±Ð²Ð³Ð´",
+                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                      ),
+                      const SizedBox(height: 16),
+                      // Ð¡Ñ‚Ñ€Ð¾ÐºÐ° Ð²Ð²Ð¾Ð´Ð° (Ð¾Ð³Ñ€Ð°Ð½Ð¸Ñ‡ÐµÐ½Ð¸Ðµ 900 px) + ÐºÐ½Ð¾Ð¿ÐºÐ° Ð¾Ñ‚Ð¿Ñ€Ð°Ð²ÐºÐ¸
+                      ConstrainedBox(
+                        constraints: const BoxConstraints(maxWidth: 900),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: TextField(
+                                controller: _messageController,
+                                decoration: const InputDecoration(
+                                  labelText: "Ð’Ð²ÐµÐ´Ð¸Ñ‚Ðµ ÑÐ¾Ð¾Ð±Ñ‰ÐµÐ½Ð¸Ðµ",
+                                  border: OutlineInputBorder(),
+                                ),
+                                keyboardType: TextInputType.multiline,
+                                minLines: 1,
+                                maxLines: 8,
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            IconButton(
+                              icon: const Icon(Icons.send),
+                              onPressed: _sendMessage,
+                              tooltip: "ÐžÑ‚Ð¿Ñ€Ð°Ð²Ð¸Ñ‚ÑŒ",
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+import 'package:flutter/material.dart';
+import 'package:promts_application_1/features/chat/view/widget_chat_create_settings.dart';
+/// Ð’Ð¸Ð´Ð¶ÐµÑ‚ Ð²Ñ‹Ð±Ð¾Ñ€Ð° Ð½ÐµÐ¹Ñ€Ð¾ÑÐµÑ‚Ð¸ (DropdownButton) + ÐºÐ½Ð¾Ð¿ÐºÐ° Ð½Ð°ÑÑ‚Ñ€Ð¾ÐµÐº Ñ‡Ð°Ñ‚Ð°.
+/// ÐœÐ°ÐºÑÐ¸Ð¼Ð°Ð»ÑŒÐ½Ð°Ñ ÑˆÐ¸Ñ€Ð¸Ð½Ð° Ð²Ñ‹Ð¿Ð°Ð´Ð°ÑŽÑ‰ÐµÐ³Ð¾ ÑÐ¿Ð¸ÑÐºÐ° Ð¾Ð³Ñ€Ð°Ð½Ð¸Ñ‡ÐµÐ½Ð° 375 px.
+class WidgetNeuroButton extends StatefulWidget {
+  const WidgetNeuroButton({Key? key}) : super(key: key);
+
+  @override
+  State<WidgetNeuroButton> createState() => _WidgetNeuroButtonState();
+}
+
+class _WidgetNeuroButtonState extends State<WidgetNeuroButton> {
+  // ÐŸÐ¾ ÑƒÐ¼Ð¾Ð»Ñ‡Ð°Ð½Ð¸ÑŽ Ð²Ñ‹Ð±Ñ€Ð°Ð½Ð½Ð°Ñ Ð½ÐµÐ¹Ñ€Ð¾ÑÐµÑ‚ÑŒ
+  String _selectedNetwork = "DeepSeek V3";
+
+  // Ð¡Ð¿Ð¸ÑÐ¾Ðº Ð´Ð¾ÑÑ‚ÑƒÐ¿Ð½Ñ‹Ñ… Ð½ÐµÐ¹Ñ€Ð¾ÑÐµÑ‚ÐµÐ¹ Ñ Ð¾Ð¿Ð¸ÑÐ°Ð½Ð¸ÑÐ¼Ð¸
+  final List<Map<String, String>> _networks = [
+    {
+      'name': 'DeepSeek V3',
+      'desc': 'ÐœÐ¾Ñ‰Ð½Ð°Ñ Ð¼Ð¾Ð´ÐµÐ»ÑŒ Ð´Ð»Ñ Ð³ÐµÐ½ÐµÑ€Ð°Ñ†Ð¸Ð¸ Ñ‚ÐµÐºÑÑ‚Ð°.',
+    },
+    {
+      'name': 'DeepSeek R1',
+      'desc': 'Ð£Ð»ÑƒÑ‡ÑˆÐµÐ½Ð½Ð°Ñ Ð¼Ð¾Ð´ÐµÐ»ÑŒ DeepSeek.',
+    },
+    {
+      'name': 'YandexGPT 5 pro',
+      'desc': 'Ð¡Ð°Ð¼Ð°Ñ Ð¿Ñ€Ð¾Ð´Ð²Ð¸Ð½ÑƒÑ‚Ð°Ñ Ñ€ÑƒÑÑÐºÐ°Ñ Ð¼Ð¾Ð´ÐµÐ»ÑŒ.',
+    },
+    {
+      'name': 'YandexGPT 5 Lite',
+      'desc': 'Ð£Ð¿Ñ€Ð¾Ñ‰Ñ‘Ð½Ð½Ð°Ñ Ð²ÐµÑ€ÑÐ¸Ñ YandexGPT 5.',
+    },
+    {
+      'name': 'ChatGPT 4o mini',
+      'desc': 'Ð›Ñ‘Ð³ÐºÐ°Ñ Ð²ÐµÑ€ÑÐ¸Ñ ChatGPT 4o.',
+    },
+    {
+      'name': 'ChatGPT 4o',
+      'desc': 'ÐŸÐ¾Ð»Ð½Ð¾Ñ†ÐµÐ½Ð½Ð°Ñ Ð²ÐµÑ€ÑÐ¸Ñ ChatGPT 4o.',
+    },
+    {
+      'name': 'ChatGPT o1',
+      'desc': 'Ð­ÐºÑÐ¿ÐµÑ€Ð¸Ð¼ÐµÐ½Ñ‚Ð°Ð»ÑŒÐ½Ð°Ñ Ð¼Ð¾Ð´ÐµÐ»ÑŒ ChatGPT.',
+    },
+    {
+      'name': 'Qwen-Max',
+      'desc': 'Ð Ð°ÑÑˆÐ¸Ñ€ÐµÐ½Ð½Ð°Ñ Ð²ÐµÑ€ÑÐ¸Ñ Qwen.',
+    },
+    {
+      'name': 'Qwen-Turbo',
+      'desc': 'Ð£ÑÐºÐ¾Ñ€ÐµÐ½Ð½Ð°Ñ Ð²ÐµÑ€ÑÐ¸Ñ Qwen.',
+    },
+  ];
+
+  // ÐžÐ±Ñ€Ð°Ð±Ð°Ñ‚Ñ‹Ð²Ð°ÐµÐ¼ Ð²Ñ‹Ð±Ð¾Ñ€ Ð½Ð¾Ð²Ð¾Ð¹ Ð½ÐµÐ¹Ñ€Ð¾ÑÐµÑ‚Ð¸
+  void _onNetworkChanged(String newNetwork) {
+    setState(() {
+      _selectedNetwork = newNetwork;
+    });
+  }
+
+  // ÐžÑ‚ÐºÑ€Ñ‹Ð²Ð°ÐµÐ¼ Ð¾ÐºÐ½Ð¾ Ð½Ð°ÑÑ‚Ñ€Ð¾ÐµÐº Ð¿Ð¾ Ñ†ÐµÐ½Ñ‚Ñ€Ñƒ ÑÐºÑ€Ð°Ð½Ð° (Ð¿Ñ€Ð¸Ð¼ÐµÑ€ Ñ AlertDialog)
+void _openSettingsDialog() {
+  showDialog(
+    context: context,
+    builder: (_) => WidgetChatCreateSettings(
+      chatId: 54719041,
+      temperature: 1.0,
+      contextChat: "ÐžÐ¿Ð¸ÑÐ°Ð½Ð¸Ðµ...",
+      useMemory: true,
+      updateMemory: false,
+      onSave: (updatedData) {
+        // Ð—Ð´ÐµÑÑŒ Ð¾Ð±Ñ€Ð°Ð±Ð¾Ñ‚ÐºÐ° Ð½Ð¾Ð²Ñ‹Ñ… Ð´Ð°Ð½Ð½Ñ‹Ñ… Ñ‡Ð°Ñ‚Ð°
+        // updatedData['temperature'], updatedData['contextChat'], Ð¸ Ñ‚.Ð´.
+        print("ÐÐ¾Ð²Ñ‹Ðµ Ð½Ð°ÑÑ‚Ñ€Ð¾Ð¹ÐºÐ¸ Ñ‡Ð°Ñ‚Ð°: $updatedData");
+        // TODO: Ð¾Ñ‚Ð¿Ñ€Ð°Ð²Ð¸Ñ‚ÑŒ Ð¸Ð·Ð¼ÐµÐ½ÐµÐ½Ð¸Ñ Ð½Ð° Ð±ÑÐºÐµÐ½Ð´
+      },
+    ),
+  );
+}
+
+
+  @override
+  Widget build(BuildContext context) {
+    // ÐŸÑ€Ð¾Ð²ÐµÑ€ÑÐµÐ¼, ÑÐ²Ð»ÑÐµÑ‚ÑÑ Ð»Ð¸ ÑƒÑÑ‚Ñ€Ð¾Ð¹ÑÑ‚Ð²Ð¾ "Ð¾Ñ‡ÐµÐ½ÑŒ ÑƒÐ·ÐºÐ¸Ð¼" (Ð´Ð»Ñ ÑƒÐ¼ÐµÐ½ÑŒÑˆÐµÐ½Ð¸Ñ ÑˆÑ€Ð¸Ñ„Ñ‚Ð° Ð¾Ð¿Ð¸ÑÐ°Ð½Ð¸Ñ, Ð¿Ñ€Ð¸ Ð¶ÐµÐ»Ð°Ð½Ð¸Ð¸)
+    final isSmallWidth = MediaQuery.of(context).size.width < 350;
+
+    return Row(
+      children: [
+        // Flexible, Ñ‡Ñ‚Ð¾Ð±Ñ‹ Ð½Ðµ Â«Ð²Ñ‹Ñ‚Ð°Ð»ÐºÐ¸Ð²Ð°Ñ‚ÑŒÂ» Ð´Ñ€ÑƒÐ³Ð¸Ðµ ÑÐ»ÐµÐ¼ÐµÐ½Ñ‚Ñ‹
+        Flexible(
+          // ConstrainedBox Ð¾Ð³Ñ€Ð°Ð½Ð¸Ñ‡Ð¸Ð²Ð°ÐµÑ‚ ÑˆÐ¸Ñ€Ð¸Ð½Ñƒ Ð² 375 Ð¿Ð¸ÐºÑÐµÐ»ÐµÐ¹ Ð¼Ð°ÐºÑÐ¸Ð¼ÑƒÐ¼
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 375),
+            child: DropdownButtonHideUnderline(
+              child: DropdownButton<String>(
+                isExpanded: true, // Ð Ð°ÑÑ‚ÑÐ³Ð¸Ð²Ð°ÐµÐ¼ Ð´Ð¾ Ð´Ð¾ÑÑ‚ÑƒÐ¿Ð½Ð¾Ð¹ ÑˆÐ¸Ñ€Ð¸Ð½Ñ‹ (Ð½Ð¾ Ð½Ðµ Ð±Ð¾Ð»ÐµÐµ 375)
+                value: _selectedNetwork,
+                items: _networks.map((net) {
+                  return DropdownMenuItem<String>(
+                    value: net['name'],
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // ÐÐ°Ð·Ð²Ð°Ð½Ð¸Ðµ Ð½ÐµÐ¹Ñ€Ð¾ÑÐµÑ‚Ð¸
+                        Text(
+                          net['name'] ?? '',
+                          style: const TextStyle(fontWeight: FontWeight.bold),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        // ÐžÐ¿Ð¸ÑÐ°Ð½Ð¸Ðµ Ð½ÐµÐ¹Ñ€Ð¾ÑÐµÑ‚Ð¸ (Ð¾Ð³Ñ€Ð°Ð½Ð¸Ñ‡Ð¸Ð²Ð°ÐµÐ¼ 2 ÑÑ‚Ñ€Ð¾ÐºÐ°Ð¼Ð¸)
+                        if (net['desc'] != null && net['desc']!.isNotEmpty)
+                          Text(
+                            net['desc']!,
+                            style: TextStyle(
+                              fontSize: isSmallWidth ? 10 : 12,
+                              color: Colors.grey,
+                            ),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                      ],
+                    ),
+                  );
+                }).toList(),
+                onChanged: (value) {
+                  if (value != null) {
+                    _onNetworkChanged(value);
+                  }
+                },
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(width: 10),
+        // ÐšÐ½Ð¾Ð¿ÐºÐ° Ð½Ð°ÑÑ‚Ñ€Ð¾ÐµÐº (Ð¸ÐºÐ¾Ð½ÐºÐ° ÑˆÐµÑÑ‚ÐµÑ€Ñ‘Ð½ÐºÐ°)
+        IconButton(
+          icon: const Icon(Icons.settings),
+          onPressed: _openSettingsDialog,
+        ),
+      ],
+    );
+  }
+}
+import 'package:flutter/material.dart';
+
+class WidgetSnackBar {
+  /// ÐŸÐ¾ÐºÐ°Ð·Ñ‹Ð²Ð°ÐµÑ‚ SnackBar Ñ Ñ‚ÐµÐºÑÑ‚Ð¾Ð¼ Ð¾ÑˆÐ¸Ð±ÐºÐ¸ [errorMessage].
+  /// Ð¦Ð²ÐµÑ‚ Ñ„Ð¾Ð½Ð° â€” ÐºÑ€Ð°ÑÐ½Ñ‹Ð¹, Ð´Ð»Ð¸Ñ‚ÐµÐ»ÑŒÐ½Ð¾ÑÑ‚ÑŒ â€” 3 ÑÐµÐºÑƒÐ½Ð´Ñ‹.
+  static void showError(BuildContext context, String errorMessage) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(errorMessage),
+        backgroundColor: Colors.red,
+        duration: const Duration(seconds: 3),
+      ),
+    );
+  }
+}
+import 'package:flutter/material.dart';
+
+class WidgetUserSettings extends StatefulWidget {
+  final String email;              
+  final int userId;                
+  final double balance;            
+  final bool memoryEnabled;        
+  final bool aiCanUpdateMemory;    
+  final String memory;             
+  final String selectedModel;      
+  final List<String> availableModels; 
+  final ValueChanged<Map<String, dynamic>> onSave;
+
+  const WidgetUserSettings({
+    Key? key,
+    required this.email,
+    required this.userId,
+    required this.balance,
+    required this.memoryEnabled,
+    required this.aiCanUpdateMemory,
+    required this.memory,
+    required this.selectedModel,
+    required this.availableModels,
+    required this.onSave,
+  }) : super(key: key);
+
+  @override
+  State<WidgetUserSettings> createState() => _WidgetUserSettingsState();
+}
+
+class _WidgetUserSettingsState extends State<WidgetUserSettings> {
+  late TextEditingController _memoryController;
+  late bool _memoryEnabled;
+  late bool _aiCanUpdateMemory;
+  late String _selectedModel;
+  late double _balance;
+
+  @override
+  void initState() {
+    super.initState();
+    _memoryController = TextEditingController(text: widget.memory);
+    _memoryEnabled = widget.memoryEnabled;
+    _aiCanUpdateMemory = widget.aiCanUpdateMemory;
+    _selectedModel = widget.selectedModel;
+    _balance = widget.balance;
+  }
+
+  @override
+  void dispose() {
+    _memoryController.dispose();
+    super.dispose();
+  }
+
+  void _handleSave() {
+    final updatedData = {
+      'memory': _memoryController.text,
+      'memoryEnabled': _memoryEnabled,
+      'aiCanUpdateMemory': _aiCanUpdateMemory,
+      'selectedModel': _selectedModel,
+      'balance': _balance,
+    };
+    widget.onSave(updatedData);
+    Navigator.of(context).pop();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text("ÐÐ°ÑÑ‚Ñ€Ð¾Ð¹ÐºÐ¸ Ð¿Ð¾Ð»ÑŒÐ·Ð¾Ð²Ð°Ñ‚ÐµÐ»Ñ"),
+      // Ð’Ð¼ÐµÑÑ‚Ð¾ SingleChildScrollView Ð¸ÑÐ¿Ð¾Ð»ÑŒÐ·ÑƒÐµÐ¼ Ñ„Ð¸ÐºÑÐ¸Ñ€Ð¾Ð²Ð°Ð½Ð½Ñ‹Ðµ Ñ€Ð°Ð·Ð¼ÐµÑ€Ñ‹ ÐºÐ¾Ð½Ñ‚ÐµÐ¹Ð½ÐµÑ€Ð°
+      content: SizedBox(
+        width: 400,   // Ð—Ð°Ñ„Ð¸ÐºÑÐ¸Ñ€Ð¾Ð²Ð°Ð½Ð½Ð°Ñ ÑˆÐ¸Ñ€Ð¸Ð½Ð° Ð¾ÐºÐ½Ð°
+        height: 400,  // Ð—Ð°Ñ„Ð¸ÐºÑÐ¸Ñ€Ð¾Ð²Ð°Ð½Ð½Ð°Ñ Ð²Ñ‹ÑÐ¾Ñ‚Ð° Ð¾ÐºÐ½Ð°
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // 1) ÐŸÐ¾Ñ‡Ñ‚Ð°
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text("Ð­Ð». Ð¿Ð¾Ñ‡Ñ‚Ð°:"),
+                Flexible(child: Text(widget.email)),
+              ],
+            ),
+            const SizedBox(height: 8),
+
+            // 2) ID
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text("ID:"),
+                Text(widget.userId.toString()),
+              ],
+            ),
+            const SizedBox(height: 8),
+
+            // 3) Ð‘Ð°Ð»Ð°Ð½Ñ + ÐºÐ½Ð¾Ð¿ÐºÐ° "+"
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text("Ð‘Ð°Ð»Ð°Ð½Ñ:"),
+                Row(
+                  children: [
+                    Text("${_balance.toStringAsFixed(2)} Ñ€ÑƒÐ±."),
+                    IconButton(
+                      icon: const Icon(Icons.add),
+                      onPressed: () {
+                        setState(() {
+                          _balance += 10.0;
+                        });
+                      },
+                    ),
+                  ],
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+
+            // 4) Ð˜ÑÐ¿Ð¾Ð»ÑŒÐ·Ð¾Ð²Ð°Ñ‚ÑŒ Ð»Ð¸ Ð¿Ð°Ð¼ÑÑ‚ÑŒ?
+            Row(
+              children: [
+                Expanded(child: Text("Ð˜ÑÐ¿Ð¾Ð»ÑŒÐ·Ð¾Ð²Ð°Ñ‚ÑŒ Ð»Ð¸ Ð¿Ð°Ð¼ÑÑ‚ÑŒ Ð² Ñ‡Ð°Ñ‚Ð°Ñ…?")),
+                Switch(
+                  value: _memoryEnabled,
+                  onChanged: (val) {
+                    setState(() {
+                      _memoryEnabled = val;
+                    });
+                  },
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+
+            // 5) ÐœÐ¾Ð³ÑƒÑ‚ Ð»Ð¸ Ñ‡Ð°Ñ‚Ñ‹ Ð¸Ð·Ð¼ÐµÐ½ÑÑ‚ÑŒ Ð¿Ð°Ð¼ÑÑ‚ÑŒ?
+            Row(
+              children: [
+                Expanded(child: Text("ÐœÐ¾Ð³ÑƒÑ‚ Ð»Ð¸ Ñ‡Ð°Ñ‚Ñ‹ Ð¸Ð·Ð¼ÐµÐ½ÑÑ‚ÑŒ Ð¿Ð°Ð¼ÑÑ‚ÑŒ Ð¿Ð¾Ð»ÑŒÐ·Ð¾Ð²Ð°Ñ‚ÐµÐ»Ñ?")),
+                Switch(
+                  value: _aiCanUpdateMemory,
+                  onChanged: (val) {
+                    setState(() {
+                      _aiCanUpdateMemory = val;
+                    });
+                  },
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+
+            // 6) ÐœÐ¾Ð´ÐµÐ»ÑŒ Ð¿Ð¾ ÑƒÐ¼Ð¾Ð»Ñ‡Ð°Ð½Ð¸ÑŽ (Dropdown)
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text("ÐœÐ¾Ð´ÐµÐ»ÑŒ Ñ‡Ð°Ñ‚Ð°:"),
+                DropdownButton<String>(
+                  value: _selectedModel,
+                  items: widget.availableModels.map((model) {
+                    return DropdownMenuItem<String>(
+                      value: model,
+                      child: Text(model),
+                    );
+                  }).toList(),
+                  onChanged: (val) {
+                    if (val != null) {
+                      setState(() {
+                        _selectedModel = val;
+                      });
+                    }
+                  },
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+
+            // 7) ÐŸÐ¾Ð»Ðµ "ÐŸÐ°Ð¼ÑÑ‚ÑŒ" - Ñ‡Ñ‚Ð¾Ð±Ñ‹ Ð¾ÐºÐ½Ð¾ Ð½Ðµ Ñ€Ð°ÑÑ‚ÑÐ³Ð¸Ð²Ð°Ð»Ð¾ÑÑŒ, Ð¸ÑÐ¿Ð¾Ð»ÑŒÐ·ÑƒÐµÐ¼ Expanded + Ð²Ð½ÑƒÑ‚Ñ€ÐµÐ½Ð½Ð¸Ð¹ ÑÐºÑ€Ð¾Ð»Ð»
+            Expanded(
+            child: TextField(
+              controller: _memoryController,
+              decoration: const InputDecoration(
+                labelText: "ÐŸÐ°Ð¼ÑÑ‚ÑŒ Ð¿Ð¾Ð»ÑŒÐ·Ð¾Ð²Ð°Ñ‚ÐµÐ»Ñ",
+                border: OutlineInputBorder(),
+              ),
+              keyboardType: TextInputType.multiline,
+              minLines: 3,
+              maxLines: 5,
+            ),
+            ),
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Text("ÐžÑ‚Ð¼ÐµÐ½Ð°"),
+        ),
+        ElevatedButton(
+          onPressed: _handleSave,
+          child: const Text("Ð¡Ð¾Ñ…Ñ€Ð°Ð½Ð¸Ñ‚ÑŒ"),
+        ),
+      ],
+    );
+  }
+}
