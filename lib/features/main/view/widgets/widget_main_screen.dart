@@ -133,21 +133,24 @@ class _WidgetMainScreenState extends State<WidgetMainScreen> {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        SizedBox(
-                          width: 300,
-                          child: TextField(
-                            controller: _messageController,
-                            decoration: const InputDecoration(
-                              labelText: "Сообщение",
-                              border: OutlineInputBorder(),
-                            ),
-                          ),
-                        ),
-                        IconButton(
-                          icon: const Icon(Icons.send),
-                          onPressed: _openChat,
-                        ),
-                      ],
+                        const SizedBox(height: 16),
+                      // Строка ввода (ограничение 900 px) + кнопка отправки
+                      ConstrainedBox(
+                        constraints: const BoxConstraints(maxWidth: 900),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: TextField(
+                                controller: _messageController,
+                                decoration: const InputDecoration(
+                                  labelText: "Введите сообщение",
+                                  border: OutlineInputBorder(),
+                                ),
+                                keyboardType: TextInputType.multiline,
+                                minLines: 1,
+                                maxLines: 8,
+                          ,
+                              ),
                     ),
                     const SizedBox(height: 20),
                   ],
