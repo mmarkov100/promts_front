@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'widget_app_bar.dart';
+
 import 'package:promts_application_1/features/chat/view/widgets/widget_chats.dart';
 import 'package:promts_application_1/features/chatbot/view/widgets/widget_chat_bots.dart';
 import 'package:promts_application_1/neuro/view/widget_neuro_button.dart';
 import 'package:promts_application_1/features/chat/view/widgets/widget_chat_page.dart'; // Подключаем наш экран чата
+
 
 class WidgetMainScreen extends StatefulWidget {
   const WidgetMainScreen({Key? key}) : super(key: key);
