@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'widget_app_bar.dart';
 import '../../../chat/view/widgets/widget_chats.dart';
-import '../../../../neuro/view/widget_neuro_button.dart';
+import '../../../neuro/view/widget_neuro_button.dart';
 
 class WidgetMainScreen extends StatefulWidget {
   const WidgetMainScreen({super.key});
