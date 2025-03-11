@@ -40,6 +40,86 @@ class _WidgetChatBotsState extends State<WidgetChatBots> {
       "totalMessages": 0,
       "isSelectedByRedact": false
     },
+        {
+      "id": 4,
+      "chatBotName": "Новый помощник",
+      "chatBotDesc": "Описание нового помощника.",
+      "messagesToday": 0,
+      "totalMessages": 0,
+      "isSelectedByRedact": false
+    },
+        {
+      "id": 5,
+      "chatBotName": "Новый помощник",
+      "chatBotDesc": "Описание нового помощника.",
+      "messagesToday": 0,
+      "totalMessages": 0,
+      "isSelectedByRedact": false
+    },
+        {
+      "id": 6,
+      "chatBotName": "Новый помощник",
+      "chatBotDesc": "Описание нового помощника.",
+      "messagesToday": 0,
+      "totalMessages": 0,
+      "isSelectedByRedact": false
+    },
+        {
+      "id": 7,
+      "chatBotName": "Новый помощник",
+      "chatBotDesc": "Описание нового помощника.",
+      "messagesToday": 0,
+      "totalMessages": 0,
+      "isSelectedByRedact": false
+    },
+        {
+      "id": 8,
+      "chatBotName": "Новый помощник",
+      "chatBotDesc": "Описание нового помощника.",
+      "messagesToday": 0,
+      "totalMessages": 0,
+      "isSelectedByRedact": false
+    },
+        {
+      "id": 9,
+      "chatBotName": "Новый помощник",
+      "chatBotDesc": "Описание нового помощника.",
+      "messagesToday": 0,
+      "totalMessages": 0,
+      "isSelectedByRedact": false
+    },
+        {
+      "id": 10,
+      "chatBotName": "Новый помощник",
+      "chatBotDesc": "Описание нового помощника.",
+      "messagesToday": 0,
+      "totalMessages": 0,
+      "isSelectedByRedact": false
+    },
+        {
+      "id": 11,
+      "chatBotName": "Новый помощник",
+      "chatBotDesc": "Описание нового помощника.",
+      "messagesToday": 0,
+      "totalMessages": 0,
+      "isSelectedByRedact": false
+    },
+        {
+      "id": 12,
+      "chatBotName": "Новый помощник",
+      "chatBotDesc": "Описание нового помощника.",
+      "messagesToday": 0,
+      "totalMessages": 0,
+      "isSelectedByRedact": false
+    },
+        {
+      "id": 13,
+      "chatBotName": "Новый помощник",
+      "chatBotDesc": "Описание нового помощника.",
+      "messagesToday": 0,
+      "totalMessages": 0,
+      "isSelectedByRedact": false
+    },
   ];
 
   /// Список отфильтрованных чат-ботов (поиск).
@@ -143,7 +223,7 @@ class _WidgetChatBotsState extends State<WidgetChatBots> {
                 final bot = _filteredChatBots[index];
                 return ListTile(
                   title: Text(bot["chatBotName"] ?? "Без названия"),
-                  subtitle: Text(bot["chatBotDesc"] ?? "Без описания"),
+                  subtitle: Text(bot["chatBotDesc"] + "\nСегодня " + bot["messagesToday"].toString() +" сообщений" ?? "Без описания"),
                   // (5.2.1) Кнопка для просмотра информации о чат-боте (иконка "!")
                   trailing: IconButton(
                     icon: const Icon(Icons.info_outline),
