@@ -3,20 +3,23 @@ import 'package:flutter/material.dart';
 /// Модель сообщения
 class ChatMessage {
   final String text;
-  final bool isUser; // true: пользователь, false: нейросеть
+  final bool isUser; // true: сообщение пользователя, false: сообщение нейросети
 
   ChatMessage({required this.text, required this.isUser});
 }
 
 class WidgetChatPage extends StatefulWidget {
-  const WidgetChatPage({Key? key}) : super(key: key);
+  const WidgetChatPage({super.key});
 
   @override
   _WidgetChatPageState createState() => _WidgetChatPageState();
 }
 
 class _WidgetChatPageState extends State<WidgetChatPage> {
-  final List<ChatMessage> _messages = [];
+  final List<ChatMessage> _messages = [
+    ChatMessage(text: "Привет, я бот!", isUser: false),
+    ChatMessage(text: "Здравствуйте!", isUser: true),
+  ];
   final TextEditingController _messageController = TextEditingController();
 
   @override
@@ -31,24 +34,19 @@ class _WidgetChatPageState extends State<WidgetChatPage> {
     if (text.isEmpty) return;
 
     setState(() {
-      // Добавляем сообщение пользователя (справа)
+      // Добавляем сообщение пользователя
       _messages.add(ChatMessage(text: text, isUser: true));
     });
     _messageController.clear();
 
-    // Здесь можно добавить логику, чтобы получить ответ от нейросети (isUser: false)
-    // Например:
-    // final response = await backend.sendMessage(text);
-    // setState(() {
-    //   _messages.add(ChatMessage(text: response, isUser: false));
-    // });
+    // Здесь можно добавить логику для получения ответа от нейросети (isUser: false)
   }
 
   @override
   Widget build(BuildContext context) {
     return Column(
       children: [
-        // (6.1) Список сообщений
+        // Список сообщений
         Expanded(
           child: ListView.builder(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -59,7 +57,7 @@ class _WidgetChatPageState extends State<WidgetChatPage> {
             },
           ),
         ),
-        // (6.2) Строка для ввода сообщения + (6.3) Кнопка отправки
+        // Поле ввода сообщения + кнопка отправки
         Container(
           color: Colors.grey[200],
           padding: const EdgeInsets.all(8),
@@ -88,7 +86,8 @@ class _WidgetChatPageState extends State<WidgetChatPage> {
     );
   }
 
-  /// Создаёт «пузырь» сообщения. Пользовательское сообщение (isUser = true) выравнивается справа, нейросети — слева.
+  /// Создаёт «пузырь» сообщения.
+  /// Если сообщение пользователя (isUser = true), выравниваем его справа, иначе — слева.
   Widget _buildMessageBubble(ChatMessage msg) {
     final alignment = msg.isUser ? Alignment.centerRight : Alignment.centerLeft;
     final bgColor = msg.isUser ? Colors.blue[100] : Colors.grey[300];
