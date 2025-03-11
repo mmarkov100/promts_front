@@ -3,7 +3,7 @@ import 'widget_app_bar.dart';
 import 'package:promts_application_1/features/chat/view/widgets/widget_chats.dart';
 import 'package:promts_application_1/features/chatbot/view/widgets/widget_chat_bots.dart';
 import 'package:promts_application_1/neuro/view/widget_neuro_button.dart';
-import 'package:promts_application_1/features/chat/view/widgets/widget_chat_page.dart'; // Подключаем наш экран чата
+import 'package:promts_application_1/features/chat/view/widgets/widget_chat_page.dart';
 
 class WidgetMainScreen extends StatefulWidget {
   const WidgetMainScreen({Key? key}) : super(key: key);
@@ -18,7 +18,6 @@ class _WidgetMainScreenState extends State<WidgetMainScreen> {
   // Флаг, указывающий, нужно ли показывать страницу чата
   bool _showChatPage = false;
 
-  // Поле ввода на главном экране (если ещё нужно)
   final TextEditingController _messageController = TextEditingController();
 
   @override
@@ -31,8 +30,10 @@ class _WidgetMainScreenState extends State<WidgetMainScreen> {
   void _openChat() {
     final text = _messageController.text.trim();
     if (text.isEmpty) return;
+
     print("Отправлено сообщение на главном экране: $text");
     _messageController.clear();
+
     setState(() {
       _showChatPage = true;
     });
@@ -44,14 +45,6 @@ class _WidgetMainScreenState extends State<WidgetMainScreen> {
       _showChatPage = false;
     });
   }
-
-  // Пример отправки сообщения на главном экране (если нужно)
-  // void _sendMessageOnMain() {
-  //   final text = _messageController.text.trim();
-  //   if (text.isEmpty) return;
-  //   print("Отправлено сообщение на главном экране: $text");
-  //   _messageController.clear();
-  // }
 
   @override
   Widget build(BuildContext context) {
@@ -73,7 +66,7 @@ class _WidgetMainScreenState extends State<WidgetMainScreen> {
         },
       ),
 
-      // ВАЖНО: Проверяем флаг _showChatPage. Если true, показываем чат, иначе - обычный экран
+      // Если _showChatPage == true, показываем экран чата, иначе обычный экран
       body: _showChatPage
           ? Column(
               children: [
@@ -82,7 +75,6 @@ class _WidgetMainScreenState extends State<WidgetMainScreen> {
                   padding: EdgeInsets.all(16.0),
                   child: WidgetNeuroButton(),
                 ),
-                // Можно добавить кнопку "назад", чтобы закрыть чат
                 Container(
                   color: Colors.grey[300],
                   child: Row(
@@ -96,14 +88,16 @@ class _WidgetMainScreenState extends State<WidgetMainScreen> {
                   ),
                 ),
                 // Сам экран чата
-                const Expanded(child: WidgetChatPage()),
+                const Expanded(
+                  child: WidgetChatPage(),
+                ),
               ],
             )
           : _buildMainContent(),
     );
   }
 
-  /// Содержимое "обычного" экрана (когда не показываем чат)
+  /// Содержимое обычного экрана
   Widget _buildMainContent() {
     return SafeArea(
       child: Column(
@@ -128,31 +122,32 @@ class _WidgetMainScreenState extends State<WidgetMainScreen> {
                       textAlign: TextAlign.center,
                     ),
                     const SizedBox(height: 16),
-
-                    // Строка ввода + кнопка отправки (пример)
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        const SizedBox(height: 16),
-                      // Строка ввода (ограничение 900 px) + кнопка отправки
-                      ConstrainedBox(
-                        constraints: const BoxConstraints(maxWidth: 900),
-                        child: Row(
-                          children: [
-                            Expanded(
-                              child: TextField(
-                                controller: _messageController,
-                                decoration: const InputDecoration(
-                                  labelText: "Введите сообщение",
-                                  border: OutlineInputBorder(),
-                                ),
-                                keyboardType: TextInputType.multiline,
-                                minLines: 1,
-                                maxLines: 8,
-                          ,
+                    // Строка ввода (ограничение 900 px) + кнопка отправки
+                    ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: 900),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: TextField(
+                              controller: _messageController,
+                              decoration: const InputDecoration(
+                                labelText: "Введите сообщение",
+                                border: OutlineInputBorder(),
                               ),
+                              keyboardType: TextInputType.multiline,
+                              minLines: 1,
+                              maxLines: 8,
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          IconButton(
+                            icon: const Icon(Icons.send),
+                            onPressed: _openChat,
+                            tooltip: "Отправить",
+                          ),
+                        ],
+                      ),
                     ),
-                    const SizedBox(height: 20),
                   ],
                 ),
               ),
