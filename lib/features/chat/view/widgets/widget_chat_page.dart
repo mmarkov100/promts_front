@@ -17,18 +17,20 @@ class WidgetChatPage extends StatefulWidget {
 
 class _WidgetChatPageState extends State<WidgetChatPage> {
   final List<ChatMessage> _messages = [
-    ChatMessage(text: "Привет, я бот!", isUser: false),
     ChatMessage(text: "Здравствуйте!", isUser: true),
+    ChatMessage(text: "Привет, я бот!", isUser: false),
   ];
   final TextEditingController _messageController = TextEditingController();
+  final ScrollController _scrollController = ScrollController();
 
   @override
   void dispose() {
     _messageController.dispose();
+    _scrollController.dispose();
     super.dispose();
   }
 
-  /// Отправка нового сообщения от пользователя
+  /// Отправка
   void _sendMessage() {
     final text = _messageController.text.trim();
     if (text.isEmpty) return;
@@ -36,55 +38,71 @@ class _WidgetChatPageState extends State<WidgetChatPage> {
     setState(() {
       // Добавляем сообщение пользователя
       _messages.add(ChatMessage(text: text, isUser: true));
+      // Добавляем сообщения чата
+      _messages.add(ChatMessage(text: "Это тестовое сообщение 1 фвыфываыфваыфвафвыфываыфваыфвафвыфываыфваыфвафвыфываыфваыфвафвыфываыфваыфвафвыфываыфваыфвафвыфываыфваыфвафвыфываыфваыфвафвыфываыфваыфвафвыфываыфваыфвафвыфываыфваыфвафвыфываыфваыфвафвыфываыфваыфвафвыфываыфваыфва", isUser: false));
     });
     _messageController.clear();
-
-    // Здесь можно добавить логику для получения ответа от нейросети (isUser: false)
+    // После построения нового сообщения, прокручиваем чат вниз
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (_scrollController.hasClients) {
+        _scrollController.animateTo(
+          _scrollController.position.maxScrollExtent,
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeOut,
+        );
+      }
+    });
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      children: [
-        // Список сообщений
-        Expanded(
-          child: ListView.builder(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            itemCount: _messages.length,
-            itemBuilder: (context, index) {
-              final msg = _messages[index];
-              return _buildMessageBubble(msg);
-            },
+@override
+Widget build(BuildContext context) {
+  return Center(
+    child: ConstrainedBox(
+      constraints: const BoxConstraints(maxWidth: 700),
+      child: Column(
+        children: [
+          // Список сообщений
+          Expanded(
+            child: ListView.builder(
+              controller: _scrollController, // передаем контроллер
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              itemCount: _messages.length,
+              itemBuilder: (context, index) {
+                final msg = _messages[index];
+                return _buildMessageBubble(msg);
+              },
+            ),
           ),
-        ),
-        // Поле ввода сообщения + кнопка отправки
-        Container(
-          color: Colors.grey[200],
-          padding: const EdgeInsets.all(8),
-          child: Row(
-            children: [
-              Expanded(
-                child: TextField(
-                  controller: _messageController,
-                  decoration: const InputDecoration(
-                    hintText: "Введите сообщение",
-                    border: OutlineInputBorder(),
+          // Поле ввода сообщения + кнопка отправки
+          Container(
+            color: Colors.grey[200],
+            padding: const EdgeInsets.all(8),
+            child: Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: _messageController,
+                    decoration: const InputDecoration(
+                      hintText: "Введите сообщение",
+                      border: OutlineInputBorder(),
+                    ),
+                    minLines: 1,
+                    maxLines: 8,
                   ),
-                  minLines: 1,
-                  maxLines: 5,
                 ),
-              ),
-              const SizedBox(width: 8),
-              IconButton(
-                icon: const Icon(Icons.send),
-                onPressed: _sendMessage,
-              ),
-            ],
+                const SizedBox(width: 8),
+                IconButton(
+                  icon: const Icon(Icons.send),
+                  onPressed: _sendMessage,
+                ),
+              ],
+            ),
           ),
-        ),
-      ],
-    );
-  }
+        ],
+      ),
+    ),
+  );
+}
 
   /// Создаёт «пузырь» сообщения.
   /// Если сообщение пользователя (isUser = true), выравниваем его справа, иначе — слева.
@@ -97,7 +115,7 @@ class _WidgetChatPageState extends State<WidgetChatPage> {
       child: Container(
         margin: const EdgeInsets.symmetric(vertical: 4),
         padding: const EdgeInsets.all(10),
-        constraints: const BoxConstraints(maxWidth: 250),
+        constraints: const BoxConstraints(maxWidth: 450),
         decoration: BoxDecoration(
           color: bgColor,
           borderRadius: BorderRadius.circular(8),
