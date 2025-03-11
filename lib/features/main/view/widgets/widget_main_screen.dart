@@ -2,10 +2,8 @@ import 'package:flutter/material.dart';
 import 'widget_app_bar.dart';
 
 import 'package:promts_application_1/features/chat/view/widgets/widget_chats.dart';
-import 'package:promts_application_1/features/chatbot/view/widgets/widget_chat_bots.dart';
-import 'package:promts_application_1/neuro/view/widget_neuro_button.dart';
-import 'package:promts_application_1/features/chat/view/widgets/widget_chat_page.dart'; // Подключаем наш экран чата
-
+import 'package:promts_application_1/features/neuro/view/widget_neuro_button.dart';
+import 'package:promts_application_1/features/chat/view/widgets/widget_chat_page.dart';
 
 class WidgetMainScreen extends StatefulWidget {
   const WidgetMainScreen({Key? key}) : super(key: key);
@@ -47,14 +45,6 @@ class _WidgetMainScreenState extends State<WidgetMainScreen> {
     });
   }
 
-  // Пример отправки сообщения на главном экране (если нужно)
-  // void _sendMessageOnMain() {
-  //   final text = _messageController.text.trim();
-  //   if (text.isEmpty) return;
-  //   print("Отправлено сообщение на главном экране: $text");
-  //   _messageController.clear();
-  // }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -75,7 +65,7 @@ class _WidgetMainScreenState extends State<WidgetMainScreen> {
         },
       ),
 
-      // ВАЖНО: Проверяем флаг _showChatPage. Если true, показываем чат, иначе - обычный экран
+      /// Экран чата
       body: _showChatPage
           ? Column(
               children: [
@@ -105,7 +95,7 @@ class _WidgetMainScreenState extends State<WidgetMainScreen> {
     );
   }
 
-  /// Содержимое "обычного" экрана (когда не показываем чат)
+  /// Обычный экран
   Widget _buildMainContent() {
     return SafeArea(
       child: Column(
@@ -124,37 +114,39 @@ class _WidgetMainScreenState extends State<WidgetMainScreen> {
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
+                    // Текст "абвгд"
                     const Text(
-                      "OABABB",
-                      style: TextStyle(fontSize: 16),
-                      textAlign: TextAlign.center,
+                      "абвгд",
+                      style:
+                          TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                     ),
                     const SizedBox(height: 16),
-
-                    // Строка ввода + кнопка отправки (пример)
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        const SizedBox(height: 16),
-                      // Строка ввода (ограничение 900 px) + кнопка отправки
-                      ConstrainedBox(
-                        constraints: const BoxConstraints(maxWidth: 900),
-                        child: Row(
-                          children: [
-                            Expanded(
-                              child: TextField(
-                                controller: _messageController,
-                                decoration: const InputDecoration(
-                                  labelText: "Введите сообщение",
-                                  border: OutlineInputBorder(),
-                                ),
-                                keyboardType: TextInputType.multiline,
-                                minLines: 1,
-                                maxLines: 8,
-                          ,
+                    // Строка ввода (ограничение 900 px) + кнопка отправки
+                    ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: 900),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: TextField(
+                              controller: _messageController,
+                              decoration: const InputDecoration(
+                                labelText: "Введите сообщение",
+                                border: OutlineInputBorder(),
                               ),
+                              keyboardType: TextInputType.multiline,
+                              minLines: 1,
+                              maxLines: 8,
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          IconButton(
+                            icon: const Icon(Icons.send),
+                            onPressed: _openChat,
+                            tooltip: "Отправить",
+                          ),
+                        ],
+                      ),
                     ),
-                    const SizedBox(height: 20),
                   ],
                 ),
               ),
