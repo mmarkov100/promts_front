@@ -316,7 +316,6 @@ void _showBotInfo(Map<String, dynamic> bot) {
               // Логика "Начать общаться!"
               Navigator.of(context).pop();
               // Например, можно создать чат по этому боту или перейти на экран чата
-              print("Нажата кнопка 'Начать общаться!'");
             },
             child: const Text("Начать общаться!"),
           ),
@@ -389,8 +388,6 @@ void _showBotInfo(Map<String, dynamic> bot) {
                   onTap: () {
                     // Закрываем Drawer
                     Navigator.of(context).pop();
-                    // TODO: логика открытия/использования выбранного чат-бота
-                    print("Выбран чат-бот: ${bot["chatBotName"]}");
                   },
                 );
               },

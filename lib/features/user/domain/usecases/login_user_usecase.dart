@@ -8,7 +8,7 @@ class LoginUserUseCase {
   LoginUserUseCase(this.repository);
 
   Future<Either<String, UserResponseDTO>> call({required String token}) {
-    return repository.getUserAllData(token: token);
+    return repository.loginUser(token: token);
   }
 }
 

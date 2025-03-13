@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:promts_application_1/features/chat/domain/entities/chat_short_entity.dart';
+import 'package:promts_application_1/features/user/view/cubit/user_cubit.dart';
+import 'package:promts_application_1/features/user/view/cubit/user_state.dart';
 
 /// NavigationDrawer, который показывает список чатов пользователя.
 class WidgetChats extends StatefulWidget {
-  // Callback, который передает выбранное имя чата (или его id)
-  final ValueChanged<String> onChatSelected;
+  final ValueChanged<int> onChatSelected;
 
   const WidgetChats({super.key, required this.onChatSelected});
 
@@ -14,34 +17,34 @@ class WidgetChats extends StatefulWidget {
 class _WidgetChatsState extends State<WidgetChats> {
   final TextEditingController _searchController = TextEditingController();
 
-  // Список чатов для примера
-  final List<String> _chats = [
-    "Первый чат",
-    "Второй чат",
-    "Третий чат",
-    "Четвёртый чат",
-  ];
-
-  // Результаты поиска
-  List<String> _filteredChats = [];
+  // Полный список чатов и отфильтрованный список
+  List<ChatShortEntity> _chats = [];
+  List<ChatShortEntity> _filteredChats = [];
 
   @override
   void initState() {
     super.initState();
-    // Изначально показываем все чаты
-    _filteredChats = List.from(_chats);
+    // Обновляем фильтрацию при изменении текста
+    _searchController.addListener(_searchChats);
   }
 
-  // Логика поиска
+  @override
+  void dispose() {
+    _searchController.removeListener(_searchChats);
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  // Функция фильтрации списка чатов по введённому запросу
   void _searchChats() {
     final query = _searchController.text.toLowerCase().trim();
     setState(() {
       if (query.isEmpty) {
         _filteredChats = List.from(_chats);
       } else {
-        _filteredChats = _chats.where((chat) {
-          return chat.toLowerCase().contains(query);
-        }).toList();
+        _filteredChats = _chats
+            .where((chat) => chat.chatName.toLowerCase().contains(query))
+            .toList();
       }
     });
   }
@@ -51,7 +54,7 @@ class _WidgetChatsState extends State<WidgetChats> {
     return SafeArea(
       child: Column(
         children: [
-          // Заголовок (необязательно)
+          // Заголовок
           const ListTile(
             title: Text(
               "Мои чаты",
@@ -63,7 +66,6 @@ class _WidgetChatsState extends State<WidgetChats> {
             padding: const EdgeInsets.all(8.0),
             child: Row(
               children: [
-                // Поле ввода
                 Expanded(
                   child: TextField(
                     controller: _searchController,
@@ -71,13 +73,9 @@ class _WidgetChatsState extends State<WidgetChats> {
                       labelText: "Поиск чатов",
                       border: OutlineInputBorder(),
                     ),
-                    onChanged: (value) {
-                      _searchChats();
-                    },
                   ),
                 ),
                 const SizedBox(width: 8),
-                // Кнопка поиска
                 IconButton(
                   icon: const Icon(Icons.search),
                   onPressed: _searchChats,
@@ -85,21 +83,36 @@ class _WidgetChatsState extends State<WidgetChats> {
               ],
             ),
           ),
-          // Список чатов
+          // Список чатов через BlocBuilder
           Expanded(
-            child: ListView.builder(
-              itemCount: _filteredChats.length,
-              itemBuilder: (context, index) {
-                final chatName = _filteredChats[index];
-                return ListTile(
-                  title: Text(chatName),
-                  onTap: () {
-                    // Закрываем Drawer
-                    Navigator.of(context).pop();
-                    // Вызываем callback с именем выбранного чата
-                    widget.onChatSelected(chatName);
-                  },
-                );
+            child: BlocBuilder<UserCubit, UserState>(
+              builder: (context, state) {
+                if (state is UserLoading) {
+                  return const Center(child: CircularProgressIndicator());
+                } else if (state is UserError) {
+                  return Center(child: Text("Ошибка: ${state.message}"));
+                } else if (state is UserLoaded) {
+                  // Обновляем список чатов и синхронизируем фильтрацию, если поле поиска пустое
+                  _chats = state.chats;
+                  if (_searchController.text.isEmpty) {
+                    _filteredChats = List.from(_chats);
+                  }
+                  return ListView.builder(
+                    itemCount: _filteredChats.length,
+                    itemBuilder: (context, index) {
+                      final chat = _filteredChats[index];
+                      return ListTile(
+                        title: Text(chat.chatName),
+                        onTap: () {
+                          Navigator.of(context).pop();
+                          widget.onChatSelected(chat.id);
+                        },
+                      );
+                    },
+                  );
+                } else {
+                  return const SizedBox.shrink();
+                }
               },
             ),
           ),

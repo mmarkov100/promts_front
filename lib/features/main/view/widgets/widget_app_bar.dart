@@ -50,27 +50,7 @@ class WidgetAppBar extends StatelessWidget implements PreferredSizeWidget {
               showDialog(
                 context: context,
                 builder: (_) => WidgetUserSettings(
-                  email: "BoberKurwa@rambler.ru",
-                  userId: 167491164,
-                  balance: 191.61,
-                  memoryEnabled: true,
-                  aiCanUpdateMemory: true,
-                  memory: "Имя пользователя Максим, из Перми (и т.д.)",
-                  selectedModel: "DeepSeek V3",
-                  availableModels: const [
-                    "DeepSeek V3",
-                    "DeepSeek R1",
-                    "YandexGPT 5 Pro",
-                    "YandexGPT 5 Lite",
-                    "ChatGPT 4o mini",
-                    "ChatGPT 4o",
-                    "ChatGPT o1",
-                    "Qwen-Max",
-                    "Qwen-Turbo",
-                  ],
-                  onSave: (updatedData) {
-                    print("Новые настройки: $updatedData");
-                  },
+                  onSave: (updatedData) {},
                 ),
               );
             },

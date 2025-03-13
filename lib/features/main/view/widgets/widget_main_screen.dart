@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:promts_application_1/features/user/view/cubit/user_cubit.dart';
+import 'package:promts_application_1/features/user/view/cubit/user_state.dart';
 import 'widget_app_bar.dart';
 import 'package:promts_application_1/features/chat/view/widgets/widget_chats.dart';
 import 'package:promts_application_1/features/neuro/view/widget_neuro_button.dart';
@@ -17,7 +20,7 @@ class _WidgetMainScreenState extends State<WidgetMainScreen> {
   bool _showChatPage = false;
   final TextEditingController _messageController = TextEditingController();
 
-  @override 
+  @override
   void dispose() {
     _messageController.dispose();
     super.dispose();
@@ -26,15 +29,13 @@ class _WidgetMainScreenState extends State<WidgetMainScreen> {
   void _openChatWithMessage() {
     final text = _messageController.text.trim();
     if (text.isEmpty) return;
-    print("Отправлено сообщение на главном экране: $text");
     _messageController.clear();
     setState(() {
       _showChatPage = true;
     });
   }
 
-  void _openChat(String chatName) {
-    print("Открываем чат: $chatName");
+  void _openChat(int chatId) {
     _messageController.clear();
     setState(() {
       _showChatPage = true;
@@ -50,48 +51,43 @@ class _WidgetMainScreenState extends State<WidgetMainScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      key: _scaffoldKey,
-
-      drawer: SizedBox(
-        width: 350,
-        child: Drawer(
-          child: WidgetChats(
-            onChatSelected: _openChat,
+        key: _scaffoldKey,
+        drawer: SizedBox(
+          width: 350,
+          child: Drawer(
+            child: WidgetChats(
+              onChatSelected: _openChat,
+            ),
           ),
         ),
-      ),
+        appBar: WidgetAppBar(
+          onMenuPressed: () {
+            _scaffoldKey.currentState?.openDrawer();
+          },
+          onPromtsPressed: () {
+            _closeChat();
+          },
+        ),
 
-      appBar: WidgetAppBar(
-        onMenuPressed: () {
-          _scaffoldKey.currentState?.openDrawer();
-        },
-        onPromtsPressed: () {
-          _closeChat();
-        },
-      ),
-
-      body: _showChatPage
-          ? const Column(
-              children: [
-                Padding(
-                  padding: EdgeInsets.all(16.0),
-                  child: WidgetNeuroButton(),
-                ),
-                Expanded(child: WidgetChatPage()),
-              ],
-            )
-          : _buildMainContent(),
-    );
+        body: Column(
+          children: [
+            const Padding(
+              padding: EdgeInsets.all(16.0),
+              child: WidgetNeuroButton(),
+            ),
+            Expanded(
+              child:
+                  _showChatPage ? const WidgetChatPage() : _buildMainContent(),
+            ),
+          ],
+        ));
   }
+
   Widget _buildMainContent() {
     return SafeArea(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Padding(
-            padding: EdgeInsets.all(16.0),
-            child: WidgetNeuroButton(),
-          ),
           Expanded(
             child: Center(
               child: Padding(
@@ -99,10 +95,35 @@ class _WidgetMainScreenState extends State<WidgetMainScreen> {
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const Text(
-                      "абвгд",
-                      style:
-                          TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                    // const Text(
+                    //   "абвгд",
+                    //   style:
+                    //       TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                    // ),
+                    BlocBuilder<UserCubit, UserState>(
+                      builder: (context, state) {
+                        if (state is UserLoading) {
+                          return const Center(
+                              child: CircularProgressIndicator());
+                        } else if (state is UserError) {
+                          return Center(
+                              child: Text("Ошибка: ${state.message}"));
+                        } else if (state is UserLoaded) {
+                          final user = state.user;
+                          final chats = state.chats;
+                          final networks = state.networks;
+
+                          return Column(
+                            children: [
+                              Text("Привет, ${user.email}!"),
+                              Text("У вас чатов: ${chats.length}"),
+                              Text("Доступные нейросети: ${networks.length}"),
+                            ],
+                          );
+                        } else {
+                          return const SizedBox.shrink();
+                        }
+                      },
                     ),
                     const SizedBox(height: 16),
                     ConstrainedBox(

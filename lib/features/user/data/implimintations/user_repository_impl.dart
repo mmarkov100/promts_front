@@ -9,7 +9,7 @@ class UserRepositoryImpl implements UserRepository {
   UserRepositoryImpl(this.remoteDataSource);
 
   @override
-  Future<Either<String, UserResponseDTO>> getUserAllData({required String token}) async {
+  Future<Either<String, UserResponseDTO>> loginUser({required String token}) async {
     try {
       final userResponseDTO = await remoteDataSource.loginUser(token: token);
       return Right(userResponseDTO); // все данные в одном DTO

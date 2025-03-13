@@ -48,20 +48,17 @@ class _WidgetCreateChatBotsState extends State<WidgetCreateChatBots> {
 
   /// Нажатие на кнопку «Создать»
   void _handleCreate() {
-    final newBotData = {
-      "botName": _botNameController.text.trim(),
-      "botDesc": _botDescController.text.trim(),
-      "temperature": _temperature,
-      "modelUriName": _selectedNetwork,
-      "canEditModel": _canEditModel,
-      "context": _botContextController.text.trim(),
-      "canEditContext": _canEditContext,
-      "canUseMemory": _canUseMemory,
-      "canUpdateMemory": _canUpdateMemory,
-    };
-
-    // Здесь можно отправить данные на бэкенд или куда нужно
-    print("Создание нового чат-бота: $newBotData");
+    // final newBotData = {
+    //   "botName": _botNameController.text.trim(),
+    //   "botDesc": _botDescController.text.trim(),
+    //   "temperature": _temperature,
+    //   "modelUriName": _selectedNetwork,
+    //   "canEditModel": _canEditModel,
+    //   "context": _botContextController.text.trim(),
+    //   "canEditContext": _canEditContext,
+    //   "canUseMemory": _canUseMemory,
+    //   "canUpdateMemory": _canUpdateMemory,
+    // };
 
     // Закрываем диалог
     Navigator.of(context).pop();

@@ -71,10 +71,7 @@ void _openSettingsDialog() {
       useMemory: true,
       updateMemory: false,
       onSave: (updatedData) {
-        // Здесь обработка новых данных чата
-        // updatedData['temperature'], updatedData['contextChat'], и т.д.
-        print("Новые настройки чата: $updatedData");
-        // TODO: отправить изменения на бэкенд
+        
       },
     ),
   );
