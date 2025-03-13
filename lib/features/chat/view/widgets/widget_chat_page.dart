@@ -20,55 +20,56 @@ class WidgetChatPage extends StatefulWidget {
 }
 
 class _WidgetChatPageState extends State<WidgetChatPage> {
-  final TextEditingController _messageController = TextEditingController();
 
   /// Пример списка сообщений (можно подгрузить с бэкенда)
   final List<ChatMessage> _messages = [
-    ChatMessage(
-      text: "**Привет**, я бот!",
-      isUser: false,
-    ),
-    ChatMessage(
-      text: "Запомни, что я **тупой**",
-      isUser: true,
-    ),
+    ChatMessage(text: "Здравствуйте!", isUser: true),
+    ChatMessage(text: "Привет, я бот!", isUser: false),
   ];
+  final TextEditingController _messageController = TextEditingController();
+  final ScrollController _scrollController = ScrollController();
 
   @override
   void dispose() {
     _messageController.dispose();
+    _scrollController.dispose();
     super.dispose();
   }
 
-  /// Отправка нового сообщения от пользователя
+  /// Отправка
   void _sendMessage() {
     final text = _messageController.text.trim();
     if (text.isEmpty) return;
 
     setState(() {
-      _messages.add(ChatMessage(
-        text: text,
-        isUser: true,
-      ));
+      // Добавляем сообщение пользователя
+      _messages.add(ChatMessage(text: text, isUser: true));
+      // Добавляем сообщения чата
+      _messages.add(ChatMessage(text: "Это тестовое сообщение 1 фвыфываыфваыфвафвыфываыфваыфвафвыфываыфваыфвафвыфываыфваыфвафвыфываыфваыфвафвыфываыфваыфвафвыфываыфваыфвафвыфываыфваыфвафвыфываыфваыфвафвыфываыфваыфвафвыфываыфваыфвафвыфываыфваыфвафвыфываыфваыфвафвыфываыфваыфва", isUser: false));
     });
 
     _messageController.clear();
-
-    // Здесь можно вызвать логику получения ответа от чат-бота
-    // И при получении добавить ChatMessage(isUser: false, ...)
+    // После построения нового сообщения, прокручиваем чат вниз
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (_scrollController.hasClients) {
+        _scrollController.animateTo(
+          _scrollController.position.maxScrollExtent,
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeOut,
+        );
+      }
+    });
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text("Чат"),
-      ),
-      body: SafeArea(
-        child: Column(
-          children: [
-            // Список сообщений
-            Expanded(
+@override
+Widget build(BuildContext context) {
+  return Center(
+    child: ConstrainedBox(
+      constraints: const BoxConstraints(maxWidth: 700),
+      child: Column(
+        children: [
+          // Список сообщений
+             Expanded(
               child: ListView.builder(
                 padding:
                     const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -79,41 +80,36 @@ class _WidgetChatPageState extends State<WidgetChatPage> {
                 },
               ),
             ),
-            // Строка ввода внизу
-            _buildMessageInput(),
-          ],
-        ),
-      ),
-    );
-  }
-
-  /// Поле ввода + кнопка отправки
-  Widget _buildMessageInput() {
-    return Container(
-      color: Colors.grey[200],
-      padding: const EdgeInsets.all(8),
-      child: Row(
-        children: [
-          Expanded(
-            child: TextField(
-              controller: _messageController,
-              decoration: const InputDecoration(
-                hintText: "Введите сообщение",
-                border: OutlineInputBorder(),
-              ),
-              minLines: 1,
-              maxLines: 5,
+          // Поле ввода сообщения + кнопка отправки
+          Container(
+            color: Colors.grey[200],
+            padding: const EdgeInsets.all(8),
+            child: Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: _messageController,
+                    decoration: const InputDecoration(
+                      hintText: "Введите сообщение",
+                      border: OutlineInputBorder(),
+                    ),
+                    minLines: 1,
+                    maxLines: 8,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                IconButton(
+                  icon: const Icon(Icons.send),
+                  onPressed: _sendMessage,
+                ),
+              ],
             ),
-          ),
-          const SizedBox(width: 8),
-          IconButton(
-            icon: const Icon(Icons.send),
-            onPressed: _sendMessage,
           ),
         ],
       ),
-    );
-  }
+    ),
+  );
+}
 
   /// Сообщение (bubble) + кнопки под сообщением
   Widget _buildMessageBubble(ChatMessage msg) {
