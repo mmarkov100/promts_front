@@ -1,11 +1,10 @@
 import 'package:flutter/material.dart';
+// Импортируем ваш файл с диалогом "Создание чат-бота"
+// Убедитесь, что путь верный, например:
+import 'package:promts_application_1/features/chatbot/view/widgets/widget_create_chat_bots.dart';
 
-/// Виджет чат-ботов (endDrawer), в котором есть:
-///  - Кнопка создания чат-бота (слева),
-///  - Строка поиска и кнопка поиска,
-///  - Список чат-ботов, каждый элемент имеет иконку "!" для просмотра инфо.
 class WidgetChatBots extends StatefulWidget {
-  const WidgetChatBots({super.key});
+  const WidgetChatBots({Key? key}) : super(key: key);
 
   @override
   State<WidgetChatBots> createState() => _WidgetChatBotsState();
@@ -40,7 +39,7 @@ class _WidgetChatBotsState extends State<WidgetChatBots> {
       "totalMessages": 0,
       "isSelectedByRedact": false
     },
-        {
+            {
       "id": 4,
       "chatBotName": "Новый помощник",
       "chatBotDesc": "Описание нового помощника.",
@@ -147,30 +146,185 @@ class _WidgetChatBotsState extends State<WidgetChatBots> {
     });
   }
 
-  /// Создание нового чат-бота (пока просто пример)
+  /// Функция открытия окна "Создание чат-бота"
   void _createChatBot() {
-    // Закрываем Drawer
-    Navigator.of(context).pop();
-    // TODO: здесь логика для экрана создания чат-бота
-    print("Открыть экран создания нового чат-бота");
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        // Открываем диалог "Создание чат-бота"
+        return const WidgetCreateChatBots();
+      },
+    );
   }
 
   /// Просмотр информации о чат-боте (иконка "!")
-  void _showBotInfo(Map<String, dynamic> bot) {
-    showDialog(
-      context: context,
-      builder: (_) => AlertDialog(
-        title: Text(bot["chatBotName"] ?? "Чат-бот"),
-        content: Text(bot["chatBotDesc"] ?? "Без описания"),
+void _showBotInfo(Map<String, dynamic> bot) {
+  showDialog(
+    context: context,
+    builder: (BuildContext context) {
+      // Извлекаем данные из `bot`
+      final chatBotName = bot["chatBotName"] ?? "Без названия";
+      final chatBotDesc = bot["chatBotDesc"] ?? "";
+      final totalMessages = bot["totalMessages"] ?? 0;
+      final messagesToday = bot["messagesToday"] ?? 0;
+      final canUseMemory = bot["canUseMemory"] ?? false;
+      final canUpdateMemory = bot["canUpdateMemory"] ?? false;
+      final modelName = "Yandex GPT 5 Pro"; 
+      // ^ Или если в bot есть поле bot["modelUriName"], используйте его
+      final dateCreate = "3.03.2025"; 
+      // ^ Замените на реальное поле, если есть bot["dateCreate"], 
+      //   иначе можно оставить статическое
+
+      final contextChat = bot["context"] ?? ""; 
+      // ^ Если в bot хранится контекст под другим ключом, подставьте его.
+
+      return AlertDialog(
+        title: const Text("Характеристики чат-бота"),
+        content: SizedBox(
+          width:400,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Название
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text("Название:"),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: TextField(
+                      readOnly: true,
+                      controller: TextEditingController(text: chatBotName),
+                      decoration: const InputDecoration(
+                        isDense: true,
+                        border: OutlineInputBorder(),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 10),
+
+              // Описание
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text("Описание:"),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: TextField(
+                      readOnly: true,
+                      controller: TextEditingController(text: chatBotDesc),
+                      decoration: const InputDecoration(
+                        border: OutlineInputBorder(),
+                      ),
+                      minLines: 3,
+                      maxLines: 3,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+
+              // Кол-во сообщений за все время
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text("Кол-во сообщений за все время:"),
+                  Text("$totalMessages"),
+                ],
+              ),
+              const SizedBox(height: 6),
+
+              // Кол-во сообщений за день
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text("Кол-во сообщений за день:"),
+                  Text("$messagesToday"),
+                ],
+              ),
+              const SizedBox(height: 10),
+
+              // Контекст чата (текст)
+              const Text("Контекст чата:"),
+              const SizedBox(height: 6),
+              TextField(
+                readOnly: true,
+                controller: TextEditingController(text: contextChat),
+                decoration: const InputDecoration(
+                  border: OutlineInputBorder(),
+                ),
+                minLines: 3,
+                maxLines: 3,
+              ),
+              const SizedBox(height: 8),
+
+              // Использовать ли память (Switch, read-only)
+              Row(
+                children: [
+                  const Expanded(child: Text("Использовать ли память в чате?")),
+                  Switch(
+                    value: canUseMemory,
+                    onChanged: null, // null => Switch недоступен для изменения
+                  ),
+                ],
+              ),
+              const SizedBox(height: 6),
+
+              // Может ли чат изменять память (Switch, read-only)
+              Row(
+                children: [
+                  const Expanded(child: Text("Может ли чат изменять память пользователя?")),
+                  Switch(
+                    value: canUpdateMemory,
+                    onChanged: null,
+                  ),
+                ],
+              ),
+              const SizedBox(height: 10),
+
+              // Используемая нейросеть
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text("Исп-мая нейросеть:"),
+                  Text(modelName),
+                ],
+              ),
+              const SizedBox(height: 10),
+
+              // Дата создания
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text("Дата создания:"),
+                  Text(dateCreate),
+                ],
+              ),
+              const SizedBox(height: 16),
+            ],
+          ),
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
-            child: const Text("Закрыть"),
+            child: const Text("Отмена"),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              // Логика "Начать общаться!"
+              Navigator.of(context).pop();
+              // Например, можно создать чат по этому боту или перейти на экран чата
+              print("Нажата кнопка 'Начать общаться!'");
+            },
+            child: const Text("Начать общаться!"),
           ),
         ],
-      ),
-    );
-  }
+      );
+    },
+  );
+}
 
   @override
   Widget build(BuildContext context) {
@@ -189,13 +343,13 @@ class _WidgetChatBotsState extends State<WidgetChatBots> {
             padding: const EdgeInsets.symmetric(horizontal: 8.0),
             child: Row(
               children: [
-                // (5.3) Кнопка создания своего чат-бота (слева)
+                // Кнопка создания своего чат-бота (слева)
                 ElevatedButton(
                   onPressed: _createChatBot,
-                  child: const Text("Создать чат-бота"),
+                  child: const Text("+"),
                 ),
                 const SizedBox(width: 8),
-                // (5.1) Строка поиска чатов по названию
+                // Строка поиска чатов по названию
                 Expanded(
                   child: TextField(
                     controller: _searchController,
@@ -207,7 +361,7 @@ class _WidgetChatBotsState extends State<WidgetChatBots> {
                   ),
                 ),
                 const SizedBox(width: 8),
-                // (5.1.1) Кнопка поиска
+                // Кнопка поиска
                 IconButton(
                   icon: const Icon(Icons.search),
                   onPressed: _searchChatBots,
@@ -215,7 +369,7 @@ class _WidgetChatBotsState extends State<WidgetChatBots> {
               ],
             ),
           ),
-          // (5.2) Список чат-ботов
+          // Список чат-ботов
           Expanded(
             child: ListView.builder(
               itemCount: _filteredChatBots.length,
@@ -223,8 +377,11 @@ class _WidgetChatBotsState extends State<WidgetChatBots> {
                 final bot = _filteredChatBots[index];
                 return ListTile(
                   title: Text(bot["chatBotName"] ?? "Без названия"),
-                  subtitle: Text(bot["chatBotDesc"] + "\nСегодня " + bot["messagesToday"].toString() +" сообщений" ?? "Без описания"),
-                  // (5.2.1) Кнопка для просмотра информации о чат-боте (иконка "!")
+                  subtitle: Text(
+                    (bot["chatBotDesc"] ?? "Без описания") +
+                        "\nСегодня ${bot["messagesToday"]} сообщений",
+                  ),
+                  // Кнопка для просмотра информации о чат-боте (иконка "!")
                   trailing: IconButton(
                     icon: const Icon(Icons.info_outline),
                     onPressed: () => _showBotInfo(bot),
