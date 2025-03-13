@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:promts_application_1/features/chatbot/view/widgets/widget_create_chat_bots.dart';
 
 class WidgetChatBots extends StatefulWidget {
-  const WidgetChatBots({Key? key}) : super(key: key);
+  const WidgetChatBots({super.key});
 
   @override
   State<WidgetChatBots> createState() => _WidgetChatBotsState();
@@ -169,9 +169,9 @@ void _showBotInfo(Map<String, dynamic> bot) {
       final messagesToday = bot["messagesToday"] ?? 0;
       final canUseMemory = bot["canUseMemory"] ?? false;
       final canUpdateMemory = bot["canUpdateMemory"] ?? false;
-      final modelName = "Yandex GPT 5 Pro"; 
+      const modelName = "Yandex GPT 5 Pro"; 
       // ^ Или если в bot есть поле bot["modelUriName"], используйте его
-      final dateCreate = "3.03.2025"; 
+      const dateCreate = "3.03.2025"; 
       // ^ Замените на реальное поле, если есть bot["dateCreate"], 
       //   иначе можно оставить статическое
 
@@ -285,20 +285,20 @@ void _showBotInfo(Map<String, dynamic> bot) {
               const SizedBox(height: 10),
 
               // Используемая нейросеть
-              Row(
+              const Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Text("Исп-мая нейросеть:"),
+                  Text("Исп-мая нейросеть:"),
                   Text(modelName),
                 ],
               ),
               const SizedBox(height: 10),
 
               // Дата создания
-              Row(
+              const Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Text("Дата создания:"),
+                  Text("Дата создания:"),
                   Text(dateCreate),
                 ],
               ),

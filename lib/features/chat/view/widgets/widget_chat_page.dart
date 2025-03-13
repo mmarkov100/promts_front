@@ -1,27 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
-
-/// Пример модели сообщения
-class ChatMessage {
-  final String text; // Текст сообщения (с Markdown)
-  final bool isUser; // true: сообщение от пользователя, false: от чат-бота
-
-  ChatMessage({
-    required this.text,
-    required this.isUser,
-  });
-}
+import 'package:promts_application_1/features/chat/domain/entities/chat_message.dart';
 
 class WidgetChatPage extends StatefulWidget {
-  const WidgetChatPage({Key? key}) : super(key: key);
+  const WidgetChatPage({super.key});
 
   @override
+  // ignore: library_private_types_in_public_api
   _WidgetChatPageState createState() => _WidgetChatPageState();
 }
 
 class _WidgetChatPageState extends State<WidgetChatPage> {
 
-  /// Пример списка сообщений (можно подгрузить с бэкенда)
   final List<ChatMessage> _messages = [
     ChatMessage(text: "Здравствуйте!", isUser: true),
     ChatMessage(text: "Привет, я бот!", isUser: false),
@@ -36,20 +26,96 @@ class _WidgetChatPageState extends State<WidgetChatPage> {
     super.dispose();
   }
 
-  /// Отправка
   void _sendMessage() {
     final text = _messageController.text.trim();
     if (text.isEmpty) return;
 
     setState(() {
-      // Добавляем сообщение пользователя
       _messages.add(ChatMessage(text: text, isUser: true));
-      // Добавляем сообщения чата
-      _messages.add(ChatMessage(text: "Это тестовое сообщение 1 фвыфываыфваыфвафвыфываыфваыфвафвыфываыфваыфвафвыфываыфваыфвафвыфываыфваыфвафвыфываыфваыфвафвыфываыфваыфвафвыфываыфваыфвафвыфываыфваыфвафвыфываыфваыфвафвыфываыфваыфвафвыфываыфваыфвафвыфываыфваыфвафвыфываыфваыфва", isUser: false));
+      _messages.add(ChatMessage(text: """
+Вот пример кода на Dart, в котором содержится длинный текст с Markdown-разметкой:
+
+```dart
+final String markdownText = '''
+# Заголовок первого уровня
+
+Добро пожаловать в пример Markdown-разметки, который можно использовать прямо в коде. Markdown позволяет легко форматировать текст, добавлять ссылки, изображения, таблицы, код и многое другое.
+
+## Заголовок второго уровня
+
+### Основные возможности Markdown
+
+Markdown поддерживает следующие элементы:
+
+- **Выделенный текст**: можно использовать **жирный** или *курсив* для выделения текста.
+- **Списки**:
+  - Ненумерованные списки с использованием дефисов или звездочек.
+  - Вложенные списки, как показано ниже:
+    - Подэлемент 1
+    - Подэлемент 2
+- **Нумерованные списки**:
+  1. Первый пункт
+  2. Второй пункт
+  3. Третий пункт
+
+### Цитаты и разделители
+
+> Это пример блока цитаты. Он используется для выделения цитируемых отрывков или важных сообщений.
+>
+> Можно добавить несколько строк в цитату.
+
+---
+
+### Код и программирование
+
+Вы можете вставлять фрагменты кода как в строчку, используя обратные кавычки, например: `print("Hello, World!");`
+
+А для форматирования целых блоков кода используйте тройные обратные кавычки:
+
+```dart
+// Пример кода на Dart
+void main() {
+  print("Привет, мир!");
+}
+```
+
+### Ссылки и изображения
+
+Для создания ссылок используйте следующий синтаксис:
+
+[Официальный сайт Dart](https://dart.dev)
+
+А чтобы добавить изображение, используйте такой формат:
+
+![Пример изображения](https://images.pexels.com/photos/56866/garden-rose-red-pink-56866.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1)
+
+### Таблицы
+
+Markdown позволяет создавать таблицы:
+
+| Название    | Описание                | Пример       |
+| ----------- | ----------------------- | ------------ |
+| Элемент 1   | Первое значение         | Пример 1     |
+| Элемент 2   | Второе значение         | Пример 2     |
+| Элемент 3   | Третье значение         | Пример 3     |
+
+### Дополнительный текст
+
+Markdown — это простой и удобный способ создания форматированного текста. Он широко используется для:
+- Документации к проектам
+- README файлов на GitHub
+- Веб-блогов и статей
+- Форумов и систем комментариев
+
+Надеюсь, этот пример поможет вам понять, как использовать Markdown-разметку прямо в коде!
+''';
+```
+
+Теперь вы можете вставить этот код в ваше приложение и использовать переменную `markdownText` для дальнейшей обработки или отображения.
+""", isUser: false));
     });
 
     _messageController.clear();
-    // После построения нового сообщения, прокручиваем чат вниз
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (_scrollController.hasClients) {
         _scrollController.animateTo(
@@ -61,15 +127,14 @@ class _WidgetChatPageState extends State<WidgetChatPage> {
     });
   }
 
-@override
-Widget build(BuildContext context) {
-  return Center(
-    child: ConstrainedBox(
-      constraints: const BoxConstraints(maxWidth: 700),
-      child: Column(
-        children: [
-          // Список сообщений
-             Expanded(
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 700),
+        child: Column(
+          children: [
+            Expanded(
               child: ListView.builder(
                 padding:
                     const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -80,42 +145,39 @@ Widget build(BuildContext context) {
                 },
               ),
             ),
-          // Поле ввода сообщения + кнопка отправки
-          Container(
-            color: Colors.grey[200],
-            padding: const EdgeInsets.all(8),
-            child: Row(
-              children: [
-                Expanded(
-                  child: TextField(
-                    controller: _messageController,
-                    decoration: const InputDecoration(
-                      hintText: "Введите сообщение",
-                      border: OutlineInputBorder(),
+            Container(
+              color: Colors.grey[200],
+              padding: const EdgeInsets.all(8),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: TextField(
+                      controller: _messageController,
+                      decoration: const InputDecoration(
+                        hintText: "Введите сообщение",
+                        border: OutlineInputBorder(),
+                      ),
+                      minLines: 1,
+                      maxLines: 8,
                     ),
-                    minLines: 1,
-                    maxLines: 8,
                   ),
-                ),
-                const SizedBox(width: 8),
-                IconButton(
-                  icon: const Icon(Icons.send),
-                  onPressed: _sendMessage,
-                ),
-              ],
+                  const SizedBox(width: 8),
+                  IconButton(
+                    icon: const Icon(Icons.send),
+                    onPressed: _sendMessage,
+                  ),
+                ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
-    ),
-  );
-}
+    );
+  }
 
-  /// Сообщение (bubble) + кнопки под сообщением
   Widget _buildMessageBubble(ChatMessage msg) {
-    // Определяем, как выравнивать контейнер
+
     final alignment = msg.isUser ? Alignment.centerRight : Alignment.centerLeft;
-    // Цвет фона сообщения
     final bgColor = msg.isUser ? Colors.blue[100] : Colors.grey[300];
 
     return Container(
@@ -125,10 +187,9 @@ Widget build(BuildContext context) {
         crossAxisAlignment:
             msg.isUser ? CrossAxisAlignment.end : CrossAxisAlignment.start,
         children: [
-          // Само "облако" сообщения
           Container(
             padding: const EdgeInsets.all(10),
-            constraints: const BoxConstraints(maxWidth: 250),
+            constraints: const BoxConstraints(maxWidth: 550),
             decoration: BoxDecoration(
               color: bgColor,
               borderRadius: BorderRadius.circular(8),
@@ -136,10 +197,13 @@ Widget build(BuildContext context) {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Показываем markdown
                 MarkdownBody(
                   data: msg.text,
+                  selectable: true,
                   styleSheet: MarkdownStyleSheet.fromTheme(Theme.of(context)),
+                  imageBuilder: (uri, title, alt) {
+                    return Image.network(uri.toString());
+                  },
                 ),
               ],
             ),

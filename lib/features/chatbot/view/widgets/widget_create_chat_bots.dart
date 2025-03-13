@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 /// Диалоговое окно «Создание чат-бота»
 class WidgetCreateChatBots extends StatefulWidget {
-  const WidgetCreateChatBots({Key? key}) : super(key: key);
+  const WidgetCreateChatBots({super.key});
 
   @override
   State<WidgetCreateChatBots> createState() => _WidgetCreateChatBotsState();
