@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
-import 'package:promts_application_1/features/chat/domain/entities/chat_message.dart';
+import 'package:promts_application_1/features/message/domain/entities/message_entity.dart';
 
 class WidgetChatPage extends StatefulWidget {
   const WidgetChatPage({super.key});
@@ -11,10 +11,27 @@ class WidgetChatPage extends StatefulWidget {
 }
 
 class _WidgetChatPageState extends State<WidgetChatPage> {
-
-  final List<ChatMessage> _messages = [
-    ChatMessage(text: "Здравствуйте!", isUser: true),
-    ChatMessage(text: "Привет, я бот!", isUser: false),
+  final List<MessageEntity> _messages = [
+    MessageEntity(
+      id: 1,
+      chatId: 1,
+      modelUriId: 1,
+      oldMessage: false,
+      role: 'USER',
+      text: 'Здравствуйте!',
+      type: 'MESSAGE',
+      dateCreate: DateTime.now(),
+    ),
+    MessageEntity(
+      id: 2,
+      chatId: 1,
+      modelUriId: 1,
+      oldMessage: false,
+      role: 'bot',
+      text: 'Привет, я бот!',
+      type: 'ASSISTANT',
+      dateCreate: DateTime.now(),
+    ),
   ];
   final TextEditingController _messageController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
@@ -29,10 +46,24 @@ class _WidgetChatPageState extends State<WidgetChatPage> {
   void _sendMessage() {
     final text = _messageController.text.trim();
     if (text.isEmpty) return;
-
     setState(() {
-      _messages.add(ChatMessage(text: text, isUser: true));
-      _messages.add(ChatMessage(text: """
+      _messages.add(MessageEntity(
+        id: _messages.length + 1,
+        chatId: 1,
+        modelUriId: 1,
+        oldMessage: false,
+        role: 'USER',
+        text: text,
+        type: 'MESSAGE',
+        dateCreate: DateTime.now(),
+      ));
+      _messages.add(MessageEntity(
+        id: _messages.length + 1,
+        chatId: 1,
+        modelUriId: 1,
+        oldMessage: false,
+        role: 'ASSISTANT',
+        text: """
 Вот пример кода на Dart, в котором содержится длинный текст с Markdown-разметкой:
 
 ```dart
@@ -112,7 +143,10 @@ Markdown — это простой и удобный способ создани
 ```
 
 Теперь вы можете вставить этот код в ваше приложение и использовать переменную `markdownText` для дальнейшей обработки или отображения.
-""", isUser: false));
+""",
+        type: 'MESSAGE',
+        dateCreate: DateTime.now(),
+      ));
     });
 
     _messageController.clear();
@@ -175,17 +209,18 @@ Markdown — это простой и удобный способ создани
     );
   }
 
-  Widget _buildMessageBubble(ChatMessage msg) {
-
-    final alignment = msg.isUser ? Alignment.centerRight : Alignment.centerLeft;
-    final bgColor = msg.isUser ? Colors.blue[100] : Colors.grey[300];
+  Widget _buildMessageBubble(MessageEntity msg) {
+    final alignment =
+        msg.role == "USER" ? Alignment.centerRight : Alignment.centerLeft;
+    final bgColor = msg.role == "USER" ? Colors.blue[100] : Colors.grey[300];
 
     return Container(
       alignment: alignment,
       margin: const EdgeInsets.symmetric(vertical: 4),
       child: Column(
-        crossAxisAlignment:
-            msg.isUser ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+        crossAxisAlignment: msg.role == "USER"
+            ? CrossAxisAlignment.end
+            : CrossAxisAlignment.start,
         children: [
           Container(
             padding: const EdgeInsets.all(10),
@@ -227,7 +262,7 @@ Markdown — это простой и удобный способ создани
                 },
               ),
               // Кнопка перегенерации (только для сообщений чат-бота)
-              if (!msg.isUser)
+              if (!(msg.role == "USER"))
                 IconButton(
                   icon: const Icon(Icons.autorenew), // "зацикленная стрелка"
                   iconSize: 16,
@@ -236,7 +271,7 @@ Markdown — это простой и удобный способ создани
                   },
                 ),
               // Кнопка удаления (только для сообщений пользователя)
-              if (msg.isUser)
+              if (msg.role == "USER")
                 IconButton(
                   icon: const Icon(Icons.delete),
                   iconSize: 16,

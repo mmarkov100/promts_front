@@ -1,7 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:promts_application_1/features/user/view/cubit/user_cubit.dart';
-import 'package:promts_application_1/features/user/view/cubit/user_state.dart';
 import 'widget_app_bar.dart';
 import 'package:promts_application_1/features/chat/view/widgets/widget_chats.dart';
 import 'package:promts_application_1/features/neuro/view/widget_neuro_button.dart';
@@ -68,7 +65,6 @@ class _WidgetMainScreenState extends State<WidgetMainScreen> {
             _closeChat();
           },
         ),
-
         body: Column(
           children: [
             const Padding(
@@ -95,35 +91,10 @@ class _WidgetMainScreenState extends State<WidgetMainScreen> {
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    // const Text(
-                    //   "абвгд",
-                    //   style:
-                    //       TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                    // ),
-                    BlocBuilder<UserCubit, UserState>(
-                      builder: (context, state) {
-                        if (state is UserLoading) {
-                          return const Center(
-                              child: CircularProgressIndicator());
-                        } else if (state is UserError) {
-                          return Center(
-                              child: Text("Ошибка: ${state.message}"));
-                        } else if (state is UserLoaded) {
-                          final user = state.user;
-                          final chats = state.chats;
-                          final networks = state.networks;
-
-                          return Column(
-                            children: [
-                              Text("Привет, ${user.email}!"),
-                              Text("У вас чатов: ${chats.length}"),
-                              Text("Доступные нейросети: ${networks.length}"),
-                            ],
-                          );
-                        } else {
-                          return const SizedBox.shrink();
-                        }
-                      },
+                    const Text(
+                      "абвгд",
+                      style:
+                          TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                     ),
                     const SizedBox(height: 16),
                     ConstrainedBox(
