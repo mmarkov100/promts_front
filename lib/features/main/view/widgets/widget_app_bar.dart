@@ -69,7 +69,7 @@ class WidgetAppBar extends StatelessWidget implements PreferredSizeWidget {
                     "Qwen-Turbo",
                   ],
                   onSave: (updatedData) {
-                    print("Новые настройки: $updatedData");
+                    
                   },
                 ),
               );

@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 /// Диалоговое окно «Создание чат-бота»
 class WidgetCreateChatBots extends StatefulWidget {
-  const WidgetCreateChatBots({Key? key}) : super(key: key);
+  const WidgetCreateChatBots({super.key});
 
   @override
   State<WidgetCreateChatBots> createState() => _WidgetCreateChatBotsState();
@@ -48,20 +48,17 @@ class _WidgetCreateChatBotsState extends State<WidgetCreateChatBots> {
 
   /// Нажатие на кнопку «Создать»
   void _handleCreate() {
-    final newBotData = {
-      "botName": _botNameController.text.trim(),
-      "botDesc": _botDescController.text.trim(),
-      "temperature": _temperature,
-      "modelUriName": _selectedNetwork,
-      "canEditModel": _canEditModel,
-      "context": _botContextController.text.trim(),
-      "canEditContext": _canEditContext,
-      "canUseMemory": _canUseMemory,
-      "canUpdateMemory": _canUpdateMemory,
-    };
-
-    // Здесь можно отправить данные на бэкенд или куда нужно
-    print("Создание нового чат-бота: $newBotData");
+    // final newBotData = {
+    //   "botName": _botNameController.text.trim(),
+    //   "botDesc": _botDescController.text.trim(),
+    //   "temperature": _temperature,
+    //   "modelUriName": _selectedNetwork,
+    //   "canEditModel": _canEditModel,
+    //   "context": _botContextController.text.trim(),
+    //   "canEditContext": _canEditContext,
+    //   "canUseMemory": _canUseMemory,
+    //   "canUpdateMemory": _canUpdateMemory,
+    // };
 
     // Закрываем диалог
     Navigator.of(context).pop();

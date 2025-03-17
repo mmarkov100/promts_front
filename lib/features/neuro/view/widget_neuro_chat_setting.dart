@@ -11,7 +11,7 @@ class WidgetNeuroChatSetting extends StatefulWidget {
   final ValueChanged<Map<String, dynamic>> onSave; // Колбэк при сохранении
 
   const WidgetNeuroChatSetting({
-    Key? key,
+    super.key,
     required this.chatId,
     required this.temperature,
     required this.contextChat,
@@ -20,7 +20,7 @@ class WidgetNeuroChatSetting extends StatefulWidget {
     required this.dateCreate,
     required this.starredChat,
     required this.onSave,
-  }) : super(key: key);
+  });
 
   @override
   State<WidgetNeuroChatSetting> createState() => _WidgetNeuroChatSettingState();

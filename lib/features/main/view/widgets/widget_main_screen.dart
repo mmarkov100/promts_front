@@ -14,10 +14,7 @@ class WidgetMainScreen extends StatefulWidget {
 class _WidgetMainScreenState extends State<WidgetMainScreen> {
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
 
-  // Флаг, указывающий, нужно ли показывать страницу чата
   bool _showChatPage = false;
-
-  // Поле ввода на главном экране (если ещё нужно)
   final TextEditingController _messageController = TextEditingController();
 
   @override
@@ -26,27 +23,22 @@ class _WidgetMainScreenState extends State<WidgetMainScreen> {
     super.dispose();
   }
 
-  // Открываем страницу чата
   void _openChatWithMessage() {
     final text = _messageController.text.trim();
     if (text.isEmpty) return;
-    print("Отправлено сообщение на главном экране: $text");
     _messageController.clear();
     setState(() {
       _showChatPage = true;
     });
   }
 
-  // Открываем страницу чата (при выборе чата)
-  void _openChat(String chatName) {
-    print("Открываем чат: $chatName");
+  void _openChat(int chatId) {
     _messageController.clear();
     setState(() {
       _showChatPage = true;
     });
   }
 
-  // Функция для перехода с чата на обычный экран
   void _closeChat() {
     setState(() {
       _showChatPage = false;
@@ -56,56 +48,42 @@ class _WidgetMainScreenState extends State<WidgetMainScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      key: _scaffoldKey,
-
-      // Левый Drawer
-      drawer: SizedBox(
-        width: 350,
-        child: Drawer(
-          child: WidgetChats(
-            onChatSelected: _openChat,
+        key: _scaffoldKey,
+        drawer: SizedBox(
+          width: 350,
+          child: Drawer(
+            child: WidgetChats(
+              onChatSelected: _openChat,
+            ),
           ),
         ),
-      ),
-
-      // AppBar
-      appBar: WidgetAppBar(
-        onMenuPressed: () {
-          _scaffoldKey.currentState?.openDrawer();
-        },
-        onPromtsPressed: () {
-          _closeChat();
-        },
-      ),
-
-      /// Экран чата
-      body: _showChatPage
-          ? const Column(
-              children: [
-                // Кнопка выбора нейросети + кнопка настроек
-                Padding(
-                  padding: EdgeInsets.all(16.0),
-                  child: WidgetNeuroButton(),
-                ),
-                // Сам экран чата
-                Expanded(child: WidgetChatPage()),
-              ],
-            )
-          : _buildMainContent(),
-    );
+        appBar: WidgetAppBar(
+          onMenuPressed: () {
+            _scaffoldKey.currentState?.openDrawer();
+          },
+          onPromtsPressed: () {
+            _closeChat();
+          },
+        ),
+        body: Column(
+          children: [
+            const Padding(
+              padding: EdgeInsets.all(16.0),
+              child: WidgetNeuroButton(),
+            ),
+            Expanded(
+              child:
+                  _showChatPage ? const WidgetChatPage() : _buildMainContent(),
+            ),
+          ],
+        ));
   }
-  /// Обычный экран
+
   Widget _buildMainContent() {
     return SafeArea(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Кнопка выбора нейросети + кнопка настроек
-          const Padding(
-            padding: EdgeInsets.all(16.0),
-            child: WidgetNeuroButton(),
-          ),
-          // Основная часть экрана
           Expanded(
             child: Center(
               child: Padding(
@@ -113,14 +91,12 @@ class _WidgetMainScreenState extends State<WidgetMainScreen> {
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    // Текст "абвгд"
                     const Text(
-                      "абвгд",
+                      "Приветствую",
                       style:
                           TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                     ),
                     const SizedBox(height: 16),
-                    // Строка ввода (ограничение 900 px) + кнопка отправки
                     ConstrainedBox(
                       constraints: const BoxConstraints(maxWidth: 900),
                       child: Row(
