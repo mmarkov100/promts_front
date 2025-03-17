@@ -92,7 +92,7 @@ class _WidgetMainScreenState extends State<WidgetMainScreen> {
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     const Text(
-                      "абвгд",
+                      "Приветствую",
                       style:
                           TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                     ),

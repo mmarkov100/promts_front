@@ -15,7 +15,7 @@ class _WidgetChatsState extends State<WidgetChats> {
   final TextEditingController _searchController = TextEditingController();
 
   // Полный список чатов и отфильтрованный список
-  List<ChatEntity> _chats = [];
+  final List<ChatEntity> _chats = [];
   List<ChatEntity> _filteredChats = [];
 
   @override
