@@ -4,18 +4,18 @@ class UserEntity {
   final String role;
   final double money;
   final String memory;
-  final bool memoryEnabled;
+  final bool memoryEnable;
   final bool aiCanUpdateMemory;
-  final int standardModelUriId;
+  final int standartModelUrild;
 
-  const UserEntity({
+  UserEntity({
     required this.id,
     required this.email,
     required this.role,
     required this.money,
     required this.memory,
-    required this.memoryEnabled,
+    required this.memoryEnable,
     required this.aiCanUpdateMemory,
-    required this.standardModelUriId,
+    required this.standartModelUrild,
   });
 }
