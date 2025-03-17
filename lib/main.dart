@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:promts_application_1/features/main/view/widgets/widget_main_screen.dart';
+import 'package:promts_application_1/features/auth/view/splash_screen_auth.dart';
+//import 'package:promts_application_1/features/main/view/widgets/widget_main_screen.dart';
 
 void main() {
   runApp(const MyApp());
@@ -16,7 +17,7 @@ class MyApp extends StatelessWidget {
       theme: ThemeData(
         primarySwatch: Colors.blue,
       ),
-      home: const WidgetMainScreen(),
+      home: const SplashScreen(jwtToken: '1234jwt',),
     );
   }
 }
