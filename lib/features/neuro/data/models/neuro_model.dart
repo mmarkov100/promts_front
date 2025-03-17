@@ -1,19 +1,28 @@
 import 'package:promts_application_1/features/neuro/domain/entities/neuro_entity.dart';
 
-class NeuralNetworkModel extends NeuralNetworkEntity{
-  NeuralNetworkModel({
-    required super.id,
-    required super.name,
-    required super.systemName,
-    required super.desc,
-  });
+class NeuroModel extends NeuroEntity {
+  NeuroModel({
+    required int id,
+    required String name,
+    required String systemName,
+    required String desc,
+  }) : super(id: id, name: name, systemName: systemName, desc: desc);
 
-  factory NeuralNetworkModel.fromJson(Map<String, dynamic> json) {
-    return NeuralNetworkModel(
-      id: json['id'] as int,
-      name: json['name'] as String? ?? 'Unnamed model',
-      systemName: json['systemName'] as String? ?? 'Unnamed model',
-      desc: json['desc'] as String? ?? '',
+  factory NeuroModel.fromJson(Map<String, dynamic> json) {
+    return NeuroModel(
+      id: json['id'],
+      name: json['name'],
+      systemName: json['systemName'],
+      desc: json['desc'],
     );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'name': name,
+      'systemName': systemName,
+      'desc': desc,
+    };
   }
 }

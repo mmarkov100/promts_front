@@ -1,28 +1,50 @@
-import '../../domain/entities/user_entity.dart';
+
+import 'package:promts_application_1/features/user/domain/entities/user_entity.dart';
 
 class UserModel extends UserEntity {
-  const UserModel({
-    required super.id,
-    required super.email,
-    required super.role,
-    required super.money,
-    required super.memory,
-    required super.memoryEnabled,
-    required super.aiCanUpdateMemory,
-    required super.standardModelUriId
-  });
+  UserModel({
+    required int id,
+    required String email,
+    required String role,
+    required double money,
+    required String memory,
+    required bool memoryEnable,
+    required bool aiCanUpdateMemory,
+    required int standartModelUrild,
+  }) : super(
+          id: id,
+          email: email,
+          role: role,
+          money: money,
+          memory: memory,
+          memoryEnable: memoryEnable,
+          aiCanUpdateMemory: aiCanUpdateMemory,
+          standartModelUrild: standartModelUrild,
+        );
 
-  // Парсим JSON из поля "user" ответа
   factory UserModel.fromJson(Map<String, dynamic> json) {
     return UserModel(
       id: json['id'] as int,
       email: json['email'] as String,
       role: json['role'] as String,
       money: (json['money'] as num).toDouble(),
-      memory: json['memory'] as String? ?? '',
-      memoryEnabled: json['memoryEnabled'] as bool? ?? true,
-      aiCanUpdateMemory: json['aiCanUpdateMemory'] as bool? ?? true,
-      standardModelUriId: json['standardModelUriId'] as int
+      memory: json['memory'] as String,
+      memoryEnable: json['memoryEnable'] as bool,
+      aiCanUpdateMemory: json['aiCanUpdateMemory'] as bool,
+      standartModelUrild: json['standartModelUrild'] as int,
     );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'email': email,
+      'role': role,
+      'money': money,
+      'memory': memory,
+      'memoryEnable': memoryEnable,
+      'aiCanUpdateMemory': aiCanUpdateMemory,
+      'standartModelUrild': standartModelUrild,
+    };
   }
 }
