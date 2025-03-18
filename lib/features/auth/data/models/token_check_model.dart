@@ -8,7 +8,6 @@ class TokenCheckModel extends TokenCheckEntity {
   });
 
   factory TokenCheckModel.fromJson(Map<String, dynamic> json) {
-    // Если ответ успешный – в JSON есть поле success
     if (json.containsKey('success')) {
       return TokenCheckModel(
         success: json['success'] as bool,

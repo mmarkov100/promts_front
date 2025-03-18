@@ -3,24 +3,15 @@ import 'package:promts_application_1/features/user/domain/entities/user_entity.d
 
 class UserModel extends UserEntity {
   UserModel({
-    required int id,
-    required String email,
-    required String role,
-    required double money,
-    required String memory,
-    required bool memoryEnable,
-    required bool aiCanUpdateMemory,
-    required int standartModelUrild,
-  }) : super(
-          id: id,
-          email: email,
-          role: role,
-          money: money,
-          memory: memory,
-          memoryEnable: memoryEnable,
-          aiCanUpdateMemory: aiCanUpdateMemory,
-          standartModelUrild: standartModelUrild,
-        );
+    required super.id,
+    required super.email,
+    required super.role,
+    required super.money,
+    required super.memory,
+    required super.memoryEnable,
+    required super.aiCanUpdateMemory,
+    required super.standartModelUrild,
+  });
 
   factory UserModel.fromJson(Map<String, dynamic> json) {
     return UserModel(

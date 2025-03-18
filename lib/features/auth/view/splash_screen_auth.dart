@@ -24,15 +24,11 @@ class _SplashScreenState extends State<SplashScreen> {
   @override
   void initState() {
     super.initState();
-
-    // Инициализация зависимостей (можно вынести в DI-контейнер)
     final client = http.Client();
     final remoteDataSource = AuthRemoteDataSourceImpl(client: client);
     final repository = AuthRepositoryImpl(remoteDataSource: remoteDataSource);
     final useCase = CheckTokenUseCase(repository: repository);
     authCubit = AuthCubit(checkTokenUseCase: useCase);
-
-    // Запуск проверки токена
     authCubit.checkToken(widget.jwtToken);
   }
 
@@ -42,12 +38,10 @@ class _SplashScreenState extends State<SplashScreen> {
       bloc: authCubit,
       listener: (context, state) {
         if (state is AuthSuccess) {
-          // Если токен валидный, переходим на главный экран
           Navigator.of(context).pushReplacement(
             MaterialPageRoute(builder: (_) => const WidgetMainScreen()),
           );
         } else if (state is AuthFailure) {
-          // Если токен невалидный или произошла ошибка, переходим на экран логина
           Navigator.of(context).pushReplacement(
             MaterialPageRoute(builder: (_) => const LoginPageScreen()),
           );

@@ -1,6 +1,6 @@
-// auth_remote_data_source.dart
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'package:promts_application_1/core/config/config.dart';
 import 'package:promts_application_1/features/auth/data/models/token_check_model.dart';
 
 abstract class AuthRemoteDataSource {
@@ -9,25 +9,32 @@ abstract class AuthRemoteDataSource {
 
 class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
   final http.Client client;
+  final AppConfig datasourceConfig = AppConfig();
 
   AuthRemoteDataSourceImpl({required this.client});
 
   @override
   Future<TokenCheckModel> tokenCheck(String jwtToken) async {
-    final url = Uri.parse('https://bc7f-104-253-187-142.ngrok-free.app/user/tokencheck');
+    print("Attempting request to /user/tokencheck");
+    final url = Uri.parse('${datasourceConfig.getBaseUrl()}/user/tokencheck');
+    //TODO Обратно поменять на гет запрос, а то нгрок хуета какая-то
     final response = await client.post(
       url,
       headers: {
-        'Authorization': jwtToken,
+        'Authorization': 'Bearer $jwtToken',
         'Content-Type': 'application/json',
       },
     );
+
+    final decodedBody = utf8.decode(response.bodyBytes);
+    print("Got response: ${response.statusCode}, body: $decodedBody");
+
     if (response.statusCode == 200) {
-      final jsonData = json.decode(response.body);
+      final jsonData = json.decode(decodedBody);
       return TokenCheckModel.fromJson(jsonData);
     } else {
-      // Обработка ошибки: можно выбросить исключение или вернуть модель с ошибкой
-      throw Exception('Ошибка запроса: ${response.statusCode}');
+      final Map<String, dynamic> errorResponse = json.decode(decodedBody);
+      throw Exception(errorResponse['message'] ?? 'Ошибка');
     }
   }
 }

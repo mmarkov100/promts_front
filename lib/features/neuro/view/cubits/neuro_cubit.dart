@@ -1,23 +1,7 @@
 // ignore: depend_on_referenced_packages
 import 'package:bloc/bloc.dart';
-import 'package:promts_application_1/features/neuro/domain/entities/neuro_entity.dart';
 import 'package:promts_application_1/features/neuro/domain/use_cases/get_neuro_data_usecase.dart';
-
-abstract class NeuroState {}
-
-class NeuroInitial extends NeuroState {}
-
-class NeuroLoading extends NeuroState {}
-
-class NeuroLoaded extends NeuroState {
-  final List<NeuroEntity> neuroList;
-  NeuroLoaded(this.neuroList);
-}
-
-class NeuroError extends NeuroState {
-  final String message;
-  NeuroError(this.message);
-}
+import 'package:promts_application_1/features/neuro/view/cubits/neuro_state.dart';
 
 class NeuroCubit extends Cubit<NeuroState> {
   final GetNeuroDataUseCase getNeuroDataUseCase;
