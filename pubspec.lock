@@ -114,10 +114,10 @@ packages:
     dependency: "direct main"
     description:
       name: flutter_markdown
-      sha256: e7bbc718adc9476aa14cfddc1ef048d2e21e4e8f18311aaac723266db9f9e7b5
+      sha256: "634622a3a826d67cb05c0e3e576d1812c430fa98404e95b60b131775c73d76ec"
       url: "https://pub.dev"
     source: hosted
-    version: "0.7.6+2"
+    version: "0.7.7"
   flutter_test:
     dependency: "direct dev"
     description: flutter
@@ -223,10 +223,10 @@ packages:
     dependency: transitive
     description:
       name: provider
-      sha256: c8a055ee5ce3fd98d6fc872478b03823ffdb448699c6ebdbbc71d59b596fd48c
+      sha256: "489024f942069c2920c844ee18bb3d467c69e48955a4f32d1677f71be103e310"
       url: "https://pub.dev"
     source: hosted
-    version: "6.1.2"
+    version: "6.1.4"
   sky_engine:
     dependency: transitive
     description: flutter

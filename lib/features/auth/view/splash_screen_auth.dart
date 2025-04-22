@@ -43,7 +43,7 @@ class _SplashScreenState extends State<SplashScreen> {
           );
         } else if (state is AuthFailure) {
           Navigator.of(context).pushReplacement(
-            MaterialPageRoute(builder: (_) => const LoginPageScreen()),
+            MaterialPageRoute(builder: (_) => const WidgetMainScreen()),
           );
         }
       },
