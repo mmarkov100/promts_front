@@ -15,8 +15,8 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
 
   @override
   Future<TokenCheckModel> tokenCheck(String jwtToken) async {
-    print("Attempting request to /user/tokencheck");
-    final url = Uri.parse('${datasourceConfig.getBaseUrl()}/user/tokencheck');
+    print("Attempting request to /auth/tokencheck");
+    final url = Uri.parse('${datasourceConfig.getBaseUrl()}/auth/tokencheck');
     //TODO Обратно поменять на гет запрос, а то нгрок хуета какая-то
     final response = await client.post(
       url,
