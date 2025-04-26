@@ -1,11 +1,12 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:promts_application_1/core/config/config.dart';
+import 'package:promts_application_1/di/locator.dart';
 import 'package:promts_application_1/features/user/data/models/user_model.dart';
 
 class UserRemoteDataSource {
   final http.Client client;
-  final AppConfig datasourceConfig = AppConfig();
+  final AppConfig datasourceConfig = getIt<AppConfig>();
 
   UserRemoteDataSource({required this.client});
 

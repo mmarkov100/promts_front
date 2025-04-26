@@ -8,35 +8,21 @@
 void registerPlugins() {}
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:promts_application_1/features/auth/data/datasources/auth_remote_data_source.dart';
-import 'package:promts_application_1/features/auth/data/implimintations/auth_repository_impl.dart';
-import 'package:promts_application_1/features/auth/view/cubits/auth_cubit.dart';
+import 'package:promts_application_1/di/locator.dart';
+import 'package:promts_application_1/features/auth/cubits/auth_cubit.dart';
 import 'package:promts_application_1/features/auth/view/splash_screen_auth.dart';
-import 'package:promts_application_1/features/neuro/data/datasources/neuro_datasource.dart';
-import 'package:promts_application_1/features/neuro/data/implimintations/neuro_repository_impl.dart';
-import 'package:promts_application_1/features/neuro/view/cubits/neuro_cubit.dart';
-import 'package:http/http.dart' as http;
+import 'package:promts_application_1/features/neuro/cubits/neuro_cubit.dart';
 
 void main() {
-  // Настраиваем зависимости для NeuroCubit
-  final neuroRemote = NeuroRemoteDataSource(client: http.Client());
-  final neuroRepo = NeuroRepositoryImpl(remoteDataSource: neuroRemote);
-
-  // Настраиваем зависимости для AuthCubit (пример)
-  final authRemote = AuthRemoteDataSourceImpl(client: http.Client());
-  final authRepo = AuthRepositoryImpl(remoteDataSource: authRemote);
-
+  
+  // 0 - продовый, 1 - тестовый (вообще пока не работает)
+  //setup(0, "https://1042-104-253-187-142.ngrok-free.app", "1234jwt");
+  setup(0, "http://localhost:8090", "1234jwt");
   runApp(
     MultiBlocProvider(
       providers: [
-        BlocProvider<AuthCubit>(
-          create: (_) => AuthCubit(repository: authRepo)
-            ..checkToken(),
-        ),
-        BlocProvider<NeuroCubit>(
-          create: (_) => NeuroCubit(repository: neuroRepo)
-            ..fetchNeuroData(),
-        ),
+        BlocProvider(create: (_) => getIt<AuthCubit>()),
+        BlocProvider(create: (_) => getIt<NeuroCubit>()),
       ],
       child: const MyApp(),
     ),
@@ -45,7 +31,7 @@ void main() {
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
-  
+
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
@@ -57,11 +43,12 @@ class MyApp extends StatelessWidget {
   }
 }
 class AppConfig {
+  final String _baseUrl;
+  final String _jwtToken;
+  AppConfig(this._baseUrl, this._jwtToken);
 
-  final String _baseUrl = "http://localhost:8090";
-  //final String _baseUrl = "https://1042-104-253-187-142.ngrok-free.app";
-  final String _jwtToken = "1234jwt";
   final int _userId = 2;
+
   String getBaseUrl(){
 
     return _baseUrl;
@@ -77,9 +64,88 @@ class AppConfig {
     return _userId;
   }
 }
+// lib/core/cubits/data_cubit.dart
+
+import 'package:flutter_bloc/flutter_bloc.dart';
+
+abstract class DataState<T> {
+  const DataState();
+}
+class DataInitial<T> extends DataState<T> {}
+class DataLoading<T> extends DataState<T> {}
+class DataLoaded<T>  extends DataState<T> {
+  final T data;
+  const DataLoaded(this.data);
+}
+class DataError<T>   extends DataState<T> {
+  final String message;
+  const DataError(this.message);
+}
+
+abstract class DataCubit<T> extends Cubit<DataState<T>> {
+  DataCubit() : super(DataInitial<T>());
+
+  Future<void> load(Future<T> Function() loader) async {
+    emit(DataLoading<T>());
+    try {
+      final result = await loader();
+      emit(DataLoaded<T>(result));
+    } catch (e) {
+      emit(DataError<T>(e.toString()));
+    }
+  }
+}
+// lib/di/locator.dart
+import 'package:get_it/get_it.dart';
+import 'package:promts_application_1/core/config/config.dart';
+import 'package:promts_application_1/features/auth/cubits/auth_cubit.dart';
+import 'package:promts_application_1/features/auth/data/datasources/auth_remote_data_source.dart';
+import 'package:promts_application_1/features/auth/data/implimintations/auth_repository_impl.dart';
+import 'package:promts_application_1/features/auth/domain/repositories/auth_repository.dart';
+import 'package:promts_application_1/features/neuro/cubits/neuro_cubit.dart';
+import 'package:promts_application_1/features/neuro/data/datasources/neuro_datasource.dart';
+import 'package:promts_application_1/features/neuro/data/implimintations/neuro_repository_impl.dart';
+import 'package:promts_application_1/features/neuro/domain/repositories/neuro_repository.dart';
+import 'package:http/http.dart' as http;
+
+final getIt = GetIt.instance;
+
+void setup(int appMode, String baseUrl, String jwtToken) {
+
+  getIt.registerLazySingleton(() => AppConfig(baseUrl, jwtToken));
+  getIt.registerLazySingleton(() => http.Client());
+
+  // Auth
+  getIt.registerLazySingleton<AuthRemoteDataSource>(
+      () => AuthRemoteDataSourceImpl(client: getIt()));
+  getIt.registerLazySingleton<AuthRepository>(
+      () => AuthRepositoryImpl(remoteDataSource: getIt()));
+  getIt.registerFactory(() => AuthCubit(repository: getIt()));
+
+  // Neuro
+  getIt.registerLazySingleton<NeuroRemoteDataSource>(
+      () => NeuroRemoteDataSource(client: getIt()));
+  getIt.registerLazySingleton<NeuroRepository>(
+      () => NeuroRepositoryImpl(remoteDataSource: getIt()));
+  getIt.registerFactory(() => NeuroCubit(repository: getIt()));
+}
+// ignore: depend_on_referenced_packages
+import 'package:promts_application_1/core/cubits/data_cubit.dart';
+import 'package:promts_application_1/features/auth/domain/entities/token_check_entity.dart';
+import 'package:promts_application_1/features/auth/domain/repositories/auth_repository.dart';
+
+class AuthCubit extends DataCubit<TokenCheckEntity> {
+  final AuthRepository repository;
+  AuthCubit({required this.repository}) : super(){
+    fetch();
+  }
+
+  void fetch() => load(() => repository.checkToken());
+}
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:promts_application_1/core/config/config.dart';
+import 'package:promts_application_1/di/locator.dart';
 import 'package:promts_application_1/features/auth/data/models/token_check_model.dart';
 
 abstract class AuthRemoteDataSource {
@@ -88,7 +154,7 @@ abstract class AuthRemoteDataSource {
 
 class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
   final http.Client client;
-  final AppConfig datasourceConfig = AppConfig();
+  final AppConfig datasourceConfig = getIt<AppConfig>();
 
   AuthRemoteDataSourceImpl({required this.client});
 
@@ -192,8 +258,9 @@ class _LoginPageScreenState extends State<LoginPageScreen> {
 }
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:promts_application_1/features/auth/view/cubits/auth_cubit.dart';
-import 'package:promts_application_1/features/auth/view/cubits/auth_state.dart';
+import 'package:promts_application_1/core/cubits/data_cubit.dart';
+import 'package:promts_application_1/features/auth/cubits/auth_cubit.dart';
+import 'package:promts_application_1/features/auth/domain/entities/token_check_entity.dart';
 import 'package:promts_application_1/features/auth/view/login_page_screen.dart';
 import 'package:promts_application_1/features/main/view/widgets/widget_main_screen.dart';
 
@@ -203,13 +270,13 @@ class SplashScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return BlocListener<AuthCubit, AuthState>(
+    return BlocListener<AuthCubit, DataState<TokenCheckEntity>>(
       listener: (context, state) {
-        if (state is AuthSuccess) {
+        if (state is DataLoaded<TokenCheckEntity>) {
           Navigator.of(context).pushReplacement(
             MaterialPageRoute(builder: (_) => const WidgetMainScreen()),
           );
-        } else if (state is AuthFailure) {
+        } else if (state is DataError<TokenCheckEntity>) {
           Navigator.of(context).pushReplacement(
             MaterialPageRoute(builder: (_) => const LoginPageScreen()),
           );
@@ -220,46 +287,6 @@ class SplashScreen extends StatelessWidget {
       ),
     );
   }
-}
-// ignore: depend_on_referenced_packages
-import 'package:bloc/bloc.dart';
-import 'package:promts_application_1/features/auth/domain/repositories/auth_repository.dart';
-import 'auth_state.dart';
-
-class AuthCubit extends Cubit<AuthState> {
-  final AuthRepository repository;
-
-  AuthCubit({required this.repository}) : super(AuthInitial());
-
-  Future<void> checkToken() async {
-    emit(AuthLoading());
-    try {
-      final result = await repository.checkToken();
-      if (result.success) {
-        emit(AuthSuccess(result.message));
-      } else {
-        emit(AuthFailure(result.error ?? 'Ошибка авторизации'));
-      }
-    } catch (e) {
-      emit(AuthFailure(e.toString()));
-    }
-  }
-}
-// auth_state.dart
-abstract class AuthState {}
-
-class AuthInitial extends AuthState {}
-
-class AuthLoading extends AuthState {}
-
-class AuthSuccess extends AuthState {
-  final String message;
-  AuthSuccess(this.message);
-}
-
-class AuthFailure extends AuthState {
-  final String error;
-  AuthFailure(this.error);
 }
 import 'package:promts_application_1/features/chat/domain/entities/chat_entity.dart';
 
@@ -1665,6 +1692,7 @@ class WidgetAppBar extends StatelessWidget implements PreferredSizeWidget {
 }
 import 'package:flutter/material.dart';
 import 'package:promts_application_1/core/config/config.dart';
+import 'package:promts_application_1/di/locator.dart';
 import 'widget_app_bar.dart';
 import 'package:promts_application_1/features/chat/view/widgets/widget_chats.dart';
 import 'package:promts_application_1/features/neuro/view/widget_neuro_button.dart';
@@ -1681,7 +1709,7 @@ class _WidgetMainScreenState extends State<WidgetMainScreen> {
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
 
   bool _showChatPage = false;
-  final AppConfig appConfig = AppConfig();
+  final appConfig = getIt<AppConfig>();
   final TextEditingController _messageController = TextEditingController();
 
   @override
@@ -1833,14 +1861,29 @@ class MessageEntity {
     required this.dateCreate,
   });
 }
+// ignore: depend_on_referenced_packages
+import 'package:promts_application_1/core/cubits/data_cubit.dart';
+import 'package:promts_application_1/features/neuro/domain/entities/neuro_entity.dart';
+import 'package:promts_application_1/features/neuro/domain/repositories/neuro_repository.dart';
+
+class NeuroCubit extends DataCubit<List<NeuroEntity>> {
+  final NeuroRepository repository;
+  NeuroCubit({ required this.repository }) : super(){
+    fetch();
+  }
+
+  void fetch() => load(() => repository.fetchNeuroData());
+}
+
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:promts_application_1/core/config/config.dart';
+import 'package:promts_application_1/di/locator.dart';
 import 'package:promts_application_1/features/neuro/data/models/neuro_model.dart';
 
 class NeuroRemoteDataSource {
   final http.Client client;
-  final AppConfig datasourceConfig = AppConfig();
+  final AppConfig datasourceConfig = getIt<AppConfig>();
 
   NeuroRemoteDataSource({
     required this.client,
@@ -1931,9 +1974,10 @@ abstract class NeuroRepository {
 }
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:promts_application_1/features/neuro/view/cubits/neuro_cubit.dart';
-import 'package:promts_application_1/features/neuro/view/cubits/neuro_state.dart';
+import 'package:promts_application_1/core/cubits/data_cubit.dart';
+import 'package:promts_application_1/features/neuro/cubits/neuro_cubit.dart';
 import 'package:promts_application_1/features/chat/view/widgets/widget_chat_create_settings.dart';
+import 'package:promts_application_1/features/neuro/domain/entities/neuro_entity.dart';
 
 class WidgetNeuroButton extends StatefulWidget {
   const WidgetNeuroButton({super.key});
@@ -1966,12 +2010,12 @@ class _WidgetNeuroButtonState extends State<WidgetNeuroButton> {
   Widget build(BuildContext context) {
     final isSmallWidth = MediaQuery.of(context).size.width < 350;
 
-    return BlocBuilder<NeuroCubit, NeuroState>(
+    return BlocBuilder<NeuroCubit, DataState<List<NeuroEntity>>>(
       builder: (context, state) {
-        if (state is NeuroLoading) {
+        if (state is DataLoading<List<NeuroEntity>>) {
           return const Center(child: CircularProgressIndicator());
-        } else if (state is NeuroLoaded) {
-          final neuroList = state.neuroList;
+        } else if (state is DataLoaded<List<NeuroEntity>>) {
+          final neuroList = state.data;
           if (neuroList.isEmpty) {
             return const Text('Список нейросетей пуст');
           }
@@ -2033,8 +2077,8 @@ class _WidgetNeuroButtonState extends State<WidgetNeuroButton> {
               ),
             ],
           );
-        } else if (state is NeuroError) {
-          return Center(child: Text("Ошибка: ${state.message}"));
+        } else if (state is DataError<List<NeuroEntity>>) {
+          return Center(child: Text('Ошибка: ${state.message}'));
         }
         return Container();
       },
@@ -2238,51 +2282,15 @@ class _WidgetNeuroChatSettingState extends State<WidgetNeuroChatSetting> {
     );
   }
 }
-// ignore: depend_on_referenced_packages
-import 'package:bloc/bloc.dart';
-import 'package:promts_application_1/features/neuro/domain/repositories/neuro_repository.dart';
-import 'package:promts_application_1/features/neuro/view/cubits/neuro_state.dart';
-
-class NeuroCubit extends Cubit<NeuroState> {
-  final NeuroRepository repository;
-
-  NeuroCubit({required this.repository}) : super(NeuroInitial());
-
-  Future<void> fetchNeuroData() async {
-    emit(NeuroLoading());
-    try {
-      final neuroList = await repository.fetchNeuroData();
-      emit(NeuroLoaded(neuroList));
-    } catch (e) {
-      emit(NeuroError(e.toString()));
-    }
-  }
-}
-import 'package:promts_application_1/features/neuro/domain/entities/neuro_entity.dart';
-
-abstract class NeuroState {}
-
-class NeuroInitial extends NeuroState {}
-
-class NeuroLoading extends NeuroState {}
-
-class NeuroLoaded extends NeuroState {
-  final List<NeuroEntity> neuroList;
-  NeuroLoaded(this.neuroList);
-}
-
-class NeuroError extends NeuroState {
-  final String message;
-  NeuroError(this.message);
-}
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:promts_application_1/core/config/config.dart';
+import 'package:promts_application_1/di/locator.dart';
 import 'package:promts_application_1/features/user/data/models/user_model.dart';
 
 class UserRemoteDataSource {
   final http.Client client;
-  final AppConfig datasourceConfig = AppConfig();
+  final AppConfig datasourceConfig = getIt<AppConfig>();
 
   UserRemoteDataSource({required this.client});
 

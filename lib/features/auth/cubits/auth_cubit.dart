@@ -1,24 +1,13 @@
 // ignore: depend_on_referenced_packages
-import 'package:bloc/bloc.dart';
+import 'package:promts_application_1/core/cubits/data_cubit.dart';
+import 'package:promts_application_1/features/auth/domain/entities/token_check_entity.dart';
 import 'package:promts_application_1/features/auth/domain/repositories/auth_repository.dart';
-import 'auth_state.dart';
 
-class AuthCubit extends Cubit<AuthState> {
+class AuthCubit extends DataCubit<TokenCheckEntity> {
   final AuthRepository repository;
-
-  AuthCubit({required this.repository}) : super(AuthInitial());
-
-  Future<void> checkToken() async {
-    emit(AuthLoading());
-    try {
-      final result = await repository.checkToken();
-      if (result.success) {
-        emit(AuthSuccess(result.message));
-      } else {
-        emit(AuthFailure(result.error ?? 'Ошибка авторизации'));
-      }
-    } catch (e) {
-      emit(AuthFailure(e.toString()));
-    }
+  AuthCubit({required this.repository}) : super(){
+    fetch();
   }
+
+  void fetch() => load(() => repository.checkToken());
 }

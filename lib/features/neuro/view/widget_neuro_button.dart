@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:promts_application_1/core/cubits/data_cubit.dart';
 import 'package:promts_application_1/features/neuro/cubits/neuro_cubit.dart';
-import 'package:promts_application_1/features/neuro/cubits/neuro_state.dart';
 import 'package:promts_application_1/features/chat/view/widgets/widget_chat_create_settings.dart';
+import 'package:promts_application_1/features/neuro/domain/entities/neuro_entity.dart';
 
 class WidgetNeuroButton extends StatefulWidget {
   const WidgetNeuroButton({super.key});
@@ -35,12 +36,12 @@ class _WidgetNeuroButtonState extends State<WidgetNeuroButton> {
   Widget build(BuildContext context) {
     final isSmallWidth = MediaQuery.of(context).size.width < 350;
 
-    return BlocBuilder<NeuroCubit, NeuroState>(
+    return BlocBuilder<NeuroCubit, DataState<List<NeuroEntity>>>(
       builder: (context, state) {
-        if (state is NeuroLoading) {
+        if (state is DataLoading<List<NeuroEntity>>) {
           return const Center(child: CircularProgressIndicator());
-        } else if (state is NeuroLoaded) {
-          final neuroList = state.neuroList;
+        } else if (state is DataLoaded<List<NeuroEntity>>) {
+          final neuroList = state.data;
           if (neuroList.isEmpty) {
             return const Text('Список нейросетей пуст');
           }
@@ -102,8 +103,8 @@ class _WidgetNeuroButtonState extends State<WidgetNeuroButton> {
               ),
             ],
           );
-        } else if (state is NeuroError) {
-          return Center(child: Text("Ошибка: ${state.message}"));
+        } else if (state is DataError<List<NeuroEntity>>) {
+          return Center(child: Text('Ошибка: ${state.message}'));
         }
         return Container();
       },

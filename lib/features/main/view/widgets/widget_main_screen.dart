@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:promts_application_1/core/config/config.dart';
+import 'package:promts_application_1/di/locator.dart';
 import 'widget_app_bar.dart';
 import 'package:promts_application_1/features/chat/view/widgets/widget_chats.dart';
 import 'package:promts_application_1/features/neuro/view/widget_neuro_button.dart';
@@ -16,7 +17,7 @@ class _WidgetMainScreenState extends State<WidgetMainScreen> {
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
 
   bool _showChatPage = false;
-  final AppConfig appConfig = AppConfig();
+  final appConfig = getIt<AppConfig>();
   final TextEditingController _messageController = TextEditingController();
 
   @override

@@ -1,20 +1,14 @@
 // ignore: depend_on_referenced_packages
-import 'package:bloc/bloc.dart';
+import 'package:promts_application_1/core/cubits/data_cubit.dart';
+import 'package:promts_application_1/features/neuro/domain/entities/neuro_entity.dart';
 import 'package:promts_application_1/features/neuro/domain/repositories/neuro_repository.dart';
-import 'package:promts_application_1/features/neuro/cubits/neuro_state.dart';
 
-class NeuroCubit extends Cubit<NeuroState> {
+class NeuroCubit extends DataCubit<List<NeuroEntity>> {
   final NeuroRepository repository;
-
-  NeuroCubit({required this.repository}) : super(NeuroInitial());
-
-  Future<void> fetchNeuroData() async {
-    emit(NeuroLoading());
-    try {
-      final neuroList = await repository.fetchNeuroData();
-      emit(NeuroLoaded(neuroList));
-    } catch (e) {
-      emit(NeuroError(e.toString()));
-    }
+  NeuroCubit({ required this.repository }) : super(){
+    fetch();
   }
+
+  void fetch() => load(() => repository.fetchNeuroData());
 }
+
