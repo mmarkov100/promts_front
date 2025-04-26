@@ -1,7 +1,7 @@
 // ignore: depend_on_referenced_packages
 import 'package:bloc/bloc.dart';
 import 'package:promts_application_1/features/neuro/domain/repositories/neuro_repository.dart';
-import 'package:promts_application_1/features/neuro/view/cubits/neuro_state.dart';
+import 'package:promts_application_1/features/neuro/cubits/neuro_state.dart';
 
 class NeuroCubit extends Cubit<NeuroState> {
   final NeuroRepository repository;

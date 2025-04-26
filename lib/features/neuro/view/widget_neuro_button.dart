@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:promts_application_1/features/neuro/view/cubits/neuro_cubit.dart';
-import 'package:promts_application_1/features/neuro/view/cubits/neuro_state.dart';
+import 'package:promts_application_1/features/neuro/cubits/neuro_cubit.dart';
+import 'package:promts_application_1/features/neuro/cubits/neuro_state.dart';
 import 'package:promts_application_1/features/chat/view/widgets/widget_chat_create_settings.dart';
 
 class WidgetNeuroButton extends StatefulWidget {

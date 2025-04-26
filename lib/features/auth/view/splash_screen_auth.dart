@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:promts_application_1/features/auth/view/cubits/auth_cubit.dart';
-import 'package:promts_application_1/features/auth/view/cubits/auth_state.dart';
+import 'package:promts_application_1/features/auth/cubits/auth_cubit.dart';
+import 'package:promts_application_1/features/auth/cubits/auth_state.dart';
 import 'package:promts_application_1/features/auth/view/login_page_screen.dart';
 import 'package:promts_application_1/features/main/view/widgets/widget_main_screen.dart';
 
