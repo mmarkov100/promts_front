@@ -8,7 +8,7 @@ class NeuroRepositoryImpl implements NeuroRepository {
   NeuroRepositoryImpl({required this.remoteDataSource});
 
   @override
-  Future<List<NeuroEntity>> fetchNeuroData(String token, int userId) async {
-    return await remoteDataSource.getNeuroModelList(token, userId);
+  Future<List<NeuroEntity>> fetchNeuroData() async {
+    return await remoteDataSource.getNeuroModelList();
   }
 }

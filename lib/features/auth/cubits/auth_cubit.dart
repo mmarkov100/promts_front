@@ -1,17 +1,17 @@
 // ignore: depend_on_referenced_packages
 import 'package:bloc/bloc.dart';
-import 'package:promts_application_1/features/auth/domain/usecases/check_token_use_case.dart';
+import 'package:promts_application_1/features/auth/domain/repositories/auth_repository.dart';
 import 'auth_state.dart';
 
 class AuthCubit extends Cubit<AuthState> {
-  final CheckTokenUseCase checkTokenUseCase;
+  final AuthRepository repository;
 
-  AuthCubit({required this.checkTokenUseCase}) : super(AuthInitial());
+  AuthCubit({required this.repository}) : super(AuthInitial());
 
-  Future<void> checkToken(String jwtToken) async {
+  Future<void> checkToken() async {
     emit(AuthLoading());
     try {
-      final result = await checkTokenUseCase(jwtToken);
+      final result = await repository.checkToken();
       if (result.success) {
         emit(AuthSuccess(result.message));
       } else {

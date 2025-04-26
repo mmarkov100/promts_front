@@ -4,7 +4,7 @@ import 'package:promts_application_1/core/config/config.dart';
 import 'package:promts_application_1/features/auth/data/models/token_check_model.dart';
 
 abstract class AuthRemoteDataSource {
-  Future<TokenCheckModel> tokenCheck(String jwtToken);
+  Future<TokenCheckModel> tokenCheck();
 }
 
 class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
@@ -14,14 +14,14 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
   AuthRemoteDataSourceImpl({required this.client});
 
   @override
-  Future<TokenCheckModel> tokenCheck(String jwtToken) async {
+  Future<TokenCheckModel> tokenCheck() async {
     print("Attempting request to /auth/tokencheck");
     final url = Uri.parse('${datasourceConfig.getBaseUrl()}/auth/tokencheck');
     //TODO Обратно поменять на гет запрос, а то нгрок хуета какая-то
     final response = await client.post(
       url,
       headers: {
-        'Authorization': 'Bearer $jwtToken',
+        'Authorization': 'Bearer ${datasourceConfig.getJwtToken()}',
         'Content-Type': 'application/json',
       },
     );

@@ -1,15 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:promts_application_1/core/config/config.dart';
-import 'package:promts_application_1/features/neuro/data/datasources/neuro_datasource.dart';
-import 'package:promts_application_1/features/neuro/data/implimintations/neuro_repository_impl.dart';
-import 'package:promts_application_1/features/neuro/domain/use_cases/get_neuro_data_usecase.dart';
-import 'package:promts_application_1/features/neuro/view/cubits/neuro_cubit.dart';
 import 'widget_app_bar.dart';
 import 'package:promts_application_1/features/chat/view/widgets/widget_chats.dart';
 import 'package:promts_application_1/features/neuro/view/widget_neuro_button.dart';
 import 'package:promts_application_1/features/chat/view/widgets/widget_chat_page.dart';
-import 'package:http/http.dart' as http;
 
 class WidgetMainScreen extends StatefulWidget {
   const WidgetMainScreen({super.key});
@@ -75,20 +69,9 @@ class _WidgetMainScreenState extends State<WidgetMainScreen> {
       ),
       body: Column(
         children: [
-          Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: BlocProvider<NeuroCubit>(
-              create: (context) => NeuroCubit(
-                getNeuroDataUseCase: GetNeuroDataUseCase(
-                  repository: NeuroRepositoryImpl(
-                    remoteDataSource: NeuroRemoteDataSource(
-                      client: http.Client(),
-                    ),
-                  ),
-                ),
-              )..fetchNeuroData(appConfig.getJwtToken(), appConfig.getUserId()),
-              child: const WidgetNeuroButton(),
-            ),
+          const Padding(
+            padding: EdgeInsets.all(16.0),
+            child: WidgetNeuroButton(),
           ),
           Expanded(
             child: _showChatPage ? const WidgetChatPage() : _buildMainContent(),

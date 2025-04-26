@@ -11,16 +11,14 @@ class NeuroRemoteDataSource {
     required this.client,
   });
 
-  Future<List<NeuroModel>> getNeuroModelList(
-      String jwtToken, int userId) async {
+  Future<List<NeuroModel>> getNeuroModelList() async {
     final url = Uri.parse('${datasourceConfig.getBaseUrl()}/neuro');
     print("Attempting request to /neuro");
     final response = await client.post(
       url,
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': 'Bearer $jwtToken',
-        'id': '$userId',
+        'Authorization': 'Bearer ${datasourceConfig.getJwtToken()}',
       },
     );
 
