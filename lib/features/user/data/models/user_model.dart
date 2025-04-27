@@ -1,26 +1,16 @@
-
 import 'package:promts_application_1/features/user/domain/entities/user_entity.dart';
 
 class UserModel extends UserEntity {
   UserModel({
-    required int id,
-    required String email,
-    required String role,
-    required double money,
-    required String memory,
-    required bool memoryEnable,
-    required bool aiCanUpdateMemory,
-    required int standartModelUrild,
-  }) : super(
-          id: id,
-          email: email,
-          role: role,
-          money: money,
-          memory: memory,
-          memoryEnable: memoryEnable,
-          aiCanUpdateMemory: aiCanUpdateMemory,
-          standartModelUrild: standartModelUrild,
-        );
+    required super.id,
+    required super.email,
+    required super.role,
+    required super.money,
+    required super.memory,
+    required super.memoryEnabled,
+    required super.aiCanUpdateMemory,
+    required super.standartModelUrild,
+  });
 
   factory UserModel.fromJson(Map<String, dynamic> json) {
     return UserModel(
@@ -28,10 +18,12 @@ class UserModel extends UserEntity {
       email: json['email'] as String,
       role: json['role'] as String,
       money: (json['money'] as num).toDouble(),
-      memory: json['memory'] as String,
-      memoryEnable: json['memoryEnable'] as bool,
-      aiCanUpdateMemory: json['aiCanUpdateMemory'] as bool,
-      standartModelUrild: json['standartModelUrild'] as int,
+      memory: json['memory'] as String? ?? '',
+      // безопасное чтение булевых полей
+      memoryEnabled: json['memoryEnabled'] as bool? ?? false,
+      aiCanUpdateMemory: json['aiCanUpdateMemory'] as bool? ?? false,
+      // ключ в JSON называется standardModelUriId
+      standartModelUrild: json['standardModelUriId'] as int? ?? 0,
     );
   }
 
@@ -42,9 +34,9 @@ class UserModel extends UserEntity {
       'role': role,
       'money': money,
       'memory': memory,
-      'memoryEnable': memoryEnable,
+      'memoryEnabled': memoryEnabled,
       'aiCanUpdateMemory': aiCanUpdateMemory,
-      'standartModelUrild': standartModelUrild,
+      'standardModelUriId': standartModelUrild,
     };
   }
 }

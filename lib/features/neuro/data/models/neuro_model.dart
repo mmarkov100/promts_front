@@ -2,11 +2,11 @@ import 'package:promts_application_1/features/neuro/domain/entities/neuro_entity
 
 class NeuroModel extends NeuroEntity {
   NeuroModel({
-    required int id,
-    required String name,
-    required String systemName,
-    required String desc,
-  }) : super(id: id, name: name, systemName: systemName, desc: desc);
+    required super.id,
+    required super.name,
+    required super.systemName,
+    required super.desc,
+  });
 
   factory NeuroModel.fromJson(Map<String, dynamic> json) {
     return NeuroModel(

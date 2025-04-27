@@ -1,7 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:promts_application_1/core/cubits/data_cubit.dart';
+import 'package:promts_application_1/features/neuro/cubits/neuro_cubit.dart';
 import 'package:promts_application_1/features/chat/view/widgets/widget_chat_create_settings.dart';
-/// Виджет выбора нейросети (DropdownButton) + кнопка настроек чата.
-/// Максимальная ширина выпадающего списка ограничена 375 px.
+import 'package:promts_application_1/features/neuro/domain/entities/neuro_entity.dart';
+import 'package:promts_application_1/features/user/cubit/user_cubit.dart';
+import 'package:promts_application_1/features/user/domain/entities/user_entity.dart';
+
 class WidgetNeuroButton extends StatefulWidget {
   const WidgetNeuroButton({super.key});
 
@@ -10,133 +15,165 @@ class WidgetNeuroButton extends StatefulWidget {
 }
 
 class _WidgetNeuroButtonState extends State<WidgetNeuroButton> {
-  // По умолчанию выбранная нейросеть
-  String _selectedNetwork = "DeepSeek V3";
+  String? _selectedNetwork;
+  bool changedNeuro = false;
 
-  // Список доступных нейросетей с описаниями
-  final List<Map<String, String>> _networks = [
-    {
-      'name': 'DeepSeek V3',
-      'desc': 'Мощная модель для генерации текста.',
-    },
-    {
-      'name': 'DeepSeek R1',
-      'desc': 'Улучшенная модель DeepSeek.',
-    },
-    {
-      'name': 'YandexGPT 5 pro',
-      'desc': 'Самая продвинутая русская модель.',
-    },
-    {
-      'name': 'YandexGPT 5 Lite',
-      'desc': 'Упрощённая версия YandexGPT 5.',
-    },
-    {
-      'name': 'ChatGPT 4o mini',
-      'desc': 'Лёгкая версия ChatGPT 4o.',
-    },
-    {
-      'name': 'ChatGPT 4o',
-      'desc': 'Полноценная версия ChatGPT 4o.',
-    },
-    {
-      'name': 'ChatGPT o1',
-      'desc': 'Экспериментальная модель ChatGPT.',
-    },
-    {
-      'name': 'Qwen-Max',
-      'desc': 'Расширенная версия Qwen.',
-    },
-    {
-      'name': 'Qwen-Turbo',
-      'desc': 'Ускоренная версия Qwen.',
-    },
-  ];
-
-  // Обрабатываем выбор новой нейросети
-  void _onNetworkChanged(String newNetwork) {
-    setState(() {
-      _selectedNetwork = newNetwork;
-    });
+  @override
+  void initState() {
+    super.initState();
+    // Один раз запрашиваем оба списка
+    context.read<NeuroCubit>().fetch();
+    context.read<UserCubit>().fetch();
   }
 
-  // Открываем окно настроек по центру экрана (пример с AlertDialog)
-void _openSettingsDialog() {
-  showDialog(
-    context: context,
-    builder: (_) => WidgetChatCreateSettings(
-      chatId: 54719041,
-      temperature: 1.0,
-      contextChat: "Описание...",
-      useMemory: true,
-      updateMemory: false,
-      onSave: (updatedData) {
-        
-      },
-    ),
-  );
-}
-
+  // Открытие диалога настроек чата
+  void _openSettingsDialog() {
+    showDialog(
+      context: context,
+      builder: (_) => WidgetChatCreateSettings(
+        chatId: 54719041,
+        temperature: 1.0,
+        contextChat: "Описание...",
+        useMemory: true,
+        updateMemory: false,
+        onSave: (updatedData) {
+          // Обработка сохранения настроек
+        },
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
-    // Проверяем, является ли устройство "очень узким" (для уменьшения шрифта описания, при желании)
     final isSmallWidth = MediaQuery.of(context).size.width < 350;
 
+    return BlocBuilder<NeuroCubit, DataState<List<NeuroEntity>>>(
+      builder: (context, neuroState) {
+        if (neuroState is DataLoading<List<NeuroEntity>>) {
+          return buildShowingMessage(isSmallWidth, "Идет загрузка..", "Пожалуйста подождите", true);
+        } else if (neuroState is DataLoaded<List<NeuroEntity>>) {
+          final neuroList = neuroState.data;
+          if (neuroList.isEmpty) {
+            //return const Text('Список нейросетей пуст');
+            return buildShowingMessage(isSmallWidth, "Список нейросетей пуст", "Делать нечего)", true);
+          }
+          return BlocBuilder<UserCubit, DataState<UserEntity>>(
+              builder: (context, userState) {
+            if (userState is DataLoading<UserEntity>) {
+              return buildShowingMessage(isSmallWidth, "Идет загрузка..", "Пожалуйста подождите", true);
+            }
+            if (userState is DataError<UserEntity>) {
+              //return const Text('Ошибка в загрузке пользователя');
+              return buildShowingMessage(isSmallWidth, "Ошибка в загрузке", "Пожалуйста обновите страницу", false);
+            }
+            if (userState is DataLoaded<UserEntity>) {
+              for (var e in neuroState.data) {
+                if (!changedNeuro) {
+                  if (e.id == userState.data.standartModelUrild) {
+                    _selectedNetwork = e.name;
+                  }
+                }
+              }
+              return Row(
+                children: [
+                  Flexible(
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: 375, minHeight: 50),
+                      child: DropdownButtonHideUnderline(
+                        child: DropdownButton<String>(
+                          isExpanded: true,
+                          value: _selectedNetwork,
+                          items: neuroList.map((neuro) {
+                            return DropdownMenuItem<String>(
+                              value: neuro.name,
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  // Название нейросети
+                                  Text(
+                                    neuro.name,
+                                    style: const TextStyle(
+                                        fontWeight: FontWeight.bold),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                  // Описание (если есть)
+                                  if (neuro.desc.isNotEmpty)
+                                    Text(
+                                      neuro.desc,
+                                      style: TextStyle(
+                                        fontSize: isSmallWidth ? 10 : 12,
+                                        color: Colors.grey,
+                                      ),
+                                      maxLines: 2,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                ],
+                              ),
+                            );
+                          }).toList(),
+                          onChanged: (value) {
+                            if (value != null) {
+                              setState(() {
+                                changedNeuro = true;
+                                _selectedNetwork = value;
+                              });
+                            }
+                          },
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  // Кнопка настроек
+                  IconButton(
+                    icon: const Icon(Icons.settings),
+                    onPressed: _openSettingsDialog,
+                  ),
+                ],
+              );
+            }
+            return Container();
+          });
+        } else if (neuroState is DataError<List<NeuroEntity>>) {
+          return buildShowingMessage(isSmallWidth, "Ошибка в загрузке", "Пожалуйста обновите страницу", false);
+        }
+        return Container();
+      },
+    );
+  }
+
+  Widget buildShowingMessage(bool isSmallWidth, String titleText, String desc, bool isLoading) {
     return Row(
       children: [
-        // Flexible, чтобы не «выталкивать» другие элементы
         Flexible(
-          // ConstrainedBox ограничивает ширину в 375 пикселей максимум
           child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 375),
-            child: DropdownButtonHideUnderline(
-              child: DropdownButton<String>(
-                isExpanded: true, // Растягиваем до доступной ширины (но не более 375)
-                value: _selectedNetwork,
-                items: _networks.map((net) {
-                  return DropdownMenuItem<String>(
-                    value: net['name'],
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        // Название нейросети
-                        Text(
-                          net['name'] ?? '',
-                          style: const TextStyle(fontWeight: FontWeight.bold),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        // Описание нейросети (ограничиваем 2 строками)
-                        if (net['desc'] != null && net['desc']!.isNotEmpty)
-                          Text(
-                            net['desc']!,
-                            style: TextStyle(
-                              fontSize: isSmallWidth ? 10 : 12,
-                              color: Colors.grey,
-                            ),
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                      ],
-                    ),
-                  );
-                }).toList(),
-                onChanged: (value) {
-                  if (value != null) {
-                    _onNetworkChanged(value);
-                  }
-                },
-              ),
+            constraints: const BoxConstraints(maxWidth: 375, minHeight: 50),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Название нейросети
+                Text(
+                  titleText,
+                  style: const TextStyle(fontWeight: FontWeight.bold),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                Text(
+                  desc,
+                  style: TextStyle(
+                    fontSize: isSmallWidth ? 10 : 12,
+                    color: Colors.grey,
+                  ),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
             ),
           ),
         ),
-        const SizedBox(width: 10),
-        // Кнопка настроек (иконка шестерёнка)
-        IconButton(
-          icon: const Icon(Icons.settings),
-          onPressed: _openSettingsDialog,
-        ),
+        const SizedBox(width: 7),
+        if (isLoading) const Center(child: CircularProgressIndicator()),
       ],
     );
   }

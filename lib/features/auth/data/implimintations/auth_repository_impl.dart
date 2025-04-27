@@ -8,8 +8,8 @@ class AuthRepositoryImpl implements AuthRepository {
   AuthRepositoryImpl({required this.remoteDataSource});
 
   @override
-  Future<TokenCheckEntity> checkToken(String jwtToken) async {
-    final tokenCheckModel = await remoteDataSource.tokenCheck(jwtToken);
+  Future<TokenCheckEntity> checkToken() async {
+    final tokenCheckModel = await remoteDataSource.tokenCheck();
     return tokenCheckModel;
   }
 }

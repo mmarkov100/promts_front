@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:promts_application_1/core/config/config.dart';
+import 'package:promts_application_1/di/locator.dart';
 import 'widget_app_bar.dart';
 import 'package:promts_application_1/features/chat/view/widgets/widget_chats.dart';
 import 'package:promts_application_1/features/neuro/view/widget_neuro_button.dart';
@@ -15,6 +17,7 @@ class _WidgetMainScreenState extends State<WidgetMainScreen> {
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
 
   bool _showChatPage = false;
+  final appConfig = getIt<AppConfig>();
   final TextEditingController _messageController = TextEditingController();
 
   @override
@@ -48,35 +51,35 @@ class _WidgetMainScreenState extends State<WidgetMainScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-        key: _scaffoldKey,
-        drawer: SizedBox(
-          width: 350,
-          child: Drawer(
-            child: WidgetChats(
-              onChatSelected: _openChat,
-            ),
+      key: _scaffoldKey,
+      drawer: SizedBox(
+        width: 350,
+        child: Drawer(
+          child: WidgetChats(
+            onChatSelected: _openChat,
           ),
         ),
-        appBar: WidgetAppBar(
-          onMenuPressed: () {
-            _scaffoldKey.currentState?.openDrawer();
-          },
-          onPromtsPressed: () {
-            _closeChat();
-          },
-        ),
-        body: Column(
-          children: [
-            const Padding(
-              padding: EdgeInsets.all(16.0),
-              child: WidgetNeuroButton(),
-            ),
-            Expanded(
-              child:
-                  _showChatPage ? const WidgetChatPage() : _buildMainContent(),
-            ),
-          ],
-        ));
+      ),
+      appBar: WidgetAppBar(
+        onMenuPressed: () {
+          _scaffoldKey.currentState?.openDrawer();
+        },
+        onPromtsPressed: () {
+          _closeChat();
+        },
+      ),
+      body: Column(
+        children: [
+          const Padding(
+            padding: EdgeInsets.all(16.0),
+            child: WidgetNeuroButton(),
+          ),
+          Expanded(
+            child: _showChatPage ? const WidgetChatPage() : _buildMainContent(),
+          ),
+        ],
+      ),
+    );
   }
 
   Widget _buildMainContent() {

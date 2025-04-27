@@ -7,59 +7,324 @@
 
 void registerPlugins() {}
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:promts_application_1/di/locator.dart';
+import 'package:promts_application_1/features/auth/cubits/auth_cubit.dart';
 import 'package:promts_application_1/features/auth/view/splash_screen_auth.dart';
-//import 'package:promts_application_1/features/main/view/widgets/widget_main_screen.dart';
+import 'package:promts_application_1/features/neuro/cubits/neuro_cubit.dart';
+import 'package:promts_application_1/features/user/cubit/user_cubit.dart';
 
 void main() {
-  runApp(const MyApp());
+  
+  // 0 - продовый, 1 - тестовый (вообще пока не работает)
+  //setup(0, "https://1042-104-253-187-142.ngrok-free.app", "1234jwt");
+  setup(0, "http://localhost:8090", "1234jwt");
+  runApp(
+    MultiBlocProvider(
+      providers: [
+        BlocProvider(create: (_) => getIt<AuthCubit>()),
+        BlocProvider(create: (_) => getIt<NeuroCubit>()),
+        BlocProvider(create: (_) => getIt<UserCubit>()),
+      ],
+      child: const MyApp(),
+    ),
+  );
 }
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
-  
+
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       title: 'Promts',
-      theme: ThemeData(
-        primarySwatch: Colors.blue,
-      ),
-      home: const SplashScreen(jwtToken: '1234jwt',),
+      theme: ThemeData(primarySwatch: Colors.blue),
+      home: const SplashScreen(),
     );
   }
 }
-// auth_remote_data_source.dart
+class AppConfig {
+  final String _baseUrl;
+  final String _jwtToken;
+  AppConfig(this._baseUrl, this._jwtToken);
+
+  final int _userId = 2;
+
+  String getBaseUrl(){
+
+    return _baseUrl;
+  }
+
+  String getJwtToken(){
+
+    return _jwtToken;
+  }
+
+  int getUserId(){
+
+    return _userId;
+  }
+}
+// lib/core/cubits/data_cubit.dart
+
+import 'package:flutter_bloc/flutter_bloc.dart';
+
+abstract class DataState<T> {
+  const DataState();
+}
+class DataInitial<T> extends DataState<T> {}
+class DataLoading<T> extends DataState<T> {}
+class DataLoaded<T>  extends DataState<T> {
+  final T data;
+  const DataLoaded(this.data);
+}
+class DataError<T>   extends DataState<T> {
+  final String message;
+  const DataError(this.message);
+}
+
+abstract class DataCubit<T> extends Cubit<DataState<T>> {
+  DataCubit() : super(DataInitial<T>());
+
+  Future<void> load(Future<T> Function() loader) async {
+    emit(DataLoading<T>());
+    try {
+      final result = await loader();
+      emit(DataLoaded<T>(result));
+    } catch (e) {
+      emit(DataError<T>(e.toString()));
+    }
+  }
+}
+// core/network/api_service.dart
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'package:promts_application_1/di/locator.dart';
+import 'package:promts_application_1/core/config/config.dart';
+
+class ApiService {
+  final http.Client _client = getIt<http.Client>();
+  final AppConfig _config = getIt<AppConfig>();
+
+  ApiService();
+
+  Map<String, String> get _headers => {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ${_config.getJwtToken()}',
+      };
+
+  Uri _makeUri(String path, [Map<String, dynamic>? query]) {
+    final base = Uri.parse(_config.getBaseUrl());
+    return base.replace(path: '${base.path}$path', queryParameters: query);
+  }
+
+  /// GET для одного объекта
+  Future<T> get<T>(
+    String path, {
+    Map<String, dynamic>? query,
+    required T Function(Map<String, dynamic>) fromJson,
+  }) async {
+    final res = await _client.get(_makeUri(path, query), headers: _headers);
+    return _decodeSingle(res, fromJson);
+  }
+
+  /// POST для одного объекта
+  Future<T> post<T>(
+    String path, {
+    Map<String, dynamic>? body,
+    Map<String, dynamic>? query,
+    required T Function(Map<String, dynamic>) fromJson,
+  }) async {
+    final res = await _client.post(
+      _makeUri(path, query),
+      headers: _headers,
+      body: body == null ? null : json.encode(body),
+    );
+    return _decodeSingle(res, fromJson);
+  }
+
+  /// PUT для одного объекта
+  Future<T> put<T>(
+    String path, {
+    Map<String, dynamic>? body,
+    Map<String, dynamic>? query,
+    required T Function(Map<String, dynamic>) fromJson,
+  }) async {
+    final res = await _client.put(
+      _makeUri(path, query),
+      headers: _headers,
+      body: body == null ? null : json.encode(body),
+    );
+    return _decodeSingle(res, fromJson);
+  }
+
+  /// DELETE для одного объекта
+  Future<T> delete<T>(
+    String path, {
+    Map<String, dynamic>? query,
+    required T Function(Map<String, dynamic>) fromJson,
+  }) async {
+    final res = await _client.delete(
+      _makeUri(path, query),
+      headers: _headers,
+    );
+    return _decodeSingle(res, fromJson);
+  }
+
+  /// DELETE без тела ответа (void)
+  Future<void> deleteVoid(
+    String path, {
+    Map<String, dynamic>? query,
+  }) async {
+    final res = await _client.delete(
+      _makeUri(path, query),
+      headers: _headers,
+    );
+    final decoded = utf8.decode(res.bodyBytes);
+    if (res.statusCode < 200 || res.statusCode >= 300) {
+      final err = json.decode(decoded) as Map<String, dynamic>;
+      throw Exception(err['message'] ?? 'Ошибка ${res.statusCode}');
+    }
+    // в случае 204 No Content — просто возвращаемся
+  }
+
+  /// GET для списка
+  Future<List<T>> getList<T>(
+    String path, {
+    Map<String, dynamic>? query,
+    required T Function(Map<String, dynamic>) fromJsonItem,
+  }) async {
+    final res = await _client.get(_makeUri(path, query), headers: _headers);
+    return _decodeList(res, fromJsonItem);
+  }
+
+  /// POST для списка
+  Future<List<T>> postList<T>(
+    String path, {
+    Map<String, dynamic>? body,
+    Map<String, dynamic>? query,
+    required T Function(Map<String, dynamic>) fromJsonItem,
+  }) async {
+    final res = await _client.post(
+      _makeUri(path, query),
+      headers: _headers,
+      body: body == null ? null : json.encode(body),
+    );
+    return _decodeList(res, fromJsonItem);
+  }
+
+  T _decodeSingle<T>(
+    http.Response res,
+    T Function(Map<String, dynamic>) fromJson,
+  ) {
+    final decodedString = utf8.decode(res.bodyBytes);
+    if (res.statusCode >= 200 && res.statusCode < 300) {
+      final Map<String, dynamic> jsonMap = json.decode(decodedString);
+      return fromJson(jsonMap);
+    }
+    final Map<String, dynamic> err = json.decode(decodedString);
+    throw Exception(err['message'] ?? 'Ошибка ${res.statusCode}');
+  }
+
+  List<T> _decodeList<T>(
+    http.Response res,
+    T Function(Map<String, dynamic>) fromJsonItem,
+  ) {
+    final decodedString = utf8.decode(res.bodyBytes);
+    if (res.statusCode >= 200 && res.statusCode < 300) {
+      final List<dynamic> jsonList = json.decode(decodedString);
+      return jsonList
+          .map((e) => fromJsonItem(e as Map<String, dynamic>))
+          .toList();
+    }
+    final Map<String, dynamic> err = json.decode(decodedString);
+    throw Exception(err['message'] ?? 'Ошибка ${res.statusCode}');
+  }
+}
+// lib/di/locator.dart
+import 'package:get_it/get_it.dart';
+import 'package:promts_application_1/core/config/config.dart';
+import 'package:promts_application_1/core/service/network_service.dart';
+import 'package:promts_application_1/features/auth/cubits/auth_cubit.dart';
+import 'package:promts_application_1/features/auth/data/datasources/auth_remote_data_source.dart';
+import 'package:promts_application_1/features/auth/data/implimintations/auth_repository_impl.dart';
+import 'package:promts_application_1/features/auth/domain/repositories/auth_repository.dart';
+import 'package:promts_application_1/features/neuro/cubits/neuro_cubit.dart';
+import 'package:promts_application_1/features/neuro/data/datasources/neuro_datasource.dart';
+import 'package:promts_application_1/features/neuro/data/implimintations/neuro_repository_impl.dart';
+import 'package:promts_application_1/features/neuro/domain/repositories/neuro_repository.dart';
+import 'package:http/http.dart' as http;
+import 'package:promts_application_1/features/user/cubit/user_cubit.dart';
+import 'package:promts_application_1/features/user/data/datasources/user_data_source.dart';
+import 'package:promts_application_1/features/user/data/implimintations/user_repository_impl.dart';
+import 'package:promts_application_1/features/user/domain/repositories/user_repository.dart';
+
+final getIt = GetIt.instance;
+
+void setup(int appMode, String baseUrl, String jwtToken) {
+  getIt.registerLazySingleton(() => AppConfig(baseUrl, jwtToken));
+  getIt.registerLazySingleton(() => http.Client());
+
+  //NetworkService
+  getIt.registerLazySingleton<ApiService>(
+    () => ApiService(),
+  );
+
+  // Auth
+  getIt.registerLazySingleton<AuthRemoteDataSource>(
+      () => AuthRemoteDataSourceImpl());
+  getIt.registerLazySingleton<AuthRepository>(
+      () => AuthRepositoryImpl(remoteDataSource: getIt()));
+  getIt.registerFactory(() => AuthCubit(repository: getIt()));
+
+  // Neuro
+  getIt.registerLazySingleton<NeuroRemoteDataSource>(
+      () => NeuroRemoteDataSourceImpl());
+  getIt.registerLazySingleton<NeuroRepository>(
+      () => NeuroRepositoryImpl(remoteDataSource: getIt()));
+  getIt.registerFactory(() => NeuroCubit(repository: getIt()));
+
+  // User
+  getIt.registerLazySingleton<UserRemoteDataSource>(
+      () => UserRemoteDataSourceImpl());
+  getIt.registerLazySingleton<UserRepository>(
+      () => UserRepositoryImpl(remoteDataSource: getIt()));
+  getIt.registerFactory(() => UserCubit(repository: getIt()));
+}
+// ignore: depend_on_referenced_packages
+import 'package:promts_application_1/core/cubits/data_cubit.dart';
+import 'package:promts_application_1/features/auth/domain/entities/token_check_entity.dart';
+import 'package:promts_application_1/features/auth/domain/repositories/auth_repository.dart';
+
+class AuthCubit extends DataCubit<TokenCheckEntity> {
+  final AuthRepository repository;
+  AuthCubit({required this.repository}) : super(){
+    fetch();
+  }
+
+  void fetch() => load(() => repository.checkToken());
+}
+import 'package:promts_application_1/core/service/network_service.dart';
+import 'package:promts_application_1/di/locator.dart';
 import 'package:promts_application_1/features/auth/data/models/token_check_model.dart';
 
 abstract class AuthRemoteDataSource {
-  Future<TokenCheckModel> tokenCheck(String jwtToken);
+  Future<TokenCheckModel> tokenCheck();
 }
 
 class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
-  final http.Client client;
+  final ApiService api = getIt<ApiService>();
 
-  AuthRemoteDataSourceImpl({required this.client});
+  AuthRemoteDataSourceImpl();
 
   @override
-  Future<TokenCheckModel> tokenCheck(String jwtToken) async {
-    final url = Uri.parse('https://bc7f-104-253-187-142.ngrok-free.app/user/tokencheck');
-    final response = await client.post(
-      url,
-      headers: {
-        'Authorization': jwtToken,
-        'Content-Type': 'application/json',
-      },
+  Future<TokenCheckModel> tokenCheck() async {
+    //TODO Обратно поменять на гет запрос, а то нгрок хуета какая-то
+    return api.post<TokenCheckModel>(
+      '/auth/tokencheck',
+      fromJson: (json) => TokenCheckModel.fromJson(json),
     );
-    if (response.statusCode == 200) {
-      final jsonData = json.decode(response.body);
-      return TokenCheckModel.fromJson(jsonData);
-    } else {
-      // Обработка ошибки: можно выбросить исключение или вернуть модель с ошибкой
-      throw Exception('Ошибка запроса: ${response.statusCode}');
-    }
   }
 }
 import 'package:promts_application_1/features/auth/data/datasources/auth_remote_data_source.dart';
@@ -72,8 +337,8 @@ class AuthRepositoryImpl implements AuthRepository {
   AuthRepositoryImpl({required this.remoteDataSource});
 
   @override
-  Future<TokenCheckEntity> checkToken(String jwtToken) async {
-    final tokenCheckModel = await remoteDataSource.tokenCheck(jwtToken);
+  Future<TokenCheckEntity> checkToken() async {
+    final tokenCheckModel = await remoteDataSource.tokenCheck();
     return tokenCheckModel;
   }
 }
@@ -87,7 +352,6 @@ class TokenCheckModel extends TokenCheckEntity {
   });
 
   factory TokenCheckModel.fromJson(Map<String, dynamic> json) {
-    // Если ответ успешный – в JSON есть поле success
     if (json.containsKey('success')) {
       return TokenCheckModel(
         success: json['success'] as bool,
@@ -116,19 +380,7 @@ class TokenCheckEntity {
 import 'package:promts_application_1/features/auth/domain/entities/token_check_entity.dart';
 
 abstract class AuthRepository {
-  Future<TokenCheckEntity> checkToken(String jwtToken);
-}
-import 'package:promts_application_1/features/auth/domain/entities/token_check_entity.dart';
-import 'package:promts_application_1/features/auth/domain/repositories/auth_repository.dart';
-
-class CheckTokenUseCase {
-  final AuthRepository repository;
-
-  CheckTokenUseCase({required this.repository});
-
-  Future<TokenCheckEntity> call(String jwtToken) async {
-    return await repository.checkToken(jwtToken);
-  }
+  Future<TokenCheckEntity> checkToken();
 }
 import 'package:flutter/material.dart';
 
@@ -142,111 +394,43 @@ class LoginPageScreen extends StatefulWidget {
 class _LoginPageScreenState extends State<LoginPageScreen> {
   @override
   Widget build(BuildContext context) {
-    return const Placeholder();
+    return const Text(
+      'ПОШЕЛ и ВЫПОЛНИЛ ЛОГИН СТРАНИЦА ЛОГИНА', 
+      style: TextStyle(fontSize: 24),
+    );
   }
 }
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:promts_application_1/features/auth/data/datasources/auth_remote_data_source.dart';
-import 'package:promts_application_1/features/auth/data/implimintations/auth_repository_impl.dart';
-import 'package:promts_application_1/features/auth/domain/usecases/check_token_use_case.dart';
-import 'package:promts_application_1/features/auth/view/cubits/auth_cubit.dart';
-import 'package:promts_application_1/features/auth/view/cubits/auth_state.dart';
+import 'package:promts_application_1/core/cubits/data_cubit.dart';
+import 'package:promts_application_1/features/auth/cubits/auth_cubit.dart';
+import 'package:promts_application_1/features/auth/domain/entities/token_check_entity.dart';
 import 'package:promts_application_1/features/auth/view/login_page_screen.dart';
 import 'package:promts_application_1/features/main/view/widgets/widget_main_screen.dart';
-import 'package:http/http.dart' as http;
 
 
-class SplashScreen extends StatefulWidget {
-  final String jwtToken;
-  const SplashScreen({super.key, required this.jwtToken});
-
-  @override
-  State<SplashScreen> createState() => _SplashScreenState();
-}
-
-class _SplashScreenState extends State<SplashScreen> {
-  late AuthCubit authCubit;
-
-  @override
-  void initState() {
-    super.initState();
-
-    // Инициализация зависимостей (можно вынести в DI-контейнер)
-    final client = http.Client();
-    final remoteDataSource = AuthRemoteDataSourceImpl(client: client);
-    final repository = AuthRepositoryImpl(remoteDataSource: remoteDataSource);
-    final useCase = CheckTokenUseCase(repository: repository);
-    authCubit = AuthCubit(checkTokenUseCase: useCase);
-
-    // Запуск проверки токена
-    authCubit.checkToken(widget.jwtToken);
-  }
+class SplashScreen extends StatelessWidget {
+  const SplashScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return BlocListener<AuthCubit, AuthState>(
-      bloc: authCubit,
+    return BlocListener<AuthCubit, DataState<TokenCheckEntity>>(
       listener: (context, state) {
-        if (state is AuthSuccess) {
-          // Если токен валидный, переходим на главный экран
+        if (state is DataLoaded<TokenCheckEntity>) {
           Navigator.of(context).pushReplacement(
             MaterialPageRoute(builder: (_) => const WidgetMainScreen()),
           );
-        } else if (state is AuthFailure) {
-          // Если токен невалидный или произошла ошибка, переходим на экран логина
+        } else if (state is DataError<TokenCheckEntity>) {
           Navigator.of(context).pushReplacement(
             MaterialPageRoute(builder: (_) => const LoginPageScreen()),
           );
         }
       },
       child: const Scaffold(
-        body: Center(
-          child: CircularProgressIndicator(),
-        ),
+        body: Center(child: CircularProgressIndicator()),
       ),
     );
   }
-}
-// ignore: depend_on_referenced_packages
-import 'package:bloc/bloc.dart';
-import 'package:promts_application_1/features/auth/domain/usecases/check_token_use_case.dart';
-import 'auth_state.dart';
-
-class AuthCubit extends Cubit<AuthState> {
-  final CheckTokenUseCase checkTokenUseCase;
-
-  AuthCubit({required this.checkTokenUseCase}) : super(AuthInitial());
-
-  Future<void> checkToken(String jwtToken) async {
-    emit(AuthLoading());
-    try {
-      final result = await checkTokenUseCase(jwtToken);
-      if (result.success) {
-        emit(AuthSuccess(result.message));
-      } else {
-        emit(AuthFailure(result.error ?? 'Ошибка авторизации'));
-      }
-    } catch (e) {
-      emit(AuthFailure(e.toString()));
-    }
-  }
-}
-// auth_state.dart
-abstract class AuthState {}
-
-class AuthInitial extends AuthState {}
-
-class AuthLoading extends AuthState {}
-
-class AuthSuccess extends AuthState {
-  final String message;
-  AuthSuccess(this.message);
-}
-
-class AuthFailure extends AuthState {
-  final String error;
-  AuthFailure(this.error);
 }
 import 'package:promts_application_1/features/chat/domain/entities/chat_entity.dart';
 
@@ -1552,6 +1736,13 @@ class _WidgetCreateChatBotsState extends State<WidgetCreateChatBots> {
   }
 }
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:promts_application_1/core/cubits/data_cubit.dart';
+import 'package:promts_application_1/features/neuro/cubits/neuro_cubit.dart';
+import 'package:promts_application_1/features/neuro/data/models/neuro_model.dart';
+import 'package:promts_application_1/features/neuro/domain/entities/neuro_entity.dart';
+import 'package:promts_application_1/features/user/cubit/user_cubit.dart';
+import 'package:promts_application_1/features/user/domain/entities/user_entity.dart';
 import 'package:promts_application_1/features/user/view/widgets/widget_user_settings.dart';
 import '../../../chatbot/view/widgets/widget_chat_bots.dart';
 
@@ -1602,32 +1793,90 @@ class WidgetAppBar extends StatelessWidget implements PreferredSizeWidget {
             onPressed: () {
               showDialog(
                 context: context,
-                builder: (_) => WidgetUserSettings(
-                  email: "BoberKurwa@rambler.ru",
-                  userId: 167491164,
-                  balance: 191.61,
-                  memoryEnabled: true,
-                  aiCanUpdateMemory: true,
-                  memory: "Имя пользователя Максим, из Перми (и т.д.)",
-                  selectedModel: "DeepSeek V3",
-                  availableModels: const [
-                    "DeepSeek V3",
-                    "DeepSeek R1",
-                    "YandexGPT 5 Pro",
-                    "YandexGPT 5 Lite",
-                    "ChatGPT 4o mini",
-                    "ChatGPT 4o",
-                    "ChatGPT o1",
-                    "Qwen-Max",
-                    "Qwen-Turbo",
-                  ],
-                  onSave: (updatedData) {
-                    
+                builder: (_) => BlocBuilder<UserCubit, DataState<UserEntity>>(
+                  builder: (context, state) {
+                    if (state is DataLoading<UserEntity>) {
+                      // Показываем диалог с индикатором
+                      return const AlertDialog(
+                        title: Text("Загрузка профиля"),
+                        content: SizedBox(
+                          height: 100,
+                          child: Center(child: CircularProgressIndicator()),
+                        ),
+                      );
+                    }
+                    if (state is DataError<UserEntity>) {
+                      // Показываем ошибку с кнопкой закрыть
+                      return AlertDialog(
+                        title: const Text("Ошибка"),
+                        content: Text(state.message),
+                        actions: [
+                          TextButton(
+                            onPressed: () => Navigator.of(context).pop(),
+                            child: const Text("Закрыть"),
+                          ),
+                        ],
+                      );
+                    }
+                    if (state is DataLoaded<UserEntity>) {
+                      final user = state.data;
+                      return BlocBuilder<NeuroCubit,
+                          DataState<List<NeuroEntity>>>(
+                        builder: (context, neuroState) {
+                          if (neuroState is DataLoading<List<NeuroEntity>>) {
+                            return const AlertDialog(
+                              title: Text("Загрузка нейросетей"),
+                              content: SizedBox(
+                                height: 100,
+                                child:
+                                    Center(child: CircularProgressIndicator()),
+                              ),
+                            );
+                          }
+                          if (neuroState is DataError<List<NeuroEntity>>) {
+                            return AlertDialog(
+                              title: const Text("Ошибка"),
+                              content: Text(neuroState.message),
+                              actions: [
+                                TextButton(
+                                  onPressed: () => Navigator.of(context).pop(),
+                                  child: const Text("Закрыть"),
+                                ),
+                              ],
+                            );
+                          }
+                          if (neuroState is DataLoaded<List<NeuroEntity>>) {
+                            final List<NeuroModel> neuroList = neuroState.data.cast<NeuroModel>();
+
+                            final models =
+                                neuroList.map((e) => e.name).toList();
+                            final current = neuroList
+                                .firstWhere(
+                                    (e) => e.id == user.standartModelUrild,
+                                    orElse: () => neuroList.first)
+                                .name;
+
+                            return WidgetUserSettings(
+                              userEntity: user,
+                              selectedModel: current,
+                              availableModels: models,
+                              onSave: (updatedData) {
+                                Navigator.of(context).pop();
+                                // …
+                              },
+                            );
+                          }
+                          return const SizedBox.shrink();
+                        },
+                      );
+                    }
+                    return const SizedBox.shrink();
                   },
                 ),
               );
             },
           ),
+
           // Кнопка открытия виджета чат-ботов
           IconButton(
             icon: const Icon(Icons.android),
@@ -1651,6 +1900,8 @@ class WidgetAppBar extends StatelessWidget implements PreferredSizeWidget {
   }
 }
 import 'package:flutter/material.dart';
+import 'package:promts_application_1/core/config/config.dart';
+import 'package:promts_application_1/di/locator.dart';
 import 'widget_app_bar.dart';
 import 'package:promts_application_1/features/chat/view/widgets/widget_chats.dart';
 import 'package:promts_application_1/features/neuro/view/widget_neuro_button.dart';
@@ -1667,6 +1918,7 @@ class _WidgetMainScreenState extends State<WidgetMainScreen> {
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
 
   bool _showChatPage = false;
+  final appConfig = getIt<AppConfig>();
   final TextEditingController _messageController = TextEditingController();
 
   @override
@@ -1700,35 +1952,35 @@ class _WidgetMainScreenState extends State<WidgetMainScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-        key: _scaffoldKey,
-        drawer: SizedBox(
-          width: 350,
-          child: Drawer(
-            child: WidgetChats(
-              onChatSelected: _openChat,
-            ),
+      key: _scaffoldKey,
+      drawer: SizedBox(
+        width: 350,
+        child: Drawer(
+          child: WidgetChats(
+            onChatSelected: _openChat,
           ),
         ),
-        appBar: WidgetAppBar(
-          onMenuPressed: () {
-            _scaffoldKey.currentState?.openDrawer();
-          },
-          onPromtsPressed: () {
-            _closeChat();
-          },
-        ),
-        body: Column(
-          children: [
-            const Padding(
-              padding: EdgeInsets.all(16.0),
-              child: WidgetNeuroButton(),
-            ),
-            Expanded(
-              child:
-                  _showChatPage ? const WidgetChatPage() : _buildMainContent(),
-            ),
-          ],
-        ));
+      ),
+      appBar: WidgetAppBar(
+        onMenuPressed: () {
+          _scaffoldKey.currentState?.openDrawer();
+        },
+        onPromtsPressed: () {
+          _closeChat();
+        },
+      ),
+      body: Column(
+        children: [
+          const Padding(
+            padding: EdgeInsets.all(16.0),
+            child: WidgetNeuroButton(),
+          ),
+          Expanded(
+            child: _showChatPage ? const WidgetChatPage() : _buildMainContent(),
+          ),
+        ],
+      ),
+    );
   }
 
   Widget _buildMainContent() {
@@ -1787,8 +2039,6 @@ class _WidgetMainScreenState extends State<WidgetMainScreen> {
 import 'package:flutter/material.dart';
 
 class WidgetSnackBar {
-  /// Показывает SnackBar с текстом ошибки [errorMessage].
-  /// Цвет фона — красный, длительность — 3 секунды.
   static void showError(BuildContext context, String errorMessage) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -1820,42 +2070,111 @@ class MessageEntity {
     required this.dateCreate,
   });
 }
+// ignore: depend_on_referenced_packages
+import 'package:promts_application_1/core/cubits/data_cubit.dart';
+import 'package:promts_application_1/features/neuro/domain/entities/neuro_entity.dart';
+import 'package:promts_application_1/features/neuro/domain/repositories/neuro_repository.dart';
+
+class NeuroCubit extends DataCubit<List<NeuroEntity>> {
+  final NeuroRepository repository;
+  NeuroCubit({ required this.repository }) : super(){
+    fetch();
+  }
+
+  void fetch() => load(() => repository.fetchNeuroData());
+}
+
+import 'package:promts_application_1/core/service/network_service.dart';
+import 'package:promts_application_1/di/locator.dart';
+import 'package:promts_application_1/features/neuro/data/models/neuro_model.dart';
+
+abstract class NeuroRemoteDataSource {
+  Future<List<NeuroModel>> getNeuroModelList();
+}
+
+class NeuroRemoteDataSourceImpl implements NeuroRemoteDataSource {
+  final ApiService api = getIt<ApiService>();
+
+  NeuroRemoteDataSourceImpl();
+
+  @override
+  Future<List<NeuroModel>> getNeuroModelList() async {
+    //TODO Обратно поменять на гет запрос, а то нгрок хуета какая-то
+    return api.postList<NeuroModel>(
+      '/neuro',
+      fromJsonItem: (json) => NeuroModel.fromJson(json),
+    );
+  }
+}
+import 'package:promts_application_1/features/neuro/data/datasources/neuro_datasource.dart';
+import 'package:promts_application_1/features/neuro/domain/entities/neuro_entity.dart';
+import 'package:promts_application_1/features/neuro/domain/repositories/neuro_repository.dart';
+
+class NeuroRepositoryImpl implements NeuroRepository {
+  final NeuroRemoteDataSource remoteDataSource;
+
+  NeuroRepositoryImpl({required this.remoteDataSource});
+
+  @override
+  Future<List<NeuroEntity>> fetchNeuroData() async {
+    return await remoteDataSource.getNeuroModelList();
+  }
+}
 import 'package:promts_application_1/features/neuro/domain/entities/neuro_entity.dart';
 
-class NeuralNetworkModel extends NeuralNetworkEntity{
-  NeuralNetworkModel({
+class NeuroModel extends NeuroEntity {
+  NeuroModel({
     required super.id,
     required super.name,
     required super.systemName,
     required super.desc,
   });
 
-  factory NeuralNetworkModel.fromJson(Map<String, dynamic> json) {
-    return NeuralNetworkModel(
-      id: json['id'] as int,
-      name: json['name'] as String? ?? 'Unnamed model',
-      systemName: json['systemName'] as String? ?? 'Unnamed model',
-      desc: json['desc'] as String? ?? '',
+  factory NeuroModel.fromJson(Map<String, dynamic> json) {
+    return NeuroModel(
+      id: json['id'],
+      name: json['name'],
+      systemName: json['systemName'],
+      desc: json['desc'],
     );
   }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'name': name,
+      'systemName': systemName,
+      'desc': desc,
+    };
+  }
 }
-class NeuralNetworkEntity {
+class NeuroEntity {
   final int id;
   final String name;
   final String systemName;
   final String desc;
 
-  NeuralNetworkEntity({
+  NeuroEntity({
     required this.id,
     required this.name,
     required this.systemName,
     required this.desc,
   });
 }
+import 'package:promts_application_1/features/neuro/domain/entities/neuro_entity.dart';
+
+abstract class NeuroRepository {
+  Future<List<NeuroEntity>> fetchNeuroData();
+}
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:promts_application_1/core/cubits/data_cubit.dart';
+import 'package:promts_application_1/features/neuro/cubits/neuro_cubit.dart';
 import 'package:promts_application_1/features/chat/view/widgets/widget_chat_create_settings.dart';
-/// Виджет выбора нейросети (DropdownButton) + кнопка настроек чата.
-/// Максимальная ширина выпадающего списка ограничена 375 px.
+import 'package:promts_application_1/features/neuro/domain/entities/neuro_entity.dart';
+import 'package:promts_application_1/features/user/cubit/user_cubit.dart';
+import 'package:promts_application_1/features/user/domain/entities/user_entity.dart';
+
 class WidgetNeuroButton extends StatefulWidget {
   const WidgetNeuroButton({super.key});
 
@@ -1864,134 +2183,129 @@ class WidgetNeuroButton extends StatefulWidget {
 }
 
 class _WidgetNeuroButtonState extends State<WidgetNeuroButton> {
-  // По умолчанию выбранная нейросеть
-  String _selectedNetwork = "DeepSeek V3";
+  String? _selectedNetwork;
+  bool changedNeuro = false;
 
-  // Список доступных нейросетей с описаниями
-  final List<Map<String, String>> _networks = [
-    {
-      'name': 'DeepSeek V3',
-      'desc': 'Мощная модель для генерации текста.',
-    },
-    {
-      'name': 'DeepSeek R1',
-      'desc': 'Улучшенная модель DeepSeek.',
-    },
-    {
-      'name': 'YandexGPT 5 pro',
-      'desc': 'Самая продвинутая русская модель.',
-    },
-    {
-      'name': 'YandexGPT 5 Lite',
-      'desc': 'Упрощённая версия YandexGPT 5.',
-    },
-    {
-      'name': 'ChatGPT 4o mini',
-      'desc': 'Лёгкая версия ChatGPT 4o.',
-    },
-    {
-      'name': 'ChatGPT 4o',
-      'desc': 'Полноценная версия ChatGPT 4o.',
-    },
-    {
-      'name': 'ChatGPT o1',
-      'desc': 'Экспериментальная модель ChatGPT.',
-    },
-    {
-      'name': 'Qwen-Max',
-      'desc': 'Расширенная версия Qwen.',
-    },
-    {
-      'name': 'Qwen-Turbo',
-      'desc': 'Ускоренная версия Qwen.',
-    },
-  ];
-
-  // Обрабатываем выбор новой нейросети
-  void _onNetworkChanged(String newNetwork) {
-    setState(() {
-      _selectedNetwork = newNetwork;
-    });
+  @override
+  void initState() {
+    super.initState();
+    // Один раз запрашиваем оба списка
+    context.read<NeuroCubit>().fetch();
+    context.read<UserCubit>().fetch();
   }
 
-  // Открываем окно настроек по центру экрана (пример с AlertDialog)
-void _openSettingsDialog() {
-  showDialog(
-    context: context,
-    builder: (_) => WidgetChatCreateSettings(
-      chatId: 54719041,
-      temperature: 1.0,
-      contextChat: "Описание...",
-      useMemory: true,
-      updateMemory: false,
-      onSave: (updatedData) {
-        
-      },
-    ),
-  );
-}
-
+  // Открытие диалога настроек чата
+  void _openSettingsDialog() {
+    showDialog(
+      context: context,
+      builder: (_) => WidgetChatCreateSettings(
+        chatId: 54719041,
+        temperature: 1.0,
+        contextChat: "Описание...",
+        useMemory: true,
+        updateMemory: false,
+        onSave: (updatedData) {
+          // Обработка сохранения настроек
+        },
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
-    // Проверяем, является ли устройство "очень узким" (для уменьшения шрифта описания, при желании)
     final isSmallWidth = MediaQuery.of(context).size.width < 350;
 
-    return Row(
-      children: [
-        // Flexible, чтобы не «выталкивать» другие элементы
-        Flexible(
-          // ConstrainedBox ограничивает ширину в 375 пикселей максимум
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 375),
-            child: DropdownButtonHideUnderline(
-              child: DropdownButton<String>(
-                isExpanded: true, // Растягиваем до доступной ширины (но не более 375)
-                value: _selectedNetwork,
-                items: _networks.map((net) {
-                  return DropdownMenuItem<String>(
-                    value: net['name'],
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        // Название нейросети
-                        Text(
-                          net['name'] ?? '',
-                          style: const TextStyle(fontWeight: FontWeight.bold),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        // Описание нейросети (ограничиваем 2 строками)
-                        if (net['desc'] != null && net['desc']!.isNotEmpty)
-                          Text(
-                            net['desc']!,
-                            style: TextStyle(
-                              fontSize: isSmallWidth ? 10 : 12,
-                              color: Colors.grey,
-                            ),
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                      ],
-                    ),
-                  );
-                }).toList(),
-                onChanged: (value) {
-                  if (value != null) {
-                    _onNetworkChanged(value);
+    return BlocBuilder<NeuroCubit, DataState<List<NeuroEntity>>>(
+      builder: (context, neuroState) {
+        if (neuroState is DataLoading<List<NeuroEntity>>) {
+          return const Center(child: CircularProgressIndicator());
+        } else if (neuroState is DataLoaded<List<NeuroEntity>>) {
+          final neuroList = neuroState.data;
+          if (neuroList.isEmpty) {
+            return const Text('Список нейросетей пуст');
+          }
+          return BlocBuilder<UserCubit, DataState<UserEntity>>(
+              builder: (context, userState) {
+            if (userState is DataLoading<UserEntity>) {
+              return const Center(child: CircularProgressIndicator());
+            }
+            if (userState is DataError<UserEntity>) {
+              return const Text('Ошибка в загрузке пользователя');
+            }
+            if (userState is DataLoaded<UserEntity>) {
+              for (var e in neuroState.data) {
+                if (!changedNeuro){
+                  if (e.id == userState.data.standartModelUrild) {
+                    _selectedNetwork = e.name;
                   }
-                },
-              ),
-            ),
-          ),
-        ),
-        const SizedBox(width: 10),
-        // Кнопка настроек (иконка шестерёнка)
-        IconButton(
-          icon: const Icon(Icons.settings),
-          onPressed: _openSettingsDialog,
-        ),
-      ],
+                }
+              }
+              return Row(
+                children: [
+                  Flexible(
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: 375),
+                      child: DropdownButtonHideUnderline(
+                        child: DropdownButton<String>(
+                          isExpanded: true,
+                          value: _selectedNetwork,
+                          items: neuroList.map((neuro) {
+                            return DropdownMenuItem<String>(
+                              value: neuro.name,
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  // Название нейросети
+                                  Text(
+                                    neuro.name,
+                                    style: const TextStyle(
+                                        fontWeight: FontWeight.bold),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                  // Описание (если есть)
+                                  if (neuro.desc.isNotEmpty)
+                                    Text(
+                                      neuro.desc,
+                                      style: TextStyle(
+                                        fontSize: isSmallWidth ? 10 : 12,
+                                        color: Colors.grey,
+                                      ),
+                                      maxLines: 2,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                ],
+                              ),
+                            );
+                          }).toList(),
+                          onChanged: (value) {
+                            if (value != null) {
+                              setState(() {
+                                changedNeuro = true;
+                                _selectedNetwork = value;
+                              });
+                            }
+                          },
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  // Кнопка настроек
+                  IconButton(
+                    icon: const Icon(Icons.settings),
+                    onPressed: _openSettingsDialog,
+                  ),
+                ],
+              );
+            }
+            return Container();
+          });
+        } else if (neuroState is DataError<List<NeuroEntity>>) {
+          return Center(child: Text('Ошибка: ${neuroState.message}'));
+        }
+        return Container();
+      },
     );
   }
 }
@@ -2192,10 +2506,60 @@ class _WidgetNeuroChatSettingState extends State<WidgetNeuroChatSetting> {
     );
   }
 }
-import '../../domain/entities/user_entity.dart';
+// ignore: depend_on_referenced_packages
+import 'package:promts_application_1/core/cubits/data_cubit.dart';
+import 'package:promts_application_1/features/user/domain/repositories/user_repository.dart';
+import '../domain/entities/user_entity.dart';
+
+class UserCubit extends DataCubit<UserEntity> {
+  final UserRepository repository;
+  UserCubit({required this.repository}) : super(){
+    fetch();
+  }
+
+  void fetch() => load(() => repository.getUser());
+}
+import 'package:promts_application_1/core/service/network_service.dart';
+import 'package:promts_application_1/di/locator.dart';
+import 'package:promts_application_1/features/user/data/models/user_model.dart';
+
+abstract class UserRemoteDataSource {
+  Future<UserModel> getUserModel();
+}
+
+class UserRemoteDataSourceImpl implements UserRemoteDataSource{
+  final ApiService api = getIt<ApiService>();
+
+  UserRemoteDataSourceImpl();
+
+  @override
+  Future<UserModel> getUserModel() async {
+    //TODO Обратно поменять на гет запрос, а то нгрок хуета какая-то
+    return api.post<UserModel>(
+      '/user',
+      fromJson: (json) => UserModel.fromJson(json),
+    );
+  }
+}
+import 'package:promts_application_1/features/user/data/datasources/user_data_source.dart';
+import 'package:promts_application_1/features/user/domain/entities/user_entity.dart';
+import 'package:promts_application_1/features/user/domain/repositories/user_repository.dart';
+
+class UserRepositoryImpl implements UserRepository {
+  final UserRemoteDataSource remoteDataSource;
+
+  UserRepositoryImpl({required this.remoteDataSource});
+
+  @override
+  Future<UserEntity> getUser() async {
+    final res = await remoteDataSource.getUserModel();
+    return res;
+  }
+}
+import 'package:promts_application_1/features/user/domain/entities/user_entity.dart';
 
 class UserModel extends UserEntity {
-  const UserModel({
+  UserModel({
     required super.id,
     required super.email,
     required super.role,
@@ -2203,10 +2567,9 @@ class UserModel extends UserEntity {
     required super.memory,
     required super.memoryEnabled,
     required super.aiCanUpdateMemory,
-    required super.standardModelUriId
+    required super.standartModelUrild,
   });
 
-  // Парсим JSON из поля "user" ответа
   factory UserModel.fromJson(Map<String, dynamic> json) {
     return UserModel(
       id: json['id'] as int,
@@ -2214,10 +2577,25 @@ class UserModel extends UserEntity {
       role: json['role'] as String,
       money: (json['money'] as num).toDouble(),
       memory: json['memory'] as String? ?? '',
-      memoryEnabled: json['memoryEnabled'] as bool? ?? true,
-      aiCanUpdateMemory: json['aiCanUpdateMemory'] as bool? ?? true,
-      standardModelUriId: json['standardModelUriId'] as int
+      // безопасное чтение булевых полей
+      memoryEnabled: json['memoryEnabled'] as bool? ?? false,
+      aiCanUpdateMemory: json['aiCanUpdateMemory'] as bool? ?? false,
+      // ключ в JSON называется standardModelUriId
+      standartModelUrild: json['standardModelUriId'] as int? ?? 0,
     );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'email': email,
+      'role': role,
+      'money': money,
+      'memory': memory,
+      'memoryEnabled': memoryEnabled,
+      'aiCanUpdateMemory': aiCanUpdateMemory,
+      'standardModelUriId': standartModelUrild,
+    };
   }
 }
 class UserEntity {
@@ -2228,9 +2606,9 @@ class UserEntity {
   final String memory;
   final bool memoryEnabled;
   final bool aiCanUpdateMemory;
-  final int standardModelUriId;
+  final int standartModelUrild;
 
-  const UserEntity({
+  UserEntity({
     required this.id,
     required this.email,
     required this.role,
@@ -2238,30 +2616,26 @@ class UserEntity {
     required this.memory,
     required this.memoryEnabled,
     required this.aiCanUpdateMemory,
-    required this.standardModelUriId,
+    required this.standartModelUrild,
   });
 }
+import '../entities/user_entity.dart';
+
+abstract class UserRepository {
+  Future<UserEntity> getUser();
+}
 import 'package:flutter/material.dart';
+import 'package:promts_application_1/features/user/domain/entities/user_entity.dart';
 
 class WidgetUserSettings extends StatefulWidget {
-  final String email;              
-  final int userId;                
-  final double balance;            
-  final bool memoryEnabled;        
-  final bool aiCanUpdateMemory;    
-  final String memory;             
-  final String selectedModel;      
-  final List<String> availableModels; 
+  final UserEntity userEntity;
+  final String selectedModel;
+  final List<String> availableModels;
   final ValueChanged<Map<String, dynamic>> onSave;
 
   const WidgetUserSettings({
     super.key,
-    required this.email,
-    required this.userId,
-    required this.balance,
-    required this.memoryEnabled,
-    required this.aiCanUpdateMemory,
-    required this.memory,
+    required this.userEntity,
     required this.selectedModel,
     required this.availableModels,
     required this.onSave,
@@ -2281,11 +2655,11 @@ class _WidgetUserSettingsState extends State<WidgetUserSettings> {
   @override
   void initState() {
     super.initState();
-    _memoryController = TextEditingController(text: widget.memory);
-    _memoryEnabled = widget.memoryEnabled;
-    _aiCanUpdateMemory = widget.aiCanUpdateMemory;
+    _memoryController = TextEditingController(text: widget.userEntity.memory);
+    _memoryEnabled = widget.userEntity.memoryEnabled;
+    _aiCanUpdateMemory = widget.userEntity.aiCanUpdateMemory;
     _selectedModel = widget.selectedModel;
-    _balance = widget.balance;
+    _balance = widget.userEntity.money;
   }
 
   @override
@@ -2303,7 +2677,6 @@ class _WidgetUserSettingsState extends State<WidgetUserSettings> {
       'balance': _balance,
     };
     widget.onSave(updatedData);
-    Navigator.of(context).pop();
   }
 
   @override
@@ -2311,7 +2684,7 @@ class _WidgetUserSettingsState extends State<WidgetUserSettings> {
     return AlertDialog(
       title: const Text("Настройки пользователя"),
       content: SizedBox(
-        width: 400, 
+        width: 400,
         height: 400,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -2321,7 +2694,7 @@ class _WidgetUserSettingsState extends State<WidgetUserSettings> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 const Text("Эл. почта:"),
-                Flexible(child: Text(widget.email)),
+                Flexible(child: Text(widget.userEntity.email)),
               ],
             ),
             const SizedBox(height: 8),
@@ -2331,7 +2704,7 @@ class _WidgetUserSettingsState extends State<WidgetUserSettings> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 const Text("ID:"),
-                Text(widget.userId.toString()),
+                Text(widget.userEntity.id.toString()),
               ],
             ),
             const SizedBox(height: 8),
@@ -2377,7 +2750,8 @@ class _WidgetUserSettingsState extends State<WidgetUserSettings> {
             // 5) Могут ли чаты изменять память?
             Row(
               children: [
-                const Expanded(child: Text("Могут ли чаты изменять память пользователя?")),
+                const Expanded(
+                    child: Text("Могут ли чаты изменять память пользователя?")),
                 Switch(
                   value: _aiCanUpdateMemory,
                   onChanged: (val) {
@@ -2417,21 +2791,24 @@ class _WidgetUserSettingsState extends State<WidgetUserSettings> {
 
             // 7) Поле "Память" - чтобы окно не растягивалось, используем Expanded + внутренний скролл
             Expanded(
-            child: TextField(
-              controller: _memoryController,
-              decoration: const InputDecoration(
-                labelText: "Память пользователя",
-                border: OutlineInputBorder(),
+              child: TextField(
+                controller: _memoryController,
+                decoration: const InputDecoration(
+                  labelText: "Память пользователя",
+                  border: OutlineInputBorder(),
+                ),
+                keyboardType: TextInputType.multiline,
+                minLines: 3,
+                maxLines: 5,
               ),
-              keyboardType: TextInputType.multiline,
-              minLines: 3,
-              maxLines: 5,
-            ),
             ),
           ],
         ),
       ),
       actions: [
+        // TextButton(
+        //   onPressed: () => {},
+        // ),
         TextButton(
           onPressed: () => Navigator.of(context).pop(),
           child: const Text("Отмена"),

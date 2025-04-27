@@ -1,25 +1,19 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:promts_application_1/features/neuro/data/models/neuro_model.dart';
+import 'package:promts_application_1/features/user/cubit/user_cubit.dart';
+import 'package:promts_application_1/features/user/domain/entities/user_entity.dart';
 
 class WidgetUserSettings extends StatefulWidget {
-  final String email;              
-  final int userId;                
-  final double balance;            
-  final bool memoryEnabled;        
-  final bool aiCanUpdateMemory;    
-  final String memory;             
-  final String selectedModel;      
-  final List<String> availableModels; 
+  final UserEntity userEntity;
+  final int selectedModelId;
+  final List<NeuroModel> availableModels;
   final ValueChanged<Map<String, dynamic>> onSave;
 
   const WidgetUserSettings({
     super.key,
-    required this.email,
-    required this.userId,
-    required this.balance,
-    required this.memoryEnabled,
-    required this.aiCanUpdateMemory,
-    required this.memory,
-    required this.selectedModel,
+    required this.userEntity,
+    required this.selectedModelId,
     required this.availableModels,
     required this.onSave,
   });
@@ -32,17 +26,21 @@ class _WidgetUserSettingsState extends State<WidgetUserSettings> {
   late TextEditingController _memoryController;
   late bool _memoryEnabled;
   late bool _aiCanUpdateMemory;
-  late String _selectedModel;
+  late int _selectedModelId;
   late double _balance;
 
   @override
   void initState() {
     super.initState();
-    _memoryController = TextEditingController(text: widget.memory);
-    _memoryEnabled = widget.memoryEnabled;
-    _aiCanUpdateMemory = widget.aiCanUpdateMemory;
-    _selectedModel = widget.selectedModel;
-    _balance = widget.balance;
+    _initFromEntity(widget.userEntity);
+  }
+
+  void _initFromEntity(UserEntity user) {
+    _memoryController = TextEditingController(text: user.memory);
+    _memoryEnabled = user.memoryEnabled;
+    _aiCanUpdateMemory = user.aiCanUpdateMemory;
+    _selectedModelId = widget.selectedModelId;
+    _balance = user.money;
   }
 
   @override
@@ -51,25 +49,38 @@ class _WidgetUserSettingsState extends State<WidgetUserSettings> {
     super.dispose();
   }
 
-  void _handleSave() {
+  void _refreshSettings() {
+    context.read<UserCubit>().fetch();
+  }
+
+  void _handleSave() async {
     final updatedData = {
       'memory': _memoryController.text,
       'memoryEnabled': _memoryEnabled,
       'aiCanUpdateMemory': _aiCanUpdateMemory,
-      'selectedModel': _selectedModel,
-      'balance': _balance,
+      'standardModelUriId': _selectedModelId,
     };
-    widget.onSave(updatedData);
-    Navigator.of(context).pop();
+
+    context.read<UserCubit>().updateSettings(updatedData);
   }
 
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: const Text("Настройки пользователя"),
+      title: Row(
+        children: [
+          const Text("Настройки пользователя"),
+          const Spacer(),
+          IconButton(
+            tooltip: 'Обновить',
+            icon: const Icon(Icons.refresh),
+            onPressed: _refreshSettings,
+          ),
+        ],
+      ),
       content: SizedBox(
-        width: 400, 
-        height: 400,
+        width: 400,
+        height: 450,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -78,7 +89,7 @@ class _WidgetUserSettingsState extends State<WidgetUserSettings> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 const Text("Эл. почта:"),
-                Flexible(child: Text(widget.email)),
+                Flexible(child: Text(widget.userEntity.email)),
               ],
             ),
             const SizedBox(height: 8),
@@ -88,7 +99,7 @@ class _WidgetUserSettingsState extends State<WidgetUserSettings> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 const Text("ID:"),
-                Text(widget.userId.toString()),
+                Text(widget.userEntity.id.toString()),
               ],
             ),
             const SizedBox(height: 8),
@@ -134,7 +145,8 @@ class _WidgetUserSettingsState extends State<WidgetUserSettings> {
             // 5) Могут ли чаты изменять память?
             Row(
               children: [
-                const Expanded(child: Text("Могут ли чаты изменять память пользователя?")),
+                const Expanded(
+                    child: Text("Могут ли чаты изменять память пользователя?")),
                 Switch(
                   value: _aiCanUpdateMemory,
                   onChanged: (val) {
@@ -152,18 +164,19 @@ class _WidgetUserSettingsState extends State<WidgetUserSettings> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 const Text("Модель чата:"),
-                DropdownButton<String>(
-                  value: _selectedModel,
+                DropdownButton<int>(
+                  // текущее выбранное значение — это id
+                  value: _selectedModelId,
                   items: widget.availableModels.map((model) {
-                    return DropdownMenuItem<String>(
-                      value: model,
-                      child: Text(model),
+                    return DropdownMenuItem<int>(
+                      value: model.id, // id модели
+                      child: Text(model.name), // имя, которое показываем
                     );
                   }).toList(),
                   onChanged: (val) {
                     if (val != null) {
                       setState(() {
-                        _selectedModel = val;
+                        _selectedModelId = val;
                       });
                     }
                   },
@@ -174,16 +187,16 @@ class _WidgetUserSettingsState extends State<WidgetUserSettings> {
 
             // 7) Поле "Память" - чтобы окно не растягивалось, используем Expanded + внутренний скролл
             Expanded(
-            child: TextField(
-              controller: _memoryController,
-              decoration: const InputDecoration(
-                labelText: "Память пользователя",
-                border: OutlineInputBorder(),
+              child: TextField(
+                controller: _memoryController,
+                decoration: const InputDecoration(
+                  labelText: "Память пользователя",
+                  border: OutlineInputBorder(),
+                ),
+                keyboardType: TextInputType.multiline,
+                minLines: 3,
+                maxLines: 5,
               ),
-              keyboardType: TextInputType.multiline,
-              minLines: 3,
-              maxLines: 5,
-            ),
             ),
           ],
         ),

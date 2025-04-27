@@ -10,6 +10,9 @@ class LoginPageScreen extends StatefulWidget {
 class _LoginPageScreenState extends State<LoginPageScreen> {
   @override
   Widget build(BuildContext context) {
-    return const Placeholder();
+    return const Text(
+      'ПОШЕЛ и ВЫПОЛНИЛ ЛОГИН СТРАНИЦА ЛОГИНА', 
+      style: TextStyle(fontSize: 24),
+    );
   }
 }
