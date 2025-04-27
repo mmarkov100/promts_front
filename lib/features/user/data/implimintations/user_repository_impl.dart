@@ -8,7 +8,14 @@ class UserRepositoryImpl implements UserRepository {
   UserRepositoryImpl({required this.remoteDataSource});
 
   @override
-  Future<UserEntity> getUser(String token) async {
-    return await remoteDataSource.getUserModel(token);
+  Future<UserEntity> getUser() async {
+    final res = await remoteDataSource.getUserModel();
+    return res;
+  }
+
+  @override
+  Future<UserEntity> updateSettings(Map<String, dynamic> body) async {
+    final model = await remoteDataSource.updateUserSettings(body);
+    return model;
   }
 }

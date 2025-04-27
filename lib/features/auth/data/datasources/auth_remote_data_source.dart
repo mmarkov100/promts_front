@@ -13,6 +13,7 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
 
   @override
   Future<TokenCheckModel> tokenCheck() async {
+    //TODO Обратно поменять на гет запрос, а то нгрок хуета какая-то
     return api.post<TokenCheckModel>(
       '/auth/tokencheck',
       fromJson: (json) => TokenCheckModel.fromJson(json),

@@ -11,18 +11,21 @@ import 'package:promts_application_1/features/neuro/data/datasources/neuro_datas
 import 'package:promts_application_1/features/neuro/data/implimintations/neuro_repository_impl.dart';
 import 'package:promts_application_1/features/neuro/domain/repositories/neuro_repository.dart';
 import 'package:http/http.dart' as http;
+import 'package:promts_application_1/features/user/cubit/user_cubit.dart';
+import 'package:promts_application_1/features/user/data/datasources/user_data_source.dart';
+import 'package:promts_application_1/features/user/data/implimintations/user_repository_impl.dart';
+import 'package:promts_application_1/features/user/domain/repositories/user_repository.dart';
 
 final getIt = GetIt.instance;
 
 void setup(int appMode, String baseUrl, String jwtToken) {
-
   getIt.registerLazySingleton(() => AppConfig(baseUrl, jwtToken));
   getIt.registerLazySingleton(() => http.Client());
 
   //NetworkService
   getIt.registerLazySingleton<ApiService>(
-  () => ApiService(),
-);
+    () => ApiService(),
+  );
 
   // Auth
   getIt.registerLazySingleton<AuthRemoteDataSource>(
@@ -32,9 +35,16 @@ void setup(int appMode, String baseUrl, String jwtToken) {
   getIt.registerFactory(() => AuthCubit(repository: getIt()));
 
   // Neuro
-  getIt.registerLazySingleton<NeuroRemoteDataSourceImpl>(
+  getIt.registerLazySingleton<NeuroRemoteDataSource>(
       () => NeuroRemoteDataSourceImpl());
   getIt.registerLazySingleton<NeuroRepository>(
       () => NeuroRepositoryImpl(remoteDataSource: getIt()));
   getIt.registerFactory(() => NeuroCubit(repository: getIt()));
+
+  // User
+  getIt.registerLazySingleton<UserRemoteDataSource>(
+      () => UserRemoteDataSourceImpl());
+  getIt.registerLazySingleton<UserRepository>(
+      () => UserRepositoryImpl(remoteDataSource: getIt()));
+  getIt.registerFactory(() => UserCubit(repository: getIt()));
 }

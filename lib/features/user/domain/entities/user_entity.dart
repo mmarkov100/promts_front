@@ -4,7 +4,7 @@ class UserEntity {
   final String role;
   final double money;
   final String memory;
-  final bool memoryEnable;
+  final bool memoryEnabled;
   final bool aiCanUpdateMemory;
   final int standartModelUrild;
 
@@ -14,7 +14,7 @@ class UserEntity {
     required this.role,
     required this.money,
     required this.memory,
-    required this.memoryEnable,
+    required this.memoryEnabled,
     required this.aiCanUpdateMemory,
     required this.standartModelUrild,
   });

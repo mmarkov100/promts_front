@@ -3,7 +3,7 @@ import 'package:promts_application_1/features/neuro/domain/entities/neuro_entity
 import 'package:promts_application_1/features/neuro/domain/repositories/neuro_repository.dart';
 
 class NeuroRepositoryImpl implements NeuroRepository {
-  final NeuroRemoteDataSourceImpl remoteDataSource;
+  final NeuroRemoteDataSource remoteDataSource;
 
   NeuroRepositoryImpl({required this.remoteDataSource});
 

@@ -12,6 +12,7 @@ import 'package:promts_application_1/di/locator.dart';
 import 'package:promts_application_1/features/auth/cubits/auth_cubit.dart';
 import 'package:promts_application_1/features/auth/view/splash_screen_auth.dart';
 import 'package:promts_application_1/features/neuro/cubits/neuro_cubit.dart';
+import 'package:promts_application_1/features/user/cubit/user_cubit.dart';
 
 void main() {
   
@@ -23,6 +24,7 @@ void main() {
       providers: [
         BlocProvider(create: (_) => getIt<AuthCubit>()),
         BlocProvider(create: (_) => getIt<NeuroCubit>()),
+        BlocProvider(create: (_) => getIt<UserCubit>()),
       ],
       child: const MyApp(),
     ),
@@ -95,9 +97,155 @@ abstract class DataCubit<T> extends Cubit<DataState<T>> {
     }
   }
 }
+// core/network/api_service.dart
+import 'dart:convert';
+import 'package:http/http.dart' as http;
+import 'package:promts_application_1/di/locator.dart';
+import 'package:promts_application_1/core/config/config.dart';
+
+class ApiService {
+  final http.Client _client = getIt<http.Client>();
+  final AppConfig _config = getIt<AppConfig>();
+
+  ApiService();
+
+  Map<String, String> get _headers => {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ${_config.getJwtToken()}',
+      };
+
+  Uri _makeUri(String path, [Map<String, dynamic>? query]) {
+    final base = Uri.parse(_config.getBaseUrl());
+    return base.replace(path: '${base.path}$path', queryParameters: query);
+  }
+
+  /// GET для одного объекта
+  Future<T> get<T>(
+    String path, {
+    Map<String, dynamic>? query,
+    required T Function(Map<String, dynamic>) fromJson,
+  }) async {
+    final res = await _client.get(_makeUri(path, query), headers: _headers);
+    return _decodeSingle(res, fromJson);
+  }
+
+  /// POST для одного объекта
+  Future<T> post<T>(
+    String path, {
+    Map<String, dynamic>? body,
+    Map<String, dynamic>? query,
+    required T Function(Map<String, dynamic>) fromJson,
+  }) async {
+    final res = await _client.post(
+      _makeUri(path, query),
+      headers: _headers,
+      body: body == null ? null : json.encode(body),
+    );
+    return _decodeSingle(res, fromJson);
+  }
+
+  /// PUT для одного объекта
+  Future<T> put<T>(
+    String path, {
+    Map<String, dynamic>? body,
+    Map<String, dynamic>? query,
+    required T Function(Map<String, dynamic>) fromJson,
+  }) async {
+    final res = await _client.put(
+      _makeUri(path, query),
+      headers: _headers,
+      body: body == null ? null : json.encode(body),
+    );
+    return _decodeSingle(res, fromJson);
+  }
+
+  /// DELETE для одного объекта
+  Future<T> delete<T>(
+    String path, {
+    Map<String, dynamic>? query,
+    required T Function(Map<String, dynamic>) fromJson,
+  }) async {
+    final res = await _client.delete(
+      _makeUri(path, query),
+      headers: _headers,
+    );
+    return _decodeSingle(res, fromJson);
+  }
+
+  /// DELETE без тела ответа (void)
+  Future<void> deleteVoid(
+    String path, {
+    Map<String, dynamic>? query,
+  }) async {
+    final res = await _client.delete(
+      _makeUri(path, query),
+      headers: _headers,
+    );
+    final decoded = utf8.decode(res.bodyBytes);
+    if (res.statusCode < 200 || res.statusCode >= 300) {
+      final err = json.decode(decoded) as Map<String, dynamic>;
+      throw Exception(err['message'] ?? 'Ошибка ${res.statusCode}');
+    }
+    // в случае 204 No Content — просто возвращаемся
+  }
+
+  /// GET для списка
+  Future<List<T>> getList<T>(
+    String path, {
+    Map<String, dynamic>? query,
+    required T Function(Map<String, dynamic>) fromJsonItem,
+  }) async {
+    final res = await _client.get(_makeUri(path, query), headers: _headers);
+    return _decodeList(res, fromJsonItem);
+  }
+
+  /// POST для списка
+  Future<List<T>> postList<T>(
+    String path, {
+    Map<String, dynamic>? body,
+    Map<String, dynamic>? query,
+    required T Function(Map<String, dynamic>) fromJsonItem,
+  }) async {
+    final res = await _client.post(
+      _makeUri(path, query),
+      headers: _headers,
+      body: body == null ? null : json.encode(body),
+    );
+    return _decodeList(res, fromJsonItem);
+  }
+
+  T _decodeSingle<T>(
+    http.Response res,
+    T Function(Map<String, dynamic>) fromJson,
+  ) {
+    final decodedString = utf8.decode(res.bodyBytes);
+    if (res.statusCode >= 200 && res.statusCode < 300) {
+      final Map<String, dynamic> jsonMap = json.decode(decodedString);
+      return fromJson(jsonMap);
+    }
+    final Map<String, dynamic> err = json.decode(decodedString);
+    throw Exception(err['message'] ?? 'Ошибка ${res.statusCode}');
+  }
+
+  List<T> _decodeList<T>(
+    http.Response res,
+    T Function(Map<String, dynamic>) fromJsonItem,
+  ) {
+    final decodedString = utf8.decode(res.bodyBytes);
+    if (res.statusCode >= 200 && res.statusCode < 300) {
+      final List<dynamic> jsonList = json.decode(decodedString);
+      return jsonList
+          .map((e) => fromJsonItem(e as Map<String, dynamic>))
+          .toList();
+    }
+    final Map<String, dynamic> err = json.decode(decodedString);
+    throw Exception(err['message'] ?? 'Ошибка ${res.statusCode}');
+  }
+}
 // lib/di/locator.dart
 import 'package:get_it/get_it.dart';
 import 'package:promts_application_1/core/config/config.dart';
+import 'package:promts_application_1/core/service/network_service.dart';
 import 'package:promts_application_1/features/auth/cubits/auth_cubit.dart';
 import 'package:promts_application_1/features/auth/data/datasources/auth_remote_data_source.dart';
 import 'package:promts_application_1/features/auth/data/implimintations/auth_repository_impl.dart';
@@ -107,27 +255,42 @@ import 'package:promts_application_1/features/neuro/data/datasources/neuro_datas
 import 'package:promts_application_1/features/neuro/data/implimintations/neuro_repository_impl.dart';
 import 'package:promts_application_1/features/neuro/domain/repositories/neuro_repository.dart';
 import 'package:http/http.dart' as http;
+import 'package:promts_application_1/features/user/cubit/user_cubit.dart';
+import 'package:promts_application_1/features/user/data/datasources/user_data_source.dart';
+import 'package:promts_application_1/features/user/data/implimintations/user_repository_impl.dart';
+import 'package:promts_application_1/features/user/domain/repositories/user_repository.dart';
 
 final getIt = GetIt.instance;
 
 void setup(int appMode, String baseUrl, String jwtToken) {
-
   getIt.registerLazySingleton(() => AppConfig(baseUrl, jwtToken));
   getIt.registerLazySingleton(() => http.Client());
 
+  //NetworkService
+  getIt.registerLazySingleton<ApiService>(
+    () => ApiService(),
+  );
+
   // Auth
   getIt.registerLazySingleton<AuthRemoteDataSource>(
-      () => AuthRemoteDataSourceImpl(client: getIt()));
+      () => AuthRemoteDataSourceImpl());
   getIt.registerLazySingleton<AuthRepository>(
       () => AuthRepositoryImpl(remoteDataSource: getIt()));
   getIt.registerFactory(() => AuthCubit(repository: getIt()));
 
   // Neuro
   getIt.registerLazySingleton<NeuroRemoteDataSource>(
-      () => NeuroRemoteDataSource(client: getIt()));
+      () => NeuroRemoteDataSourceImpl());
   getIt.registerLazySingleton<NeuroRepository>(
       () => NeuroRepositoryImpl(remoteDataSource: getIt()));
   getIt.registerFactory(() => NeuroCubit(repository: getIt()));
+
+  // User
+  getIt.registerLazySingleton<UserRemoteDataSource>(
+      () => UserRemoteDataSourceImpl());
+  getIt.registerLazySingleton<UserRepository>(
+      () => UserRepositoryImpl(remoteDataSource: getIt()));
+  getIt.registerFactory(() => UserCubit(repository: getIt()));
 }
 // ignore: depend_on_referenced_packages
 import 'package:promts_application_1/core/cubits/data_cubit.dart';
@@ -142,9 +305,7 @@ class AuthCubit extends DataCubit<TokenCheckEntity> {
 
   void fetch() => load(() => repository.checkToken());
 }
-import 'dart:convert';
-import 'package:http/http.dart' as http;
-import 'package:promts_application_1/core/config/config.dart';
+import 'package:promts_application_1/core/service/network_service.dart';
 import 'package:promts_application_1/di/locator.dart';
 import 'package:promts_application_1/features/auth/data/models/token_check_model.dart';
 
@@ -153,34 +314,17 @@ abstract class AuthRemoteDataSource {
 }
 
 class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
-  final http.Client client;
-  final AppConfig datasourceConfig = getIt<AppConfig>();
+  final ApiService api = getIt<ApiService>();
 
-  AuthRemoteDataSourceImpl({required this.client});
+  AuthRemoteDataSourceImpl();
 
   @override
   Future<TokenCheckModel> tokenCheck() async {
-    print("Attempting request to /auth/tokencheck");
-    final url = Uri.parse('${datasourceConfig.getBaseUrl()}/auth/tokencheck');
     //TODO Обратно поменять на гет запрос, а то нгрок хуета какая-то
-    final response = await client.post(
-      url,
-      headers: {
-        'Authorization': 'Bearer ${datasourceConfig.getJwtToken()}',
-        'Content-Type': 'application/json',
-      },
+    return api.post<TokenCheckModel>(
+      '/auth/tokencheck',
+      fromJson: (json) => TokenCheckModel.fromJson(json),
     );
-
-    final decodedBody = utf8.decode(response.bodyBytes);
-    print("Got response: ${response.statusCode}, body: $decodedBody");
-
-    if (response.statusCode == 200) {
-      final jsonData = json.decode(decodedBody);
-      return TokenCheckModel.fromJson(jsonData);
-    } else {
-      final Map<String, dynamic> errorResponse = json.decode(decodedBody);
-      throw Exception(errorResponse['message'] ?? 'Ошибка');
-    }
   }
 }
 import 'package:promts_application_1/features/auth/data/datasources/auth_remote_data_source.dart';
@@ -1592,6 +1736,13 @@ class _WidgetCreateChatBotsState extends State<WidgetCreateChatBots> {
   }
 }
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:promts_application_1/core/cubits/data_cubit.dart';
+import 'package:promts_application_1/features/neuro/cubits/neuro_cubit.dart';
+import 'package:promts_application_1/features/neuro/data/models/neuro_model.dart';
+import 'package:promts_application_1/features/neuro/domain/entities/neuro_entity.dart';
+import 'package:promts_application_1/features/user/cubit/user_cubit.dart';
+import 'package:promts_application_1/features/user/domain/entities/user_entity.dart';
 import 'package:promts_application_1/features/user/view/widgets/widget_user_settings.dart';
 import '../../../chatbot/view/widgets/widget_chat_bots.dart';
 
@@ -1642,32 +1793,90 @@ class WidgetAppBar extends StatelessWidget implements PreferredSizeWidget {
             onPressed: () {
               showDialog(
                 context: context,
-                builder: (_) => WidgetUserSettings(
-                  email: "BoberKurwa@rambler.ru",
-                  userId: 167491164,
-                  balance: 191.61,
-                  memoryEnabled: true,
-                  aiCanUpdateMemory: true,
-                  memory: "Имя пользователя Максим, из Перми (и т.д.)",
-                  selectedModel: "DeepSeek V3",
-                  availableModels: const [
-                    "DeepSeek V3",
-                    "DeepSeek R1",
-                    "YandexGPT 5 Pro",
-                    "YandexGPT 5 Lite",
-                    "ChatGPT 4o mini",
-                    "ChatGPT 4o",
-                    "ChatGPT o1",
-                    "Qwen-Max",
-                    "Qwen-Turbo",
-                  ],
-                  onSave: (updatedData) {
-                    
+                builder: (_) => BlocBuilder<UserCubit, DataState<UserEntity>>(
+                  builder: (context, state) {
+                    if (state is DataLoading<UserEntity>) {
+                      // Показываем диалог с индикатором
+                      return const AlertDialog(
+                        title: Text("Загрузка профиля"),
+                        content: SizedBox(
+                          height: 100,
+                          child: Center(child: CircularProgressIndicator()),
+                        ),
+                      );
+                    }
+                    if (state is DataError<UserEntity>) {
+                      // Показываем ошибку с кнопкой закрыть
+                      return AlertDialog(
+                        title: const Text("Ошибка"),
+                        content: Text(state.message),
+                        actions: [
+                          TextButton(
+                            onPressed: () => Navigator.of(context).pop(),
+                            child: const Text("Закрыть"),
+                          ),
+                        ],
+                      );
+                    }
+                    if (state is DataLoaded<UserEntity>) {
+                      final user = state.data;
+                      return BlocBuilder<NeuroCubit,
+                          DataState<List<NeuroEntity>>>(
+                        builder: (context, neuroState) {
+                          if (neuroState is DataLoading<List<NeuroEntity>>) {
+                            return const AlertDialog(
+                              title: Text("Загрузка нейросетей"),
+                              content: SizedBox(
+                                height: 100,
+                                child:
+                                    Center(child: CircularProgressIndicator()),
+                              ),
+                            );
+                          }
+                          if (neuroState is DataError<List<NeuroEntity>>) {
+                            return AlertDialog(
+                              title: const Text("Ошибка"),
+                              content: Text(neuroState.message),
+                              actions: [
+                                TextButton(
+                                  onPressed: () => Navigator.of(context).pop(),
+                                  child: const Text("Закрыть"),
+                                ),
+                              ],
+                            );
+                          }
+                          if (neuroState is DataLoaded<List<NeuroEntity>>) {
+                            final List<NeuroModel> neuroList = neuroState.data.cast<NeuroModel>();
+
+                            final models =
+                                neuroList.map((e) => e.name).toList();
+                            final current = neuroList
+                                .firstWhere(
+                                    (e) => e.id == user.standartModelUrild,
+                                    orElse: () => neuroList.first)
+                                .name;
+
+                            return WidgetUserSettings(
+                              userEntity: user,
+                              selectedModel: current,
+                              availableModels: models,
+                              onSave: (updatedData) {
+                                Navigator.of(context).pop();
+                                // …
+                              },
+                            );
+                          }
+                          return const SizedBox.shrink();
+                        },
+                      );
+                    }
+                    return const SizedBox.shrink();
                   },
                 ),
               );
             },
           ),
+
           // Кнопка открытия виджета чат-ботов
           IconButton(
             icon: const Icon(Icons.android),
@@ -1875,41 +2084,26 @@ class NeuroCubit extends DataCubit<List<NeuroEntity>> {
   void fetch() => load(() => repository.fetchNeuroData());
 }
 
-import 'dart:convert';
-import 'package:http/http.dart' as http;
-import 'package:promts_application_1/core/config/config.dart';
+import 'package:promts_application_1/core/service/network_service.dart';
 import 'package:promts_application_1/di/locator.dart';
 import 'package:promts_application_1/features/neuro/data/models/neuro_model.dart';
 
-class NeuroRemoteDataSource {
-  final http.Client client;
-  final AppConfig datasourceConfig = getIt<AppConfig>();
+abstract class NeuroRemoteDataSource {
+  Future<List<NeuroModel>> getNeuroModelList();
+}
 
-  NeuroRemoteDataSource({
-    required this.client,
-  });
+class NeuroRemoteDataSourceImpl implements NeuroRemoteDataSource {
+  final ApiService api = getIt<ApiService>();
 
+  NeuroRemoteDataSourceImpl();
+
+  @override
   Future<List<NeuroModel>> getNeuroModelList() async {
-    final url = Uri.parse('${datasourceConfig.getBaseUrl()}/neuro');
-    print("Attempting request to /neuro");
-    final response = await client.post(
-      url,
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer ${datasourceConfig.getJwtToken()}',
-      },
+    //TODO Обратно поменять на гет запрос, а то нгрок хуета какая-то
+    return api.postList<NeuroModel>(
+      '/neuro',
+      fromJsonItem: (json) => NeuroModel.fromJson(json),
     );
-
-    final decodedBody = utf8.decode(response.bodyBytes);
-    print("Got response: ${response.statusCode}, body: $decodedBody");
-
-    if (response.statusCode == 200) {
-      final List<dynamic> jsonList = json.decode(decodedBody);
-      return jsonList.map((json) => NeuroModel.fromJson(json)).toList();
-    } else {
-      final Map<String, dynamic> errorResponse = json.decode(decodedBody);
-      throw Exception(errorResponse['message'] ?? 'Ошибка');
-    }
   }
 }
 import 'package:promts_application_1/features/neuro/data/datasources/neuro_datasource.dart';
@@ -1978,6 +2172,8 @@ import 'package:promts_application_1/core/cubits/data_cubit.dart';
 import 'package:promts_application_1/features/neuro/cubits/neuro_cubit.dart';
 import 'package:promts_application_1/features/chat/view/widgets/widget_chat_create_settings.dart';
 import 'package:promts_application_1/features/neuro/domain/entities/neuro_entity.dart';
+import 'package:promts_application_1/features/user/cubit/user_cubit.dart';
+import 'package:promts_application_1/features/user/domain/entities/user_entity.dart';
 
 class WidgetNeuroButton extends StatefulWidget {
   const WidgetNeuroButton({super.key});
@@ -1988,6 +2184,15 @@ class WidgetNeuroButton extends StatefulWidget {
 
 class _WidgetNeuroButtonState extends State<WidgetNeuroButton> {
   String? _selectedNetwork;
+  bool changedNeuro = false;
+
+  @override
+  void initState() {
+    super.initState();
+    // Один раз запрашиваем оба списка
+    context.read<NeuroCubit>().fetch();
+    context.read<UserCubit>().fetch();
+  }
 
   // Открытие диалога настроек чата
   void _openSettingsDialog() {
@@ -2011,74 +2216,93 @@ class _WidgetNeuroButtonState extends State<WidgetNeuroButton> {
     final isSmallWidth = MediaQuery.of(context).size.width < 350;
 
     return BlocBuilder<NeuroCubit, DataState<List<NeuroEntity>>>(
-      builder: (context, state) {
-        if (state is DataLoading<List<NeuroEntity>>) {
+      builder: (context, neuroState) {
+        if (neuroState is DataLoading<List<NeuroEntity>>) {
           return const Center(child: CircularProgressIndicator());
-        } else if (state is DataLoaded<List<NeuroEntity>>) {
-          final neuroList = state.data;
+        } else if (neuroState is DataLoaded<List<NeuroEntity>>) {
+          final neuroList = neuroState.data;
           if (neuroList.isEmpty) {
             return const Text('Список нейросетей пуст');
           }
-          // Если ещё не выбрана нейросеть, выбираем первую
-          _selectedNetwork ??= neuroList.first.name;
-          return Row(
-            children: [
-              Flexible(
-                child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 375),
-                  child: DropdownButtonHideUnderline(
-                    child: DropdownButton<String>(
-                      isExpanded: true,
-                      value: _selectedNetwork,
-                      items: neuroList.map((neuro) {
-                        return DropdownMenuItem<String>(
-                          value: neuro.name,
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              // Название нейросети
-                              Text(
-                                neuro.name,
-                                style: const TextStyle(fontWeight: FontWeight.bold),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                              // Описание (если есть)
-                              if (neuro.desc.isNotEmpty)
-                                Text(
-                                  neuro.desc,
-                                  style: TextStyle(
-                                    fontSize: isSmallWidth ? 10 : 12,
-                                    color: Colors.grey,
+          return BlocBuilder<UserCubit, DataState<UserEntity>>(
+              builder: (context, userState) {
+            if (userState is DataLoading<UserEntity>) {
+              return const Center(child: CircularProgressIndicator());
+            }
+            if (userState is DataError<UserEntity>) {
+              return const Text('Ошибка в загрузке пользователя');
+            }
+            if (userState is DataLoaded<UserEntity>) {
+              for (var e in neuroState.data) {
+                if (!changedNeuro){
+                  if (e.id == userState.data.standartModelUrild) {
+                    _selectedNetwork = e.name;
+                  }
+                }
+              }
+              return Row(
+                children: [
+                  Flexible(
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: 375),
+                      child: DropdownButtonHideUnderline(
+                        child: DropdownButton<String>(
+                          isExpanded: true,
+                          value: _selectedNetwork,
+                          items: neuroList.map((neuro) {
+                            return DropdownMenuItem<String>(
+                              value: neuro.name,
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  // Название нейросети
+                                  Text(
+                                    neuro.name,
+                                    style: const TextStyle(
+                                        fontWeight: FontWeight.bold),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
                                   ),
-                                  maxLines: 2,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                            ],
-                          ),
-                        );
-                      }).toList(),
-                      onChanged: (value) {
-                        if (value != null) {
-                          setState(() {
-                            _selectedNetwork = value;
-                          });
-                        }
-                      },
+                                  // Описание (если есть)
+                                  if (neuro.desc.isNotEmpty)
+                                    Text(
+                                      neuro.desc,
+                                      style: TextStyle(
+                                        fontSize: isSmallWidth ? 10 : 12,
+                                        color: Colors.grey,
+                                      ),
+                                      maxLines: 2,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                ],
+                              ),
+                            );
+                          }).toList(),
+                          onChanged: (value) {
+                            if (value != null) {
+                              setState(() {
+                                changedNeuro = true;
+                                _selectedNetwork = value;
+                              });
+                            }
+                          },
+                        ),
+                      ),
                     ),
                   ),
-                ),
-              ),
-              const SizedBox(width: 10),
-              // Кнопка настроек
-              IconButton(
-                icon: const Icon(Icons.settings),
-                onPressed: _openSettingsDialog,
-              ),
-            ],
-          );
-        } else if (state is DataError<List<NeuroEntity>>) {
-          return Center(child: Text('Ошибка: ${state.message}'));
+                  const SizedBox(width: 10),
+                  // Кнопка настроек
+                  IconButton(
+                    icon: const Icon(Icons.settings),
+                    onPressed: _openSettingsDialog,
+                  ),
+                ],
+              );
+            }
+            return Container();
+          });
+        } else if (neuroState is DataError<List<NeuroEntity>>) {
+          return Center(child: Text('Ошибка: ${neuroState.message}'));
         }
         return Container();
       },
@@ -2282,35 +2506,39 @@ class _WidgetNeuroChatSettingState extends State<WidgetNeuroChatSetting> {
     );
   }
 }
-import 'dart:convert';
-import 'package:http/http.dart' as http;
-import 'package:promts_application_1/core/config/config.dart';
+// ignore: depend_on_referenced_packages
+import 'package:promts_application_1/core/cubits/data_cubit.dart';
+import 'package:promts_application_1/features/user/domain/repositories/user_repository.dart';
+import '../domain/entities/user_entity.dart';
+
+class UserCubit extends DataCubit<UserEntity> {
+  final UserRepository repository;
+  UserCubit({required this.repository}) : super(){
+    fetch();
+  }
+
+  void fetch() => load(() => repository.getUser());
+}
+import 'package:promts_application_1/core/service/network_service.dart';
 import 'package:promts_application_1/di/locator.dart';
 import 'package:promts_application_1/features/user/data/models/user_model.dart';
 
-class UserRemoteDataSource {
-  final http.Client client;
-  final AppConfig datasourceConfig = getIt<AppConfig>();
+abstract class UserRemoteDataSource {
+  Future<UserModel> getUserModel();
+}
 
-  UserRemoteDataSource({required this.client});
+class UserRemoteDataSourceImpl implements UserRemoteDataSource{
+  final ApiService api = getIt<ApiService>();
 
-  Future<UserModel> getUserModel(String jwtToken) async {
+  UserRemoteDataSourceImpl();
+
+  @override
+  Future<UserModel> getUserModel() async {
     //TODO Обратно поменять на гет запрос, а то нгрок хуета какая-то
-    final response = await client.post(
-      Uri.parse('${datasourceConfig.getBaseUrl()}/user'),
-      headers: {
-        'Authorization': 'Bearer $jwtToken',
-        'Content-Type': 'application/json',
-      },
+    return api.post<UserModel>(
+      '/user',
+      fromJson: (json) => UserModel.fromJson(json),
     );
-
-    if (response.statusCode == 200) {
-      final jsonMap = json.decode(response.body) as Map<String, dynamic>;
-      return UserModel.fromJson(jsonMap);
-    } else {
-      final Map<String, dynamic> errorResponse = json.decode(response.body);
-      throw Exception(errorResponse['message'] ?? 'Ошибка');
-    }
   }
 }
 import 'package:promts_application_1/features/user/data/datasources/user_data_source.dart';
@@ -2323,11 +2551,11 @@ class UserRepositoryImpl implements UserRepository {
   UserRepositoryImpl({required this.remoteDataSource});
 
   @override
-  Future<UserEntity> getUser(String token) async {
-    return await remoteDataSource.getUserModel(token);
+  Future<UserEntity> getUser() async {
+    final res = await remoteDataSource.getUserModel();
+    return res;
   }
 }
-
 import 'package:promts_application_1/features/user/domain/entities/user_entity.dart';
 
 class UserModel extends UserEntity {
@@ -2337,7 +2565,7 @@ class UserModel extends UserEntity {
     required super.role,
     required super.money,
     required super.memory,
-    required super.memoryEnable,
+    required super.memoryEnabled,
     required super.aiCanUpdateMemory,
     required super.standartModelUrild,
   });
@@ -2348,10 +2576,12 @@ class UserModel extends UserEntity {
       email: json['email'] as String,
       role: json['role'] as String,
       money: (json['money'] as num).toDouble(),
-      memory: json['memory'] as String,
-      memoryEnable: json['memoryEnable'] as bool,
-      aiCanUpdateMemory: json['aiCanUpdateMemory'] as bool,
-      standartModelUrild: json['standartModelUrild'] as int,
+      memory: json['memory'] as String? ?? '',
+      // безопасное чтение булевых полей
+      memoryEnabled: json['memoryEnabled'] as bool? ?? false,
+      aiCanUpdateMemory: json['aiCanUpdateMemory'] as bool? ?? false,
+      // ключ в JSON называется standardModelUriId
+      standartModelUrild: json['standardModelUriId'] as int? ?? 0,
     );
   }
 
@@ -2362,9 +2592,9 @@ class UserModel extends UserEntity {
       'role': role,
       'money': money,
       'memory': memory,
-      'memoryEnable': memoryEnable,
+      'memoryEnabled': memoryEnabled,
       'aiCanUpdateMemory': aiCanUpdateMemory,
-      'standartModelUrild': standartModelUrild,
+      'standardModelUriId': standartModelUrild,
     };
   }
 }
@@ -2374,7 +2604,7 @@ class UserEntity {
   final String role;
   final double money;
   final String memory;
-  final bool memoryEnable;
+  final bool memoryEnabled;
   final bool aiCanUpdateMemory;
   final int standartModelUrild;
 
@@ -2384,7 +2614,7 @@ class UserEntity {
     required this.role,
     required this.money,
     required this.memory,
-    required this.memoryEnable,
+    required this.memoryEnabled,
     required this.aiCanUpdateMemory,
     required this.standartModelUrild,
   });
@@ -2392,92 +2622,20 @@ class UserEntity {
 import '../entities/user_entity.dart';
 
 abstract class UserRepository {
-  Future<UserEntity> getUser(String token);
-}
-import '../entities/user_entity.dart';
-import '../repositories/user_repository.dart';
-
-class GetUserDataUseCase {
-  final UserRepository repository;
-
-  GetUserDataUseCase({required this.repository});
-
-  Future<UserEntity> call(String token) async {
-    return await repository.getUser(token);
-  }
-}
-// ignore: depend_on_referenced_packages
-import 'package:bloc/bloc.dart';
-import 'package:promts_application_1/features/user/domain/use_cases/get_user_data_use_case.dart';
-import 'user_state.dart';
-import '../../domain/entities/user_entity.dart';
-
-
-class UserCubit extends Cubit<UserState> {
-  final GetUserDataUseCase getUserDataUseCase;
-
-  UserCubit({required this.getUserDataUseCase}) : super(UserInitial());
-
-  void fetchUser(String token) async {
-    emit(UserLoading());
-    try {
-      final UserEntity user = await getUserDataUseCase(token);
-      emit(UserLoaded(user: user));
-    } catch (e) {
-      emit(UserError(error: e.toString()));
-    }
-  }
-}
-import 'package:equatable/equatable.dart';
-import '../../domain/entities/user_entity.dart';
-
-abstract class UserState extends Equatable {
-  @override
-  List<Object> get props => [];
-}
-
-class UserInitial extends UserState {}
-
-class UserLoading extends UserState {}
-
-class UserLoaded extends UserState {
-  final UserEntity user;
-
-  UserLoaded({required this.user});
-
-  @override
-  List<Object> get props => [user];
-}
-
-class UserError extends UserState {
-  final String error;
-
-  UserError({required this.error});
-
-  @override
-  List<Object> get props => [error];
+  Future<UserEntity> getUser();
 }
 import 'package:flutter/material.dart';
+import 'package:promts_application_1/features/user/domain/entities/user_entity.dart';
 
 class WidgetUserSettings extends StatefulWidget {
-  final String email;              
-  final int userId;                
-  final double balance;            
-  final bool memoryEnabled;        
-  final bool aiCanUpdateMemory;    
-  final String memory;             
-  final String selectedModel;      
-  final List<String> availableModels; 
+  final UserEntity userEntity;
+  final String selectedModel;
+  final List<String> availableModels;
   final ValueChanged<Map<String, dynamic>> onSave;
 
   const WidgetUserSettings({
     super.key,
-    required this.email,
-    required this.userId,
-    required this.balance,
-    required this.memoryEnabled,
-    required this.aiCanUpdateMemory,
-    required this.memory,
+    required this.userEntity,
     required this.selectedModel,
     required this.availableModels,
     required this.onSave,
@@ -2497,11 +2655,11 @@ class _WidgetUserSettingsState extends State<WidgetUserSettings> {
   @override
   void initState() {
     super.initState();
-    _memoryController = TextEditingController(text: widget.memory);
-    _memoryEnabled = widget.memoryEnabled;
-    _aiCanUpdateMemory = widget.aiCanUpdateMemory;
+    _memoryController = TextEditingController(text: widget.userEntity.memory);
+    _memoryEnabled = widget.userEntity.memoryEnabled;
+    _aiCanUpdateMemory = widget.userEntity.aiCanUpdateMemory;
     _selectedModel = widget.selectedModel;
-    _balance = widget.balance;
+    _balance = widget.userEntity.money;
   }
 
   @override
@@ -2519,7 +2677,6 @@ class _WidgetUserSettingsState extends State<WidgetUserSettings> {
       'balance': _balance,
     };
     widget.onSave(updatedData);
-    Navigator.of(context).pop();
   }
 
   @override
@@ -2527,7 +2684,7 @@ class _WidgetUserSettingsState extends State<WidgetUserSettings> {
     return AlertDialog(
       title: const Text("Настройки пользователя"),
       content: SizedBox(
-        width: 400, 
+        width: 400,
         height: 400,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -2537,7 +2694,7 @@ class _WidgetUserSettingsState extends State<WidgetUserSettings> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 const Text("Эл. почта:"),
-                Flexible(child: Text(widget.email)),
+                Flexible(child: Text(widget.userEntity.email)),
               ],
             ),
             const SizedBox(height: 8),
@@ -2547,7 +2704,7 @@ class _WidgetUserSettingsState extends State<WidgetUserSettings> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 const Text("ID:"),
-                Text(widget.userId.toString()),
+                Text(widget.userEntity.id.toString()),
               ],
             ),
             const SizedBox(height: 8),
@@ -2593,7 +2750,8 @@ class _WidgetUserSettingsState extends State<WidgetUserSettings> {
             // 5) Могут ли чаты изменять память?
             Row(
               children: [
-                const Expanded(child: Text("Могут ли чаты изменять память пользователя?")),
+                const Expanded(
+                    child: Text("Могут ли чаты изменять память пользователя?")),
                 Switch(
                   value: _aiCanUpdateMemory,
                   onChanged: (val) {
@@ -2633,21 +2791,24 @@ class _WidgetUserSettingsState extends State<WidgetUserSettings> {
 
             // 7) Поле "Память" - чтобы окно не растягивалось, используем Expanded + внутренний скролл
             Expanded(
-            child: TextField(
-              controller: _memoryController,
-              decoration: const InputDecoration(
-                labelText: "Память пользователя",
-                border: OutlineInputBorder(),
+              child: TextField(
+                controller: _memoryController,
+                decoration: const InputDecoration(
+                  labelText: "Память пользователя",
+                  border: OutlineInputBorder(),
+                ),
+                keyboardType: TextInputType.multiline,
+                minLines: 3,
+                maxLines: 5,
               ),
-              keyboardType: TextInputType.multiline,
-              minLines: 3,
-              maxLines: 5,
-            ),
             ),
           ],
         ),
       ),
       actions: [
+        // TextButton(
+        //   onPressed: () => {},
+        // ),
         TextButton(
           onPressed: () => Navigator.of(context).pop(),
           child: const Text("Отмена"),

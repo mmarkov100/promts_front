@@ -4,6 +4,7 @@ import 'package:promts_application_1/di/locator.dart';
 import 'package:promts_application_1/features/auth/cubits/auth_cubit.dart';
 import 'package:promts_application_1/features/auth/view/splash_screen_auth.dart';
 import 'package:promts_application_1/features/neuro/cubits/neuro_cubit.dart';
+import 'package:promts_application_1/features/user/cubit/user_cubit.dart';
 
 void main() {
   
@@ -15,6 +16,7 @@ void main() {
       providers: [
         BlocProvider(create: (_) => getIt<AuthCubit>()),
         BlocProvider(create: (_) => getIt<NeuroCubit>()),
+        BlocProvider(create: (_) => getIt<UserCubit>()),
       ],
       child: const MyApp(),
     ),

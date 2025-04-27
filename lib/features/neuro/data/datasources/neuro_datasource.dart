@@ -13,6 +13,7 @@ class NeuroRemoteDataSourceImpl implements NeuroRemoteDataSource {
 
   @override
   Future<List<NeuroModel>> getNeuroModelList() async {
+    //TODO Обратно поменять на гет запрос, а то нгрок хуета какая-то
     return api.postList<NeuroModel>(
       '/neuro',
       fromJsonItem: (json) => NeuroModel.fromJson(json),
