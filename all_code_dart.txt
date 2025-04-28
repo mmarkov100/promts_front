@@ -11,6 +11,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:promts_application_1/di/locator.dart';
 import 'package:promts_application_1/features/auth/cubits/auth_cubit.dart';
 import 'package:promts_application_1/features/auth/view/splash_screen_auth.dart';
+import 'package:promts_application_1/features/chat/cubits/chat_cubit.dart';
 import 'package:promts_application_1/features/neuro/cubits/neuro_cubit.dart';
 import 'package:promts_application_1/features/user/cubit/user_cubit.dart';
 
@@ -18,13 +19,14 @@ void main() {
   
   // 0 - продовый, 1 - тестовый (вообще пока не работает)
   //setup(0, "https://1042-104-253-187-142.ngrok-free.app", "1234jwt");
-  setup(0, "http://localhost:8090", "1234jwt");
+  setup(0, "https://a610-104-253-187-142.ngrok-free.app", "1234jwt");
   runApp(
     MultiBlocProvider(
       providers: [
         BlocProvider(create: (_) => getIt<AuthCubit>()),
         BlocProvider(create: (_) => getIt<NeuroCubit>()),
         BlocProvider(create: (_) => getIt<UserCubit>()),
+        BlocProvider(create: (_) => getIt<ChatCubit>()),
       ],
       child: const MyApp(),
     ),
@@ -250,6 +252,10 @@ import 'package:promts_application_1/features/auth/cubits/auth_cubit.dart';
 import 'package:promts_application_1/features/auth/data/datasources/auth_remote_data_source.dart';
 import 'package:promts_application_1/features/auth/data/implimintations/auth_repository_impl.dart';
 import 'package:promts_application_1/features/auth/domain/repositories/auth_repository.dart';
+import 'package:promts_application_1/features/chat/cubits/chat_cubit.dart';
+import 'package:promts_application_1/features/chat/data/datasources/chat_datasource.dart';
+import 'package:promts_application_1/features/chat/data/implimentations/chat_repository_impl.dart';
+import 'package:promts_application_1/features/chat/domain/repositories/chat_repository.dart';
 import 'package:promts_application_1/features/neuro/cubits/neuro_cubit.dart';
 import 'package:promts_application_1/features/neuro/data/datasources/neuro_datasource.dart';
 import 'package:promts_application_1/features/neuro/data/implimintations/neuro_repository_impl.dart';
@@ -291,6 +297,15 @@ void setup(int appMode, String baseUrl, String jwtToken) {
   getIt.registerLazySingleton<UserRepository>(
       () => UserRepositoryImpl(remoteDataSource: getIt()));
   getIt.registerFactory(() => UserCubit(repository: getIt()));
+
+  // Chat
+  getIt.registerLazySingleton<ChatRemoteDataSource>(
+    () => ChatRemoteDataSourceImpl(),
+  );
+  getIt.registerLazySingleton<ChatRepository>(
+    () => ChatRepositoryImpl(remoteDataSource: getIt()),
+  );
+  getIt.registerFactory(() => ChatCubit(repository: getIt()));
 }
 // ignore: depend_on_referenced_packages
 import 'package:promts_application_1/core/cubits/data_cubit.dart';
@@ -432,6 +447,51 @@ class SplashScreen extends StatelessWidget {
     );
   }
 }
+import 'package:promts_application_1/core/cubits/data_cubit.dart';
+import 'package:promts_application_1/features/chat/domain/entities/chat_entity.dart';
+import 'package:promts_application_1/features/chat/domain/repositories/chat_repository.dart';
+
+class ChatCubit extends DataCubit<List<ChatEntity>> {
+  final ChatRepository repository;
+  ChatCubit({required this.repository}) : super(){
+    fetchChats();
+  }
+
+  void fetchChats() => load(() => repository.fetchChats());
+}
+import 'package:promts_application_1/core/service/network_service.dart';
+import 'package:promts_application_1/di/locator.dart';
+import 'package:promts_application_1/features/chat/data/models/chat_model.dart';
+
+abstract class ChatRemoteDataSource {
+  Future<List<ChatModel>> fetchChats();
+}
+
+class ChatRemoteDataSourceImpl implements ChatRemoteDataSource {
+  final ApiService _api = getIt<ApiService>();
+
+  @override
+  Future<List<ChatModel>> fetchChats() {
+    return _api.postList<ChatModel>(
+      '/chats/get',
+      fromJsonItem: (json) => ChatModel.fromJson(json),
+    );
+  }
+}
+import 'package:promts_application_1/features/chat/data/datasources/chat_datasource.dart';
+import 'package:promts_application_1/features/chat/domain/entities/chat_entity.dart';
+import 'package:promts_application_1/features/chat/domain/repositories/chat_repository.dart';
+
+class ChatRepositoryImpl implements ChatRepository {
+  final ChatRemoteDataSource remoteDataSource;
+
+  ChatRepositoryImpl({required this.remoteDataSource});
+
+  @override
+  Future<List<ChatEntity>> fetchChats() async {
+    return await remoteDataSource.fetchChats();
+  }
+}
 import 'package:promts_application_1/features/chat/domain/entities/chat_entity.dart';
 
 class ChatModel extends ChatEntity {
@@ -458,7 +518,7 @@ class ChatModel extends ChatEntity {
     return ChatModel(
       id: json['id'] as int,
       userId: json['userId'] as int,
-      chatBotId: json['chatBotId'] as int,
+      chatBotId: json['chatBotId'] != null ? json['chatBotId'] as int : null,
       chatName: json['chatName'] as String? ?? 'Без названия',
       modelUriId: json['modelUriId'] as int,
       temperature: (json['temperature'] as num).toDouble(),
@@ -478,7 +538,7 @@ class ChatModel extends ChatEntity {
 class ChatEntity {
   final int id;
   final int userId;
-  final int chatBotId;
+  final int? chatBotId;
   final String chatName;
   final int modelUriId;
   final double temperature;
@@ -516,15 +576,15 @@ import 'package:promts_application_1/features/chat/domain/entities/chat_entity.d
 
 abstract class ChatRepository{
   Future<List<ChatEntity>> fetchChats();
-  Future<ChatEntity> getChat();
 }
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:promts_application_1/features/chat/domain/entities/chat_entity.dart';
+import 'package:promts_application_1/features/chat/cubits/chat_cubit.dart';
+import 'package:promts_application_1/core/cubits/data_cubit.dart';
 
-/// NavigationDrawer, который показывает список чатов пользователя.
 class WidgetChats extends StatefulWidget {
   final ValueChanged<int> onChatSelected;
-
   const WidgetChats({super.key, required this.onChatSelected});
 
   @override
@@ -533,37 +593,31 @@ class WidgetChats extends StatefulWidget {
 
 class _WidgetChatsState extends State<WidgetChats> {
   final TextEditingController _searchController = TextEditingController();
-
-  // Полный список чатов и отфильтрованный список
-  final List<ChatEntity> _chats = [];
-  List<ChatEntity> _filteredChats = [];
+  String _query = '';
 
   @override
   void initState() {
     super.initState();
-    // Обновляем фильтрацию при изменении текста
-    _searchController.addListener(_searchChats);
+    _searchController.addListener(() {
+      setState(() {
+        _query = _searchController.text.trim().toLowerCase();
+      });
+    });
   }
 
   @override
   void dispose() {
-    _searchController.removeListener(_searchChats);
     _searchController.dispose();
     super.dispose();
   }
 
-  // Функция фильтрации списка чатов по введённому запросу
-  void _searchChats() {
-    final query = _searchController.text.toLowerCase().trim();
-    setState(() {
-      if (query.isEmpty) {
-        _filteredChats = List.from(_chats);
-      } else {
-        _filteredChats = _chats
-            .where((chat) => chat.chatName.toLowerCase().contains(query))
-            .toList();
-      }
-    });
+  void selectChat(int id) {
+    widget.onChatSelected(id);
+    Navigator.of(context).pop();
+  }
+
+  void _refreshChats() {
+    context.read<ChatCubit>().fetchChats();
   }
 
   @override
@@ -571,47 +625,77 @@ class _WidgetChatsState extends State<WidgetChats> {
     return SafeArea(
       child: Column(
         children: [
-          // Заголовок
-          const ListTile(
-            title: Text(
+          // Заголовок и поле поиска всегда отображаются
+          ListTile(
+            title: const Text(
               "Мои чаты",
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
-          ),
-          // Строка поиска
-          Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: Row(
-              children: [
-                Expanded(
-                  child: TextField(
-                    controller: _searchController,
-                    decoration: const InputDecoration(
-                      labelText: "Поиск чатов",
-                      border: OutlineInputBorder(),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                IconButton(
-                  icon: const Icon(Icons.search),
-                  onPressed: _searchChats,
-                ),
-              ],
+            trailing: IconButton(
+              icon: const Icon(Icons.refresh),
+              tooltip: 'Обновить чаты',
+              onPressed: _refreshChats,
             ),
           ),
-          // Список чатов
+          Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: TextField(
+              controller: _searchController,
+              decoration: const InputDecoration(
+                labelText: 'Поиск чатов',
+                border: OutlineInputBorder(),
+                prefixIcon: Icon(Icons.search),
+              ),
+            ),
+          ),
+          // Контентная область
           Expanded(
-            child: ListView.builder(
-              itemCount: _filteredChats.length,
-              itemBuilder: (context, index) {
-                final chat = _filteredChats[index];
-                return ListTile(
-                  title: Text(chat.chatName),
-                  onTap: () => widget.onChatSelected(chat.id),
-                );
+            child: BlocBuilder<ChatCubit, DataState<List<ChatEntity>>>(
+              builder: (context, state) {
+                if (state is DataLoading) {
+                  return const Center(child: CircularProgressIndicator());
+                } else if (state is DataError) {
+                  return Center(child: Text('Ошибка: ${state.toString()}'));
+                } else if (state is DataLoaded<List<ChatEntity>>) {
+                  final sorted = [...state.data]
+                    ..sort((a, b) {
+                      if (a.starredChat && !b.starredChat) return -1;
+                      if (!a.starredChat && b.starredChat) return 1;
+                      return b.dateEdit.compareTo(a.dateEdit);
+                    });
+
+                  final filtered = _query.isEmpty
+                      ? sorted
+                      : sorted
+                          .where((chat) =>
+                              chat.chatName.toLowerCase().contains(_query))
+                          .toList();
+
+                  if (filtered.isEmpty) {
+                    return const Center(child: Text('Чатов не найдено'));
+                  }
+
+                  return ListView.builder(
+                    itemCount: filtered.length,
+                    itemBuilder: (ctx, idx) {
+                      final chat = filtered[idx];
+                      return ListTile(
+                        leading: chat.starredChat
+                            ? const Icon(Icons.star, color: Colors.amber)
+                            : const Icon(Icons.chat_bubble_outline),
+                        title: Text(chat.chatName),
+                        subtitle: Text(
+                          'Изменён: ${chat.dateEdit.toLocal().toIso8601String().split('T').first}',
+                        ),
+                        onTap: () => selectChat(chat.id),
+                      );
+                    },
+                  );
+                }
+                // default
+                return const SizedBox.shrink();
               },
-            )
+            ),
           ),
         ],
       ),
