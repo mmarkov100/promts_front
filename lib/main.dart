@@ -12,7 +12,7 @@ import 'package:promts_application_1/features/user/cubit/user_cubit.dart';
 void main() {
   // 0 - продовый, 1 - тестовый (вообще пока не работает)
   //setup(0, "https://1042-104-253-187-142.ngrok-free.app", "1234jwt");
-  setup(0, "https://a610-104-253-187-142.ngrok-free.app", "124jwt");
+  setup(0, "https://a610-104-253-187-142.ngrok-free.app", "1234jwt");
   runApp(
     MultiBlocProvider(
       providers: [

@@ -5,7 +5,7 @@ import 'package:promts_application_1/features/chat/cubits/chat_cubit.dart';
 import 'package:promts_application_1/core/cubits/data_cubit.dart';
 
 class WidgetChats extends StatefulWidget {
-  final ValueChanged<int> onChatSelected;
+  final ValueChanged<ChatEntity> onChatSelected;
   const WidgetChats({super.key, required this.onChatSelected});
 
   @override
@@ -32,8 +32,8 @@ class _WidgetChatsState extends State<WidgetChats> {
     super.dispose();
   }
 
-  void selectChat(int id) {
-    widget.onChatSelected(id);
+  void selectChat(ChatEntity chat) {
+    widget.onChatSelected(chat);
     Navigator.of(context).pop();
   }
 
@@ -108,7 +108,7 @@ class _WidgetChatsState extends State<WidgetChats> {
                         subtitle: Text(
                           'Изменён: ${chat.dateEdit.toLocal().toIso8601String().split('T').first}',
                         ),
-                        onTap: () => selectChat(chat.id),
+                        onTap: () => selectChat(chat),
                       );
                     },
                   );

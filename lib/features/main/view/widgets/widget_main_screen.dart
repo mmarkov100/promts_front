@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:promts_application_1/core/config/config.dart';
 import 'package:promts_application_1/di/locator.dart';
+import 'package:promts_application_1/features/chat/domain/entities/chat_entity.dart';
 import 'widget_app_bar.dart';
 import 'package:promts_application_1/features/chat/view/widgets/widget_chats.dart';
 import 'package:promts_application_1/features/neuro/view/widget_neuro_button.dart';
@@ -17,6 +18,7 @@ class _WidgetMainScreenState extends State<WidgetMainScreen> {
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
 
   bool _showChatPage = false;
+  ChatEntity? _currentChat;
   final appConfig = getIt<AppConfig>();
   final TextEditingController _messageController = TextEditingController();
 
@@ -35,9 +37,10 @@ class _WidgetMainScreenState extends State<WidgetMainScreen> {
     });
   }
 
-  void _openChat(int chatId) {
+  void _openChat(ChatEntity chat) {
     _messageController.clear();
     setState(() {
+      _currentChat = chat;
       _showChatPage = true;
     });
   }
@@ -45,6 +48,7 @@ class _WidgetMainScreenState extends State<WidgetMainScreen> {
   void _closeChat() {
     setState(() {
       _showChatPage = false;
+      _currentChat = null;
     });
   }
 
@@ -56,7 +60,7 @@ class _WidgetMainScreenState extends State<WidgetMainScreen> {
         width: 350,
         child: Drawer(
           child: WidgetChats(
-            onChatSelected: _openChat,
+            onChatSelected: (chat) => _openChat(chat),
           ),
         ),
       ),
@@ -70,9 +74,9 @@ class _WidgetMainScreenState extends State<WidgetMainScreen> {
       ),
       body: Column(
         children: [
-          const Padding(
-            padding: EdgeInsets.all(16.0),
-            child: WidgetNeuroButton(),
+          Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: WidgetNeuroButton(currentChat: _currentChat),
           ),
           Expanded(
             child: _showChatPage ? const WidgetChatPage() : _buildMainContent(),
