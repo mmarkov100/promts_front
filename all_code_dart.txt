@@ -512,6 +512,12 @@ class ChatEntity {
     required this.dateCreate,
   });
 }
+import 'package:promts_application_1/features/chat/domain/entities/chat_entity.dart';
+
+abstract class ChatRepository{
+  Future<List<ChatEntity>> fetchChats();
+  Future<ChatEntity> getChat();
+}
 import 'package:flutter/material.dart';
 import 'package:promts_application_1/features/chat/domain/entities/chat_entity.dart';
 
@@ -1800,7 +1806,8 @@ class WidgetAppBar extends StatelessWidget implements PreferredSizeWidget {
                       return const AlertDialog(
                         title: Text("Загрузка профиля"),
                         content: SizedBox(
-                          height: 100,
+                          width: 400,
+                          height: 450,
                           child: Center(child: CircularProgressIndicator()),
                         ),
                       );
@@ -1846,19 +1853,20 @@ class WidgetAppBar extends StatelessWidget implements PreferredSizeWidget {
                             );
                           }
                           if (neuroState is DataLoaded<List<NeuroEntity>>) {
-                            final List<NeuroModel> neuroList = neuroState.data.cast<NeuroModel>();
+                            final List<NeuroModel> neuroList =
+                                neuroState.data.cast<NeuroModel>();
 
                             final models =
-                                neuroList.map((e) => e.name).toList();
+                                neuroList;
                             final current = neuroList
                                 .firstWhere(
                                     (e) => e.id == user.standartModelUrild,
                                     orElse: () => neuroList.first)
-                                .name;
+                                .id;
 
                             return WidgetUserSettings(
                               userEntity: user,
-                              selectedModel: current,
+                              selectedModelId: current,
                               availableModels: models,
                               onSave: (updatedData) {
                                 Navigator.of(context).pop();
@@ -2218,23 +2226,25 @@ class _WidgetNeuroButtonState extends State<WidgetNeuroButton> {
     return BlocBuilder<NeuroCubit, DataState<List<NeuroEntity>>>(
       builder: (context, neuroState) {
         if (neuroState is DataLoading<List<NeuroEntity>>) {
-          return const Center(child: CircularProgressIndicator());
+          return buildShowingMessage(isSmallWidth, "Идет загрузка..", "Пожалуйста подождите", true);
         } else if (neuroState is DataLoaded<List<NeuroEntity>>) {
           final neuroList = neuroState.data;
           if (neuroList.isEmpty) {
-            return const Text('Список нейросетей пуст');
+            //return const Text('Список нейросетей пуст');
+            return buildShowingMessage(isSmallWidth, "Список нейросетей пуст", "Делать нечего)", true);
           }
           return BlocBuilder<UserCubit, DataState<UserEntity>>(
               builder: (context, userState) {
             if (userState is DataLoading<UserEntity>) {
-              return const Center(child: CircularProgressIndicator());
+              return buildShowingMessage(isSmallWidth, "Идет загрузка..", "Пожалуйста подождите", true);
             }
             if (userState is DataError<UserEntity>) {
-              return const Text('Ошибка в загрузке пользователя');
+              //return const Text('Ошибка в загрузке пользователя');
+              return buildShowingMessage(isSmallWidth, "Ошибка в загрузке", "Пожалуйста обновите страницу", false);
             }
             if (userState is DataLoaded<UserEntity>) {
               for (var e in neuroState.data) {
-                if (!changedNeuro){
+                if (!changedNeuro) {
                   if (e.id == userState.data.standartModelUrild) {
                     _selectedNetwork = e.name;
                   }
@@ -2244,7 +2254,7 @@ class _WidgetNeuroButtonState extends State<WidgetNeuroButton> {
                 children: [
                   Flexible(
                     child: ConstrainedBox(
-                      constraints: const BoxConstraints(maxWidth: 375),
+                      constraints: const BoxConstraints(maxWidth: 375, minHeight: 50),
                       child: DropdownButtonHideUnderline(
                         child: DropdownButton<String>(
                           isExpanded: true,
@@ -2302,10 +2312,45 @@ class _WidgetNeuroButtonState extends State<WidgetNeuroButton> {
             return Container();
           });
         } else if (neuroState is DataError<List<NeuroEntity>>) {
-          return Center(child: Text('Ошибка: ${neuroState.message}'));
+          return buildShowingMessage(isSmallWidth, "Ошибка в загрузке", "Пожалуйста обновите страницу", false);
         }
         return Container();
       },
+    );
+  }
+
+  Widget buildShowingMessage(bool isSmallWidth, String titleText, String desc, bool isLoading) {
+    return Row(
+      children: [
+        Flexible(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 375, minHeight: 50),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Название нейросети
+                Text(
+                  titleText,
+                  style: const TextStyle(fontWeight: FontWeight.bold),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                Text(
+                  desc,
+                  style: TextStyle(
+                    fontSize: isSmallWidth ? 10 : 12,
+                    color: Colors.grey,
+                  ),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+            ),
+          ),
+        ),
+        const SizedBox(width: 7),
+        if (isLoading) const Center(child: CircularProgressIndicator()),
+      ],
     );
   }
 }
@@ -2513,11 +2558,16 @@ import '../domain/entities/user_entity.dart';
 
 class UserCubit extends DataCubit<UserEntity> {
   final UserRepository repository;
-  UserCubit({required this.repository}) : super(){
+  UserCubit({required this.repository}) : super() {
     fetch();
   }
 
   void fetch() => load(() => repository.getUser());
+
+  /// Обновить настройки на сервере
+  Future<void> updateSettings(Map<String, dynamic> body) {
+    return load(() => repository.updateSettings(body));
+  }
 }
 import 'package:promts_application_1/core/service/network_service.dart';
 import 'package:promts_application_1/di/locator.dart';
@@ -2525,9 +2575,10 @@ import 'package:promts_application_1/features/user/data/models/user_model.dart';
 
 abstract class UserRemoteDataSource {
   Future<UserModel> getUserModel();
+  Future<UserModel> updateUserSettings(Map<String, dynamic> body);
 }
 
-class UserRemoteDataSourceImpl implements UserRemoteDataSource{
+class UserRemoteDataSourceImpl implements UserRemoteDataSource {
   final ApiService api = getIt<ApiService>();
 
   UserRemoteDataSourceImpl();
@@ -2537,6 +2588,15 @@ class UserRemoteDataSourceImpl implements UserRemoteDataSource{
     //TODO Обратно поменять на гет запрос, а то нгрок хуета какая-то
     return api.post<UserModel>(
       '/user',
+      fromJson: (json) => UserModel.fromJson(json),
+    );
+  }
+
+  @override
+  Future<UserModel> updateUserSettings(Map<String, dynamic> body) {
+    return api.put<UserModel>(
+      '/user/settings', // PUT на конкретный ресурс
+      body: body,
       fromJson: (json) => UserModel.fromJson(json),
     );
   }
@@ -2554,6 +2614,12 @@ class UserRepositoryImpl implements UserRepository {
   Future<UserEntity> getUser() async {
     final res = await remoteDataSource.getUserModel();
     return res;
+  }
+
+  @override
+  Future<UserEntity> updateSettings(Map<String, dynamic> body) async {
+    final model = await remoteDataSource.updateUserSettings(body);
+    return model;
   }
 }
 import 'package:promts_application_1/features/user/domain/entities/user_entity.dart';
@@ -2623,20 +2689,24 @@ import '../entities/user_entity.dart';
 
 abstract class UserRepository {
   Future<UserEntity> getUser();
+  Future<UserEntity> updateSettings(Map<String, dynamic> body);
 }
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:promts_application_1/features/neuro/data/models/neuro_model.dart';
+import 'package:promts_application_1/features/user/cubit/user_cubit.dart';
 import 'package:promts_application_1/features/user/domain/entities/user_entity.dart';
 
 class WidgetUserSettings extends StatefulWidget {
   final UserEntity userEntity;
-  final String selectedModel;
-  final List<String> availableModels;
+  final int selectedModelId;
+  final List<NeuroModel> availableModels;
   final ValueChanged<Map<String, dynamic>> onSave;
 
   const WidgetUserSettings({
     super.key,
     required this.userEntity,
-    required this.selectedModel,
+    required this.selectedModelId,
     required this.availableModels,
     required this.onSave,
   });
@@ -2649,17 +2719,21 @@ class _WidgetUserSettingsState extends State<WidgetUserSettings> {
   late TextEditingController _memoryController;
   late bool _memoryEnabled;
   late bool _aiCanUpdateMemory;
-  late String _selectedModel;
+  late int _selectedModelId;
   late double _balance;
 
   @override
   void initState() {
     super.initState();
-    _memoryController = TextEditingController(text: widget.userEntity.memory);
-    _memoryEnabled = widget.userEntity.memoryEnabled;
-    _aiCanUpdateMemory = widget.userEntity.aiCanUpdateMemory;
-    _selectedModel = widget.selectedModel;
-    _balance = widget.userEntity.money;
+    _initFromEntity(widget.userEntity);
+  }
+
+  void _initFromEntity(UserEntity user) {
+    _memoryController = TextEditingController(text: user.memory);
+    _memoryEnabled = user.memoryEnabled;
+    _aiCanUpdateMemory = user.aiCanUpdateMemory;
+    _selectedModelId = widget.selectedModelId;
+    _balance = user.money;
   }
 
   @override
@@ -2668,24 +2742,38 @@ class _WidgetUserSettingsState extends State<WidgetUserSettings> {
     super.dispose();
   }
 
-  void _handleSave() {
+  void _refreshSettings() {
+    context.read<UserCubit>().fetch();
+  }
+
+  void _handleSave() async {
     final updatedData = {
       'memory': _memoryController.text,
       'memoryEnabled': _memoryEnabled,
       'aiCanUpdateMemory': _aiCanUpdateMemory,
-      'selectedModel': _selectedModel,
-      'balance': _balance,
+      'standardModelUriId': _selectedModelId,
     };
-    widget.onSave(updatedData);
+
+    context.read<UserCubit>().updateSettings(updatedData);
   }
 
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: const Text("Настройки пользователя"),
+      title: Row(
+        children: [
+          const Text("Настройки пользователя"),
+          const Spacer(),
+          IconButton(
+            tooltip: 'Обновить',
+            icon: const Icon(Icons.refresh),
+            onPressed: _refreshSettings,
+          ),
+        ],
+      ),
       content: SizedBox(
         width: 400,
-        height: 400,
+        height: 450,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -2769,18 +2857,19 @@ class _WidgetUserSettingsState extends State<WidgetUserSettings> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 const Text("Модель чата:"),
-                DropdownButton<String>(
-                  value: _selectedModel,
+                DropdownButton<int>(
+                  // текущее выбранное значение — это id
+                  value: _selectedModelId,
                   items: widget.availableModels.map((model) {
-                    return DropdownMenuItem<String>(
-                      value: model,
-                      child: Text(model),
+                    return DropdownMenuItem<int>(
+                      value: model.id, // id модели
+                      child: Text(model.name), // имя, которое показываем
                     );
                   }).toList(),
                   onChanged: (val) {
                     if (val != null) {
                       setState(() {
-                        _selectedModel = val;
+                        _selectedModelId = val;
                       });
                     }
                   },
@@ -2806,9 +2895,6 @@ class _WidgetUserSettingsState extends State<WidgetUserSettings> {
         ),
       ),
       actions: [
-        // TextButton(
-        //   onPressed: () => {},
-        // ),
         TextButton(
           onPressed: () => Navigator.of(context).pop(),
           child: const Text("Отмена"),

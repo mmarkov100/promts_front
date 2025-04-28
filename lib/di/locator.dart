@@ -6,6 +6,10 @@ import 'package:promts_application_1/features/auth/cubits/auth_cubit.dart';
 import 'package:promts_application_1/features/auth/data/datasources/auth_remote_data_source.dart';
 import 'package:promts_application_1/features/auth/data/implimintations/auth_repository_impl.dart';
 import 'package:promts_application_1/features/auth/domain/repositories/auth_repository.dart';
+import 'package:promts_application_1/features/chat/cubits/chat_cubit.dart';
+import 'package:promts_application_1/features/chat/data/datasources/chat_datasource.dart';
+import 'package:promts_application_1/features/chat/data/implimentations/chat_repository_impl.dart';
+import 'package:promts_application_1/features/chat/domain/repositories/chat_repository.dart';
 import 'package:promts_application_1/features/neuro/cubits/neuro_cubit.dart';
 import 'package:promts_application_1/features/neuro/data/datasources/neuro_datasource.dart';
 import 'package:promts_application_1/features/neuro/data/implimintations/neuro_repository_impl.dart';
@@ -47,4 +51,13 @@ void setup(int appMode, String baseUrl, String jwtToken) {
   getIt.registerLazySingleton<UserRepository>(
       () => UserRepositoryImpl(remoteDataSource: getIt()));
   getIt.registerFactory(() => UserCubit(repository: getIt()));
+
+  // Chat
+  getIt.registerLazySingleton<ChatRemoteDataSource>(
+    () => ChatRemoteDataSourceImpl(),
+  );
+  getIt.registerLazySingleton<ChatRepository>(
+    () => ChatRepositoryImpl(remoteDataSource: getIt()),
+  );
+  getIt.registerFactory(() => ChatCubit(repository: getIt()));
 }
