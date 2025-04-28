@@ -24,7 +24,7 @@ class ChatModel extends ChatEntity {
     return ChatModel(
       id: json['id'] as int,
       userId: json['userId'] as int,
-      chatBotId: json['chatBotId'] as int,
+      chatBotId: json['chatBotId'] != null ? json['chatBotId'] as int : null,
       chatName: json['chatName'] as String? ?? 'Без названия',
       modelUriId: json['modelUriId'] as int,
       temperature: (json['temperature'] as num).toDouble(),

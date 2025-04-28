@@ -1,7 +1,7 @@
 class ChatEntity {
   final int id;
   final int userId;
-  final int chatBotId;
+  final int? chatBotId;
   final String chatName;
   final int modelUriId;
   final double temperature;
