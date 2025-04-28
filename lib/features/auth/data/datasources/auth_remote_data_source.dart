@@ -1,0 +1,47 @@
+import 'package:promts_application_1/core/service/network_service.dart';
+import 'package:promts_application_1/di/locator.dart';
+import 'package:promts_application_1/features/auth/data/models/token_check_model.dart';
+import 'package:promts_application_1/features/auth/domain/entities/login_entity.dart';
+import '../models/login_model.dart';
+
+abstract class AuthRemoteDataSource {
+  Future<TokenCheckModel> tokenCheck();
+  Future<LoginModel> login(String email, String password);
+    Future<LoginEntity> register(String email, String password);
+}
+
+class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
+  final ApiService api = getIt<ApiService>();
+
+  AuthRemoteDataSourceImpl();
+
+  @override
+  Future<TokenCheckModel> tokenCheck() async {
+    //TODO Обратно поменять на гет запрос, а то нгрок хуета какая-то
+    return api.post<TokenCheckModel>(
+      '/auth/tokencheck',
+      fromJson: (json) => TokenCheckModel.fromJson(json),
+    );
+  }
+    @override
+  Future<LoginModel> login(String email, String password) async {
+    return api.post<LoginModel>(
+      '/auth/log',
+      body: {
+        'email': email,
+        'password': password,
+      },
+      fromJson: (json) => LoginModel.fromJson(json),
+    );
+  }
+
+    @override
+  Future<LoginEntity> register(String email, String password) async {
+    return api.post<LoginEntity>(
+      '/auth/reg',
+      body: {'email': email, 'password': password},
+      fromJson: (json) => LoginModel.fromJson(json),
+    );
+  }
+}
+

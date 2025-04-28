@@ -1,63 +1,729 @@
-﻿// Flutter web plugin registrant file.
+// Flutter web plugin registrant file.
 //
 // Generated file. Do not edit.
 //
 
-// @dart = 2.13
 // ignore_for_file: type=lint
 
-import 'package:video_player_web/video_player_web.dart';
-import 'package:flutter_web_plugins/flutter_web_plugins.dart';
-
-void registerPlugins([final Registrar? pluginRegistrar]) {
-  final Registrar registrar = pluginRegistrar ?? webPluginRegistrar;
-  VideoPlayerPlugin.registerWith(registrar);
-  registrar.registerMessageHandler();
-}
+void registerPlugins() {}
 import 'package:flutter/material.dart';
-import 'package:promts_application_1/features/main/view/widget_main_screen.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:promts_application_1/di/locator.dart';
+import 'package:promts_application_1/features/auth/cubits/auth_cubit.dart';
+import 'package:promts_application_1/features/auth/view/splash_screen_auth.dart';
+import 'package:promts_application_1/features/chat/cubits/chat_cubit.dart';
+import 'package:promts_application_1/features/neuro/cubits/neuro_cubit.dart';
+import 'package:promts_application_1/features/user/cubit/user_cubit.dart';
 
 void main() {
-  runApp(const MyApp());
+  
+  // 0 - продовый, 1 - тестовый (вообще пока не работает)
+  //setup(0, "https://1042-104-253-187-142.ngrok-free.app", "1234jwt");
+  setup(0, "https://a610-104-253-187-142.ngrok-free.app", "1234jwt");
+  runApp(
+    MultiBlocProvider(
+      providers: [
+        BlocProvider(create: (_) => getIt<AuthCubit>()),
+        BlocProvider(create: (_) => getIt<NeuroCubit>()),
+        BlocProvider(create: (_) => getIt<UserCubit>()),
+        BlocProvider(create: (_) => getIt<ChatCubit>()),
+      ],
+      child: const MyApp(),
+    ),
+  );
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({Key? key}) : super(key: key);
-  
+  const MyApp({super.key});
+
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       title: 'Promts',
-      theme: ThemeData(
-        primarySwatch: Colors.blue,
+      theme: ThemeData(primarySwatch: Colors.blue),
+      home: const SplashScreen(),
+    );
+  }
+}
+class AppConfig {
+  final String _baseUrl;
+  final String _jwtToken;
+  AppConfig(this._baseUrl, this._jwtToken);
+
+  final int _userId = 2;
+
+  String getBaseUrl(){
+
+    return _baseUrl;
+  }
+
+  String getJwtToken(){
+
+    return _jwtToken;
+  }
+
+  int getUserId(){
+
+    return _userId;
+  }
+}
+// lib/core/cubits/data_cubit.dart
+
+import 'package:flutter_bloc/flutter_bloc.dart';
+
+abstract class DataState<T> {
+  const DataState();
+}
+class DataInitial<T> extends DataState<T> {}
+class DataLoading<T> extends DataState<T> {}
+class DataLoaded<T>  extends DataState<T> {
+  final T data;
+  const DataLoaded(this.data);
+}
+class DataError<T>   extends DataState<T> {
+  final String message;
+  const DataError(this.message);
+}
+
+abstract class DataCubit<T> extends Cubit<DataState<T>> {
+  DataCubit() : super(DataInitial<T>());
+
+  Future<void> load(Future<T> Function() loader) async {
+    emit(DataLoading<T>());
+    try {
+      final result = await loader();
+      emit(DataLoaded<T>(result));
+    } catch (e) {
+      emit(DataError<T>(e.toString()));
+    }
+  }
+}
+// core/network/api_service.dart
+import 'dart:convert';
+import 'package:http/http.dart' as http;
+import 'package:promts_application_1/di/locator.dart';
+import 'package:promts_application_1/core/config/config.dart';
+
+class ApiService {
+  final http.Client _client = getIt<http.Client>();
+  final AppConfig _config = getIt<AppConfig>();
+
+  ApiService();
+
+  Map<String, String> get _headers => {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ${_config.getJwtToken()}',
+      };
+
+  Uri _makeUri(String path, [Map<String, dynamic>? query]) {
+    final base = Uri.parse(_config.getBaseUrl());
+    return base.replace(path: '${base.path}$path', queryParameters: query);
+  }
+
+  /// GET для одного объекта
+  Future<T> get<T>(
+    String path, {
+    Map<String, dynamic>? query,
+    required T Function(Map<String, dynamic>) fromJson,
+  }) async {
+    final res = await _client.get(_makeUri(path, query), headers: _headers);
+    return _decodeSingle(res, fromJson);
+  }
+
+  /// POST для одного объекта
+  Future<T> post<T>(
+    String path, {
+    Map<String, dynamic>? body,
+    Map<String, dynamic>? query,
+    required T Function(Map<String, dynamic>) fromJson,
+  }) async {
+    final res = await _client.post(
+      _makeUri(path, query),
+      headers: _headers,
+      body: body == null ? null : json.encode(body),
+    );
+    return _decodeSingle(res, fromJson);
+  }
+
+  /// PUT для одного объекта
+  Future<T> put<T>(
+    String path, {
+    Map<String, dynamic>? body,
+    Map<String, dynamic>? query,
+    required T Function(Map<String, dynamic>) fromJson,
+  }) async {
+    final res = await _client.put(
+      _makeUri(path, query),
+      headers: _headers,
+      body: body == null ? null : json.encode(body),
+    );
+    return _decodeSingle(res, fromJson);
+  }
+
+  /// DELETE для одного объекта
+  Future<T> delete<T>(
+    String path, {
+    Map<String, dynamic>? query,
+    required T Function(Map<String, dynamic>) fromJson,
+  }) async {
+    final res = await _client.delete(
+      _makeUri(path, query),
+      headers: _headers,
+    );
+    return _decodeSingle(res, fromJson);
+  }
+
+  /// DELETE без тела ответа (void)
+  Future<void> deleteVoid(
+    String path, {
+    Map<String, dynamic>? query,
+  }) async {
+    final res = await _client.delete(
+      _makeUri(path, query),
+      headers: _headers,
+    );
+    final decoded = utf8.decode(res.bodyBytes);
+    if (res.statusCode < 200 || res.statusCode >= 300) {
+      final err = json.decode(decoded) as Map<String, dynamic>;
+      throw Exception(err['message'] ?? 'Ошибка ${res.statusCode}');
+    }
+    // в случае 204 No Content — просто возвращаемся
+  }
+
+  /// GET для списка
+  Future<List<T>> getList<T>(
+    String path, {
+    Map<String, dynamic>? query,
+    required T Function(Map<String, dynamic>) fromJsonItem,
+  }) async {
+    final res = await _client.get(_makeUri(path, query), headers: _headers);
+    return _decodeList(res, fromJsonItem);
+  }
+
+  /// POST для списка
+  Future<List<T>> postList<T>(
+    String path, {
+    Map<String, dynamic>? body,
+    Map<String, dynamic>? query,
+    required T Function(Map<String, dynamic>) fromJsonItem,
+  }) async {
+    final res = await _client.post(
+      _makeUri(path, query),
+      headers: _headers,
+      body: body == null ? null : json.encode(body),
+    );
+    return _decodeList(res, fromJsonItem);
+  }
+
+  T _decodeSingle<T>(
+    http.Response res,
+    T Function(Map<String, dynamic>) fromJson,
+  ) {
+    final decodedString = utf8.decode(res.bodyBytes);
+    if (res.statusCode >= 200 && res.statusCode < 300) {
+      final Map<String, dynamic> jsonMap = json.decode(decodedString);
+      return fromJson(jsonMap);
+    }
+    final Map<String, dynamic> err = json.decode(decodedString);
+    throw Exception(err['message'] ?? 'Ошибка ${res.statusCode}');
+  }
+
+  List<T> _decodeList<T>(
+    http.Response res,
+    T Function(Map<String, dynamic>) fromJsonItem,
+  ) {
+    final decodedString = utf8.decode(res.bodyBytes);
+    if (res.statusCode >= 200 && res.statusCode < 300) {
+      final List<dynamic> jsonList = json.decode(decodedString);
+      return jsonList
+          .map((e) => fromJsonItem(e as Map<String, dynamic>))
+          .toList();
+    }
+    final Map<String, dynamic> err = json.decode(decodedString);
+    throw Exception(err['message'] ?? 'Ошибка ${res.statusCode}');
+  }
+}
+// lib/di/locator.dart
+import 'package:get_it/get_it.dart';
+import 'package:promts_application_1/core/config/config.dart';
+import 'package:promts_application_1/core/service/network_service.dart';
+import 'package:promts_application_1/features/auth/cubits/auth_cubit.dart';
+import 'package:promts_application_1/features/auth/data/datasources/auth_remote_data_source.dart';
+import 'package:promts_application_1/features/auth/data/implimintations/auth_repository_impl.dart';
+import 'package:promts_application_1/features/auth/domain/repositories/auth_repository.dart';
+import 'package:promts_application_1/features/chat/cubits/chat_cubit.dart';
+import 'package:promts_application_1/features/chat/data/datasources/chat_datasource.dart';
+import 'package:promts_application_1/features/chat/data/implimentations/chat_repository_impl.dart';
+import 'package:promts_application_1/features/chat/domain/repositories/chat_repository.dart';
+import 'package:promts_application_1/features/neuro/cubits/neuro_cubit.dart';
+import 'package:promts_application_1/features/neuro/data/datasources/neuro_datasource.dart';
+import 'package:promts_application_1/features/neuro/data/implimintations/neuro_repository_impl.dart';
+import 'package:promts_application_1/features/neuro/domain/repositories/neuro_repository.dart';
+import 'package:http/http.dart' as http;
+import 'package:promts_application_1/features/user/cubit/user_cubit.dart';
+import 'package:promts_application_1/features/user/data/datasources/user_data_source.dart';
+import 'package:promts_application_1/features/user/data/implimintations/user_repository_impl.dart';
+import 'package:promts_application_1/features/user/domain/repositories/user_repository.dart';
+
+final getIt = GetIt.instance;
+
+void setup(int appMode, String baseUrl, String jwtToken) {
+  getIt.registerLazySingleton(() => AppConfig(baseUrl, jwtToken));
+  getIt.registerLazySingleton(() => http.Client());
+
+  //NetworkService
+  getIt.registerLazySingleton<ApiService>(
+    () => ApiService(),
+  );
+
+  // Auth
+  getIt.registerLazySingleton<AuthRemoteDataSource>(
+      () => AuthRemoteDataSourceImpl());
+  getIt.registerLazySingleton<AuthRepository>(
+      () => AuthRepositoryImpl(remoteDataSource: getIt()));
+  getIt.registerFactory(() => AuthCubit(repository: getIt()));
+
+  // Neuro
+  getIt.registerLazySingleton<NeuroRemoteDataSource>(
+      () => NeuroRemoteDataSourceImpl());
+  getIt.registerLazySingleton<NeuroRepository>(
+      () => NeuroRepositoryImpl(remoteDataSource: getIt()));
+  getIt.registerFactory(() => NeuroCubit(repository: getIt()));
+
+  // User
+  getIt.registerLazySingleton<UserRemoteDataSource>(
+      () => UserRemoteDataSourceImpl());
+  getIt.registerLazySingleton<UserRepository>(
+      () => UserRepositoryImpl(remoteDataSource: getIt()));
+  getIt.registerFactory(() => UserCubit(repository: getIt()));
+
+  // Chat
+  getIt.registerLazySingleton<ChatRemoteDataSource>(
+    () => ChatRemoteDataSourceImpl(),
+  );
+  getIt.registerLazySingleton<ChatRepository>(
+    () => ChatRepositoryImpl(remoteDataSource: getIt()),
+  );
+  getIt.registerFactory(() => ChatCubit(repository: getIt()));
+}
+// ignore: depend_on_referenced_packages
+import 'package:promts_application_1/core/cubits/data_cubit.dart';
+import 'package:promts_application_1/features/auth/domain/entities/token_check_entity.dart';
+import 'package:promts_application_1/features/auth/domain/repositories/auth_repository.dart';
+
+class AuthCubit extends DataCubit<TokenCheckEntity> {
+  final AuthRepository repository;
+  AuthCubit({required this.repository}) : super(){
+    fetch();
+  }
+
+  void fetch() => load(() => repository.checkToken());
+}
+import 'package:promts_application_1/core/service/network_service.dart';
+import 'package:promts_application_1/di/locator.dart';
+import 'package:promts_application_1/features/auth/data/models/token_check_model.dart';
+
+abstract class AuthRemoteDataSource {
+  Future<TokenCheckModel> tokenCheck();
+}
+
+class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
+  final ApiService api = getIt<ApiService>();
+
+  AuthRemoteDataSourceImpl();
+
+  @override
+  Future<TokenCheckModel> tokenCheck() async {
+    //TODO Обратно поменять на гет запрос, а то нгрок хуета какая-то
+    return api.post<TokenCheckModel>(
+      '/auth/tokencheck',
+      fromJson: (json) => TokenCheckModel.fromJson(json),
+    );
+  }
+}
+import 'package:promts_application_1/features/auth/data/datasources/auth_remote_data_source.dart';
+import 'package:promts_application_1/features/auth/domain/entities/token_check_entity.dart';
+import 'package:promts_application_1/features/auth/domain/repositories/auth_repository.dart';
+
+class AuthRepositoryImpl implements AuthRepository {
+  final AuthRemoteDataSource remoteDataSource;
+
+  AuthRepositoryImpl({required this.remoteDataSource});
+
+  @override
+  Future<TokenCheckEntity> checkToken() async {
+    final tokenCheckModel = await remoteDataSource.tokenCheck();
+    return tokenCheckModel;
+  }
+}
+import 'package:promts_application_1/features/auth/domain/entities/token_check_entity.dart';
+
+class TokenCheckModel extends TokenCheckEntity {
+  TokenCheckModel({
+    required super.success,
+    required super.message,
+    super.error,
+  });
+
+  factory TokenCheckModel.fromJson(Map<String, dynamic> json) {
+    if (json.containsKey('success')) {
+      return TokenCheckModel(
+        success: json['success'] as bool,
+        message: json['message'] as String,
+      );
+    } else {
+      return TokenCheckModel(
+        success: false,
+        message: json['message'] as String,
+        error: json['error'] as String,
+      );
+    }
+  }
+}
+class TokenCheckEntity {
+  final bool success;
+  final String message;
+  final String? error;
+
+  TokenCheckEntity({
+    required this.success,
+    required this.message,
+    this.error,
+  });
+}
+import 'package:promts_application_1/features/auth/domain/entities/token_check_entity.dart';
+
+abstract class AuthRepository {
+  Future<TokenCheckEntity> checkToken();
+}
+import 'package:flutter/material.dart';
+
+class LoginPageScreen extends StatefulWidget {
+  const LoginPageScreen({super.key});
+
+  @override
+  State<LoginPageScreen> createState() => _LoginPageScreenState();
+}
+
+class _LoginPageScreenState extends State<LoginPageScreen> {
+  @override
+  Widget build(BuildContext context) {
+    return const Text(
+      'ПОШЕЛ и ВЫПОЛНИЛ ЛОГИН СТРАНИЦА ЛОГИНА, СУКААА', 
+      style: TextStyle(fontSize: 24),
+    );
+  }
+}
+import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:promts_application_1/core/cubits/data_cubit.dart';
+import 'package:promts_application_1/features/auth/cubits/auth_cubit.dart';
+import 'package:promts_application_1/features/auth/domain/entities/token_check_entity.dart';
+import 'package:promts_application_1/features/auth/view/login_page_screen.dart';
+import 'package:promts_application_1/features/main/view/widgets/widget_main_screen.dart';
+
+
+class SplashScreen extends StatelessWidget {
+  const SplashScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return BlocListener<AuthCubit, DataState<TokenCheckEntity>>(
+      listener: (context, state) {
+        if (state is DataLoaded<TokenCheckEntity>) {
+          Navigator.of(context).pushReplacement(
+            MaterialPageRoute(builder: (_) => const WidgetMainScreen()),
+          );
+        } else if (state is DataError<TokenCheckEntity>) {
+          Navigator.of(context).pushReplacement(
+            MaterialPageRoute(builder: (_) => const LoginPageScreen()),
+          );
+        }
+      },
+      child: const Scaffold(
+        body: Center(child: CircularProgressIndicator()),
       ),
-      home: const WidgetMainScreen(),
+    );
+  }
+}
+import 'package:promts_application_1/core/cubits/data_cubit.dart';
+import 'package:promts_application_1/features/chat/domain/entities/chat_entity.dart';
+import 'package:promts_application_1/features/chat/domain/repositories/chat_repository.dart';
+
+class ChatCubit extends DataCubit<List<ChatEntity>> {
+  final ChatRepository repository;
+  ChatCubit({required this.repository}) : super(){
+    fetchChats();
+  }
+
+  void fetchChats() => load(() => repository.fetchChats());
+}
+import 'package:promts_application_1/core/service/network_service.dart';
+import 'package:promts_application_1/di/locator.dart';
+import 'package:promts_application_1/features/chat/data/models/chat_model.dart';
+
+abstract class ChatRemoteDataSource {
+  Future<List<ChatModel>> fetchChats();
+}
+
+class ChatRemoteDataSourceImpl implements ChatRemoteDataSource {
+  final ApiService _api = getIt<ApiService>();
+
+  @override
+  Future<List<ChatModel>> fetchChats() {
+    return _api.postList<ChatModel>(
+      '/chats/get',
+      fromJsonItem: (json) => ChatModel.fromJson(json),
+    );
+  }
+}
+import 'package:promts_application_1/features/chat/data/datasources/chat_datasource.dart';
+import 'package:promts_application_1/features/chat/domain/entities/chat_entity.dart';
+import 'package:promts_application_1/features/chat/domain/repositories/chat_repository.dart';
+
+class ChatRepositoryImpl implements ChatRepository {
+  final ChatRemoteDataSource remoteDataSource;
+
+  ChatRepositoryImpl({required this.remoteDataSource});
+
+  @override
+  Future<List<ChatEntity>> fetchChats() async {
+    return await remoteDataSource.fetchChats();
+  }
+}
+import 'package:promts_application_1/features/chat/domain/entities/chat_entity.dart';
+
+class ChatModel extends ChatEntity {
+  ChatModel({
+    required super.id,
+    required super.userId,
+    required super.chatBotId,
+    required super.chatName,
+    required super.modelUriId,
+    required super.temperature,
+    required super.context,
+    required super.starredChat,
+    required super.useMemory,
+    required super.updateMemory,
+    required super.canUseMemory,
+    required super.canUpdateMemory,
+    required super.canEditModelUri,
+    required super.canEditContext,
+    required super.dateEdit,
+    required super.dateCreate,
+  });
+
+  factory ChatModel.fromJson(Map<String, dynamic> json) {
+    return ChatModel(
+      id: json['id'] as int,
+      userId: json['userId'] as int,
+      chatBotId: json['chatBotId'] != null ? json['chatBotId'] as int : null,
+      chatName: json['chatName'] as String? ?? 'Без названия',
+      modelUriId: json['modelUriId'] as int,
+      temperature: (json['temperature'] as num).toDouble(),
+      context: json['context'] as String,
+      starredChat: json['starredChat'] as bool? ?? false,
+      useMemory: json['useMemory'] as bool,
+      updateMemory: json['updateMemory'] as bool,
+      canUseMemory: json['canUseMemory'] as bool,
+      canUpdateMemory: json['canUpdateMemory'] as bool,
+      canEditModelUri: json['canEditModelUri'] as bool,
+      canEditContext: json['canEditContext'] as bool,
+      dateEdit: DateTime.parse(json['dateEdit'] as String),
+      dateCreate: DateTime.parse(json['dateCreate'] as String),
+    );
+  }
+}
+class ChatEntity {
+  final int id;
+  final int userId;
+  final int? chatBotId;
+  final String chatName;
+  final int modelUriId;
+  final double temperature;
+  final String context;
+  final bool starredChat;
+  final bool useMemory;
+  final bool updateMemory;
+  final bool canUseMemory;
+  final bool canUpdateMemory;
+  final bool canEditModelUri;
+  final bool canEditContext;
+  final DateTime dateEdit;
+  final DateTime dateCreate;
+
+  ChatEntity({
+    required this.id,
+    required this.userId,
+    required this.chatBotId,
+    required this.chatName,
+    required this.modelUriId,
+    required this.temperature,
+    required this.context,
+    required this.starredChat,
+    required this.useMemory,
+    required this.updateMemory,
+    required this.canUseMemory,
+    required this.canUpdateMemory,
+    required this.canEditModelUri,
+    required this.canEditContext,
+    required this.dateEdit,
+    required this.dateCreate,
+  });
+}
+import 'package:promts_application_1/features/chat/domain/entities/chat_entity.dart';
+
+abstract class ChatRepository{
+  Future<List<ChatEntity>> fetchChats();
+}
+import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:promts_application_1/features/chat/domain/entities/chat_entity.dart';
+import 'package:promts_application_1/features/chat/cubits/chat_cubit.dart';
+import 'package:promts_application_1/core/cubits/data_cubit.dart';
+
+class WidgetChats extends StatefulWidget {
+  final ValueChanged<int> onChatSelected;
+  const WidgetChats({super.key, required this.onChatSelected});
+
+  @override
+  State<WidgetChats> createState() => _WidgetChatsState();
+}
+
+class _WidgetChatsState extends State<WidgetChats> {
+  final TextEditingController _searchController = TextEditingController();
+  String _query = '';
+
+  @override
+  void initState() {
+    super.initState();
+    _searchController.addListener(() {
+      setState(() {
+        _query = _searchController.text.trim().toLowerCase();
+      });
+    });
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  void selectChat(int id) {
+    widget.onChatSelected(id);
+    Navigator.of(context).pop();
+  }
+
+  void _refreshChats() {
+    context.read<ChatCubit>().fetchChats();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return SafeArea(
+      child: Column(
+        children: [
+          // Заголовок и поле поиска всегда отображаются
+          ListTile(
+            title: const Text(
+              "Мои чаты",
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+            trailing: IconButton(
+              icon: const Icon(Icons.refresh),
+              tooltip: 'Обновить чаты',
+              onPressed: _refreshChats,
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: TextField(
+              controller: _searchController,
+              decoration: const InputDecoration(
+                labelText: 'Поиск чатов',
+                border: OutlineInputBorder(),
+                prefixIcon: Icon(Icons.search),
+              ),
+            ),
+          ),
+          // Контентная область
+          Expanded(
+            child: BlocBuilder<ChatCubit, DataState<List<ChatEntity>>>(
+              builder: (context, state) {
+                if (state is DataLoading) {
+                  return const Center(child: CircularProgressIndicator());
+                } else if (state is DataError) {
+                  return Center(child: Text('Ошибка: ${state.toString()}'));
+                } else if (state is DataLoaded<List<ChatEntity>>) {
+                  final sorted = [...state.data]
+                    ..sort((a, b) {
+                      if (a.starredChat && !b.starredChat) return -1;
+                      if (!a.starredChat && b.starredChat) return 1;
+                      return b.dateEdit.compareTo(a.dateEdit);
+                    });
+
+                  final filtered = _query.isEmpty
+                      ? sorted
+                      : sorted
+                          .where((chat) =>
+                              chat.chatName.toLowerCase().contains(_query))
+                          .toList();
+
+                  if (filtered.isEmpty) {
+                    return const Center(child: Text('Чатов не найдено'));
+                  }
+
+                  return ListView.builder(
+                    itemCount: filtered.length,
+                    itemBuilder: (ctx, idx) {
+                      final chat = filtered[idx];
+                      return ListTile(
+                        leading: chat.starredChat
+                            ? const Icon(Icons.star, color: Colors.amber)
+                            : const Icon(Icons.chat_bubble_outline),
+                        title: Text(chat.chatName),
+                        subtitle: Text(
+                          'Изменён: ${chat.dateEdit.toLocal().toIso8601String().split('T').first}',
+                        ),
+                        onTap: () => selectChat(chat.id),
+                      );
+                    },
+                  );
+                }
+                // default
+                return const SizedBox.shrink();
+              },
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
 import 'package:flutter/material.dart';
 
 class WidgetChatCreateSettings extends StatefulWidget {
-  final int chatId;              // ID Ñ‡Ð°Ñ‚Ð°
-  final double temperature;      // Ð¢ÐµÐ¼Ð¿ÐµÑ€Ð°Ñ‚ÑƒÑ€Ð° Ñ‡Ð°Ñ‚Ð°
-  final String contextChat;      // ÐšÐ¾Ð½Ñ‚ÐµÐºÑÑ‚ (Ð¿Ñ€Ð°Ð²Ð¸Ð»Ð°) Ñ‡Ð°Ñ‚Ð°
-  final bool useMemory;          // Ð˜ÑÐ¿Ð¾Ð»ÑŒÐ·Ð¾Ð²Ð°Ñ‚ÑŒ Ð»Ð¸ Ð¿Ð°Ð¼ÑÑ‚ÑŒ Ð² Ñ‡Ð°Ñ‚Ðµ?
-  final bool updateMemory;       // ÐœÐ¾Ð¶ÐµÑ‚ Ð»Ð¸ Ñ‡Ð°Ñ‚ Ð¸Ð·Ð¼ÐµÐ½ÑÑ‚ÑŒ Ð¿Ð°Ð¼ÑÑ‚ÑŒ Ð¿Ð¾Ð»ÑŒÐ·Ð¾Ð²Ð°Ñ‚ÐµÐ»Ñ?
+  final int chatId;              // ID чата
+  final double temperature;      // Температура чата
+  final String contextChat;      // Контекст (правила) чата
+  final bool useMemory;          // Использовать ли память в чате?
+  final bool updateMemory;       // Может ли чат изменять память пользователя?
 
-  /// ÐšÐ¾Ð»Ð±ÑÐº, ÐºÐ¾Ñ‚Ð¾Ñ€Ñ‹Ð¹ Ð²Ñ‹Ð·Ñ‹Ð²Ð°ÐµÑ‚ÑÑ Ð¿Ñ€Ð¸ Ð½Ð°Ð¶Ð°Ñ‚Ð¸Ð¸ "Ð¡Ð¾Ñ…Ñ€Ð°Ð½Ð¸Ñ‚ÑŒ".
-  /// Ð’Ð¾Ð·Ð²Ñ€Ð°Ñ‰Ð°ÐµÑ‚ Ð²ÑÐµ Ð¾Ð±Ð½Ð¾Ð²Ð»Ñ‘Ð½Ð½Ñ‹Ðµ Ð´Ð°Ð½Ð½Ñ‹Ðµ (Ð² Ð²Ð¸Ð´Ðµ Map) Ð² onSave().
+  /// Колбэк, который вызывается при нажатии "Сохранить".
+  /// Возвращает все обновлённые данные (в виде Map) в onSave().
   final ValueChanged<Map<String, dynamic>> onSave;
 
   const WidgetChatCreateSettings({
-    Key? key,
+    super.key,
     required this.chatId,
     required this.temperature,
     required this.contextChat,
     required this.useMemory,
     required this.updateMemory,
     required this.onSave,
-  }) : super(key: key);
+  });
 
   @override
   State<WidgetChatCreateSettings> createState() => _WidgetChatCreateSettingsState();
@@ -85,7 +751,7 @@ class _WidgetChatCreateSettingsState extends State<WidgetChatCreateSettings> {
   }
 
   void _handleSave() {
-    // Ð¡Ð¾Ð±Ð¸Ñ€Ð°ÐµÐ¼ Ð´Ð°Ð½Ð½Ñ‹Ðµ, ÐºÐ¾Ñ‚Ð¾Ñ€Ñ‹Ðµ Ð½Ð°Ð´Ð¾ ÑÐ¾Ñ…Ñ€Ð°Ð½Ð¸Ñ‚ÑŒ
+    // Собираем данные, которые надо сохранить
     final updatedData = {
       'chatId': widget.chatId,
       'temperature': _temperature,
@@ -93,36 +759,36 @@ class _WidgetChatCreateSettingsState extends State<WidgetChatCreateSettings> {
       'useMemory': _useMemory,
       'updateMemory': _updateMemory,
     };
-    // Ð’Ñ‹Ð·Ñ‹Ð²Ð°ÐµÐ¼ ÐºÐ¾Ð»Ð±ÑÐº, Ð¿ÐµÑ€ÐµÐ´Ð°Ð²Ð°Ñ Ð¾Ð±Ð½Ð¾Ð²Ð»Ñ‘Ð½Ð½Ñ‹Ðµ Ð´Ð°Ð½Ð½Ñ‹Ðµ
+    // Вызываем колбэк, передавая обновлённые данные
     widget.onSave(updatedData);
-    // Ð—Ð°ÐºÑ€Ñ‹Ð²Ð°ÐµÐ¼ Ð´Ð¸Ð°Ð»Ð¾Ð³
+    // Закрываем диалог
     Navigator.of(context).pop();
   }
 
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: const Text("Ð¡Ð¾Ð·Ð´Ð°Ð½Ð¸Ðµ Ñ‡Ð°Ñ‚Ð°"),
+      title: const Text("Создание чата"),
       content: SizedBox(
-        width: 400,   // Ð—Ð°Ñ„Ð¸ÐºÑÐ¸Ñ€Ð¾Ð²Ð°Ð½Ð½Ð°Ñ ÑˆÐ¸Ñ€Ð¸Ð½Ð° Ð¾ÐºÐ½Ð°
-        height: 350,  // Ð—Ð°Ñ„Ð¸ÐºÑÐ¸Ñ€Ð¾Ð²Ð°Ð½Ð½Ð°Ñ Ð²Ñ‹ÑÐ¾Ñ‚Ð° Ð¾ÐºÐ½Ð°
+        width: 400,   // Зафиксированная ширина окна
+        height: 350,  // Зафиксированная высота окна
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            // (1) ID Ñ‡Ð°Ñ‚Ð°
+            // (1) ID чата
             Row(
               children: [
-                const Text("ID Ñ‡Ð°Ñ‚Ð°: "),
+                const Text("ID чата: "),
                 Text(widget.chatId.toString()),
               ],
             ),
             const SizedBox(height: 8),
 
-            // (2) Ð¢ÐµÐ¼Ð¿ÐµÑ€Ð°Ñ‚ÑƒÑ€Ð° Ñ‡Ð°Ñ‚Ð° (Ð¿Ñ€Ð¸Ð¼ÐµÑ€ Ñ DropdownButton)
+            // (2) Температура чата (пример с DropdownButton)
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text("Ð¢ÐµÐ¼Ð¿ÐµÑ€Ð°Ñ‚ÑƒÑ€Ð° Ñ‡Ð°Ñ‚Ð°:"),
+                const Text("Температура чата:"),
                 DropdownButton<double>(
                   value: _temperature,
                   items: [0.0, 0.5, 1.0, 1.5, 2.0].map((temp) {
@@ -143,12 +809,12 @@ class _WidgetChatCreateSettingsState extends State<WidgetChatCreateSettings> {
             ),
             const SizedBox(height: 8),
 
-            // (3) ÐšÐ¾Ð½Ñ‚ÐµÐºÑÑ‚ Ñ‡Ð°Ñ‚Ð° (Ð¼Ð½Ð¾Ð³Ð¾ÑÑ‚Ñ€Ð¾Ñ‡Ð½Ð¾Ðµ Ð¿Ð¾Ð»Ðµ)
+            // (3) Контекст чата (многострочное поле)
             
             TextField(
               controller: _contextController,
               decoration: const InputDecoration(
-                labelText: "ÐšÐ¾Ð½Ñ‚ÐµÐºÑÑ‚ Ñ‡Ð°Ñ‚Ð°",
+                labelText: "Контекст чата",
                 border: OutlineInputBorder(),
               ),
               keyboardType: TextInputType.multiline,
@@ -157,10 +823,10 @@ class _WidgetChatCreateSettingsState extends State<WidgetChatCreateSettings> {
             ),
             const SizedBox(height: 8),
 
-            // (4) Ð˜ÑÐ¿Ð¾Ð»ÑŒÐ·Ð¾Ð²Ð°Ñ‚ÑŒ Ð»Ð¸ Ð¿Ð°Ð¼ÑÑ‚ÑŒ Ð² Ð´Ð°Ð½Ð½Ð¾Ð¼ Ñ‡Ð°Ñ‚Ðµ?
+            // (4) Использовать ли память в данном чате?
             Row(
               children: [
-                Expanded(child: Text("Ð˜ÑÐ¿Ð¾Ð»ÑŒÐ·Ð¾Ð²Ð°Ñ‚ÑŒ Ð»Ð¸ Ð¿Ð°Ð¼ÑÑ‚ÑŒ Ð² Ñ‡Ð°Ñ‚Ðµ?")),
+                const Expanded(child: Text("Использовать ли память в чате?")),
                 Switch(
                   value: _useMemory,
                   onChanged: (val) {
@@ -173,10 +839,10 @@ class _WidgetChatCreateSettingsState extends State<WidgetChatCreateSettings> {
             ),
             const SizedBox(height: 8),
 
-            // (5) ÐœÐ¾Ð¶ÐµÑ‚ Ð»Ð¸ Ñ‡Ð°Ñ‚ Ð¸Ð·Ð¼ÐµÐ½ÑÑ‚ÑŒ Ð¿Ð°Ð¼ÑÑ‚ÑŒ?
+            // (5) Может ли чат изменять память?
             Row(
               children: [
-                Expanded(child: Text("ÐœÐ¾Ð¶ÐµÑ‚ Ð»Ð¸ Ñ‡Ð°Ñ‚ Ð¸Ð·Ð¼ÐµÐ½ÑÑ‚ÑŒ Ð¿Ð°Ð¼ÑÑ‚ÑŒ Ð¿Ð¾Ð»ÑŒÐ·Ð¾Ð²Ð°Ñ‚ÐµÐ»Ñ?")),
+                const Expanded(child: Text("Может ли чат изменять память пользователя?")),
                 Switch(
                   value: _updateMemory,
                   onChanged: (val) {
@@ -193,209 +859,298 @@ class _WidgetChatCreateSettingsState extends State<WidgetChatCreateSettings> {
       actions: [
         TextButton(
           onPressed: () => Navigator.of(context).pop(),
-          child: const Text("ÐžÑ‚Ð¼ÐµÐ½Ð°"),
+          child: const Text("Отмена"),
         ),
         ElevatedButton(
           onPressed: _handleSave,
-          child: const Text("Ð¡Ð¾Ñ…Ñ€Ð°Ð½Ð¸Ñ‚ÑŒ"),
+          child: const Text("Сохранить"),
         ),
       ],
     );
   }
 }
 import 'package:flutter/material.dart';
-import 'package:promts_application_1/features/user/view/widget_user_settings.dart';
-/// ÐšÐ»Ð°ÑÑ, Ñ€ÐµÐ°Ð»Ð¸Ð·ÑƒÑŽÑ‰Ð¸Ð¹ AppBar Ñ Ð¾Ð´Ð½Ð¸Ð¼ ÐºÐ¾Ð»Ð±ÑÐºÐ¾Ð¼ Ð´Ð»Ñ Ð»ÐµÐ²Ð¾Ð³Ð¾ Ð¼ÐµÐ½ÑŽ.
-class WidgetAppBar extends StatelessWidget implements PreferredSizeWidget {
-  final VoidCallback onMenuPressed; // Ð´Ð»Ñ Ð¾Ñ‚ÐºÑ€Ñ‹Ñ‚Ð¸Ñ Ð»ÐµÐ²Ð¾Ð³Ð¾ Drawer
+import 'package:flutter_markdown/flutter_markdown.dart';
+import 'package:promts_application_1/features/message/domain/entities/message_entity.dart';
 
-  const WidgetAppBar({
-    Key? key,
-    required this.onMenuPressed,
-  }) : super(key: key);
+class WidgetChatPage extends StatefulWidget {
+  const WidgetChatPage({super.key});
 
   @override
-  Size get preferredSize => const Size.fromHeight(kToolbarHeight);
-
-  @override
-  Widget build(BuildContext context) {
-    return AppBar(
-      automaticallyImplyLeading: false,
-      title: Row(
-        children: [
-          // ÐšÐ½Ð¾Ð¿ÐºÐ° Ð¾Ñ‚ÐºÑ€Ñ‹Ñ‚Ð¸Ñ NavigationDrawer (Ð¸ÐºÐ¾Ð½ÐºÐ° "3 Ð¿Ð¾Ð»Ð¾ÑÐºÐ¸")
-          IconButton(
-            icon: const Icon(Icons.menu),
-            onPressed: onMenuPressed,
-          ),
-          // ÐšÐ½Ð¾Ð¿ÐºÐ° "Promts"
-          TextButton(
-            onPressed: () {
-              // TODO: Ð»Ð¾Ð³Ð¸ÐºÐ° Ð¿ÐµÑ€ÐµÑ…Ð¾Ð´Ð° Ð½Ð° Ð³Ð»Ð°Ð²Ð½Ñ‹Ð¹ ÑÐºÑ€Ð°Ð½
-            },
-            child: const Text(
-              "Promts",
-              style: TextStyle(
-                fontSize: 20,
-                color: Colors.black
-                ),
-            ),
-          ),
-          // Ð¦ÐµÐ½Ñ‚Ñ€ AppBar (Ð½Ð°Ð·Ð²Ð°Ð½Ð¸Ðµ Ñ‡Ð°Ñ‚Ð°)
-          Expanded(
-            child: Text(
-              "ÐžÐ±Ñ‹Ñ‡Ð½Ñ‹Ð¹ Ñ‡Ð°Ñ‚-Ð±Ð¾Ñ‚",
-              textAlign: TextAlign.center,
-              style: const TextStyle(fontWeight: FontWeight.w600),
-            ),
-          ),
-          // ÐšÐ½Ð¾Ð¿ÐºÐ° Ð½Ð°ÑÑ‚Ñ€Ð¾ÐµÐº Ð¿Ð¾Ð»ÑŒÐ·Ð¾Ð²Ð°Ñ‚ÐµÐ»Ñ (Ð¸ÐºÐ¾Ð½ÐºÐ° Ñ‡ÐµÐ»Ð¾Ð²ÐµÑ‡ÐºÐ°)
-IconButton(
-  icon: const Icon(Icons.person),
-  onPressed: () {
-    showDialog(
-      context: context,
-      builder: (_) => WidgetUserSettings(
-        email: "BoberKurwa@rambler.ru",
-        userId: 167491164,
-        balance: 191.61,
-        memoryEnabled: true,
-        aiCanUpdateMemory: true,
-        memory: "Ð˜Ð¼Ñ Ð¿Ð¾Ð»ÑŒÐ·Ð¾Ð²Ð°Ñ‚ÐµÐ»Ñ ÐœÐ°ÐºÑÐ¸Ð¼, Ð¸Ð· ÐŸÐµÑ€Ð¼Ð¸ (Ð¸ Ñ‚.Ð´.)",
-        selectedModel: "DeepSeek V3",
-        availableModels: [
-          "DeepSeek V3",
-          "DeepSeek R1",
-          "YandexGPT 5 Pro",
-          "YandexGPT 5 Lite",
-          "ChatGPT 4o mini",
-          "ChatGPT 4o",
-          "ChatGPT o1",
-          "Qwen-Max",
-          "Qwen-Turbo",
-        ],
-        onSave: (updatedData) {
-          // Ð—Ð´ÐµÑÑŒ Ð¾Ð±Ñ€Ð°Ð±Ð°Ñ‚Ñ‹Ð²Ð°ÐµÐ¼ Ð½Ð¾Ð²Ñ‹Ðµ Ð´Ð°Ð½Ð½Ñ‹Ðµ Ð¿Ð¾Ð»ÑŒÐ·Ð¾Ð²Ð°Ñ‚ÐµÐ»Ñ:
-          // updatedData['memory'], updatedData['memoryEnabled'], Ð¸ Ñ‚.Ð´.
-          print("ÐÐ¾Ð²Ñ‹Ðµ Ð½Ð°ÑÑ‚Ñ€Ð¾Ð¹ÐºÐ¸: $updatedData");
-          // TODO: Ð¾Ñ‚Ð¿Ñ€Ð°Ð²Ð¸Ñ‚ÑŒ Ð¸Ð·Ð¼ÐµÐ½ÐµÐ½Ð¸Ñ Ð½Ð° Ð±ÑÐºÐµÐ½Ð´
-        },
-      ),
-    );
-  },
-),
-
-
-        ],
-      ),
-    );
-  }
-}
-import 'package:flutter/material.dart';
-
-/// NavigationDrawer, ÐºÐ¾Ñ‚Ð¾Ñ€Ñ‹Ð¹ Ð¿Ð¾ÐºÐ°Ð·Ñ‹Ð²Ð°ÐµÑ‚ ÑÐ¿Ð¸ÑÐ¾Ðº Ñ‡Ð°Ñ‚Ð¾Ð² Ð¿Ð¾Ð»ÑŒÐ·Ð¾Ð²Ð°Ñ‚ÐµÐ»Ñ.
-class WidgetChats extends StatefulWidget {
-  const WidgetChats({Key? key}) : super(key: key);
-
-  @override
-  State<WidgetChats> createState() => _WidgetChatsState();
+  // ignore: library_private_types_in_public_api
+  _WidgetChatPageState createState() => _WidgetChatPageState();
 }
 
-class _WidgetChatsState extends State<WidgetChats> {
-  final TextEditingController _searchController = TextEditingController();
-
-  // Ð¡Ð¿Ð¸ÑÐ¾Ðº Ñ‡Ð°Ñ‚Ð¾Ð² Ð´Ð»Ñ Ð¿Ñ€Ð¸Ð¼ÐµÑ€Ð°
-  final List<String> _chats = [
-    "ÐŸÐµÑ€Ð²Ñ‹Ð¹ Ñ‡Ð°Ñ‚",
-    "Ð’Ñ‚Ð¾Ñ€Ð¾Ð¹ Ñ‡Ð°Ñ‚",
-    "Ð¢Ñ€ÐµÑ‚Ð¸Ð¹ Ñ‡Ð°Ñ‚",
-    "Ð§ÐµÑ‚Ð²Ñ‘Ñ€Ñ‚Ñ‹Ð¹ Ñ‡Ð°Ñ‚",
+class _WidgetChatPageState extends State<WidgetChatPage> {
+  final List<MessageEntity> _messages = [
+    MessageEntity(
+      id: 1,
+      chatId: 1,
+      modelUriId: 1,
+      oldMessage: false,
+      role: 'USER',
+      text: 'Здравствуйте!',
+      type: 'MESSAGE',
+      dateCreate: DateTime.now(),
+    ),
+    MessageEntity(
+      id: 2,
+      chatId: 1,
+      modelUriId: 1,
+      oldMessage: false,
+      role: 'bot',
+      text: 'Привет, я бот!',
+      type: 'ASSISTANT',
+      dateCreate: DateTime.now(),
+    ),
   ];
-
-  // Ð ÐµÐ·ÑƒÐ»ÑŒÑ‚Ð°Ñ‚Ñ‹ Ð¿Ð¾Ð¸ÑÐºÐ°
-  List<String> _filteredChats = [];
+  final TextEditingController _messageController = TextEditingController();
+  final ScrollController _scrollController = ScrollController();
 
   @override
-  void initState() {
-    super.initState();
-    // Ð˜Ð·Ð½Ð°Ñ‡Ð°Ð»ÑŒÐ½Ð¾ Ð¿Ð¾ÐºÐ°Ð·Ñ‹Ð²Ð°ÐµÐ¼ Ð²ÑÐµ Ñ‡Ð°Ñ‚Ñ‹
-    _filteredChats = List.from(_chats);
+  void dispose() {
+    _messageController.dispose();
+    _scrollController.dispose();
+    super.dispose();
   }
 
-  // Ð›Ð¾Ð³Ð¸ÐºÐ° Ð¿Ð¾Ð¸ÑÐºÐ°
-  void _searchChats() {
-    final query = _searchController.text.toLowerCase().trim();
+  void _sendMessage() {
+    final text = _messageController.text.trim();
+    if (text.isEmpty) return;
     setState(() {
-      if (query.isEmpty) {
-        _filteredChats = List.from(_chats);
-      } else {
-        _filteredChats = _chats.where((chat) {
-          return chat.toLowerCase().contains(query);
-        }).toList();
+      _messages.add(MessageEntity(
+        id: _messages.length + 1,
+        chatId: 1,
+        modelUriId: 1,
+        oldMessage: false,
+        role: 'USER',
+        text: text,
+        type: 'MESSAGE',
+        dateCreate: DateTime.now(),
+      ));
+      _messages.add(MessageEntity(
+        id: _messages.length + 1,
+        chatId: 1,
+        modelUriId: 1,
+        oldMessage: false,
+        role: 'ASSISTANT',
+        text: """
+Вот пример кода на Dart, в котором содержится длинный текст с Markdown-разметкой:
+
+```dart
+final String markdownText = '''
+# Заголовок первого уровня
+
+Добро пожаловать в пример Markdown-разметки, который можно использовать прямо в коде. Markdown позволяет легко форматировать текст, добавлять ссылки, изображения, таблицы, код и многое другое.
+
+## Заголовок второго уровня
+
+### Основные возможности Markdown
+
+Markdown поддерживает следующие элементы:
+
+- **Выделенный текст**: можно использовать **жирный** или *курсив* для выделения текста.
+- **Списки**:
+  - Ненумерованные списки с использованием дефисов или звездочек.
+  - Вложенные списки, как показано ниже:
+    - Подэлемент 1
+    - Подэлемент 2
+- **Нумерованные списки**:
+  1. Первый пункт
+  2. Второй пункт
+  3. Третий пункт
+
+### Цитаты и разделители
+
+> Это пример блока цитаты. Он используется для выделения цитируемых отрывков или важных сообщений.
+>
+> Можно добавить несколько строк в цитату.
+
+---
+
+### Код и программирование
+
+Вы можете вставлять фрагменты кода как в строчку, используя обратные кавычки, например: `print("Hello, World!");`
+
+А для форматирования целых блоков кода используйте тройные обратные кавычки:
+
+```dart
+// Пример кода на Dart
+void main() {
+  print("Привет, мир!");
+}
+```
+
+### Ссылки и изображения
+
+Для создания ссылок используйте следующий синтаксис:
+
+[Официальный сайт Dart](https://dart.dev)
+
+А чтобы добавить изображение, используйте такой формат:
+
+![Пример изображения](https://images.pexels.com/photos/56866/garden-rose-red-pink-56866.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1)
+
+### Таблицы
+
+Markdown позволяет создавать таблицы:
+
+| Название    | Описание                | Пример       |
+| ----------- | ----------------------- | ------------ |
+| Элемент 1   | Первое значение         | Пример 1     |
+| Элемент 2   | Второе значение         | Пример 2     |
+| Элемент 3   | Третье значение         | Пример 3     |
+
+### Дополнительный текст
+
+Markdown — это простой и удобный способ создания форматированного текста. Он широко используется для:
+- Документации к проектам
+- README файлов на GitHub
+- Веб-блогов и статей
+- Форумов и систем комментариев
+
+Надеюсь, этот пример поможет вам понять, как использовать Markdown-разметку прямо в коде!
+''';
+```
+
+Теперь вы можете вставить этот код в ваше приложение и использовать переменную `markdownText` для дальнейшей обработки или отображения.
+""",
+        type: 'MESSAGE',
+        dateCreate: DateTime.now(),
+      ));
+    });
+
+    _messageController.clear();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (_scrollController.hasClients) {
+        _scrollController.animateTo(
+          _scrollController.position.maxScrollExtent,
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeOut,
+        );
       }
     });
   }
 
   @override
   Widget build(BuildContext context) {
-    // Drawer Ð¿Ð¾ ÑƒÐ¼Ð¾Ð»Ñ‡Ð°Ð½Ð¸ÑŽ Â«Ð½Ð°ÐºÑ€Ñ‹Ð²Ð°ÐµÑ‚Â» ÑÐºÑ€Ð°Ð½, 
-    // Ð½Ð¾ ÑˆÐ¸Ñ€Ð¸Ð½Ñƒ Drawer Ð¼Ñ‹ Ð±ÑƒÐ´ÐµÐ¼ Ð¾Ð³Ñ€Ð°Ð½Ð¸Ñ‡Ð¸Ð²Ð°Ñ‚ÑŒ Ð² Scaffold (ÑÐ¼. Ð´Ð°Ð»ÐµÐµ).
-    return SafeArea(
-      child: Column(
-        children: [
-          // Ð—Ð°Ð³Ð¾Ð»Ð¾Ð²Ð¾Ðº (Ð½ÐµÐ¾Ð±ÑÐ·Ð°Ñ‚ÐµÐ»ÑŒÐ½Ð¾)
-          const ListTile(
-            title: Text(
-              "ÐœÐ¾Ð¸ Ñ‡Ð°Ñ‚Ñ‹",
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+    return Center(
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 700),
+        child: Column(
+          children: [
+            Expanded(
+              child: ListView.builder(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                itemCount: _messages.length,
+                itemBuilder: (context, index) {
+                  final msg = _messages[index];
+                  return _buildMessageBubble(msg);
+                },
+              ),
             ),
-          ),
-
-          // Ð¡Ñ‚Ñ€Ð¾ÐºÐ° Ð¿Ð¾Ð¸ÑÐºÐ°
-          Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: Row(
-              children: [
-                // ÐŸÐ¾Ð»Ðµ Ð²Ð²Ð¾Ð´Ð°
-                Expanded(
-                  child: TextField(
-                    controller: _searchController,
-                    decoration: const InputDecoration(
-                      labelText: "ÐŸÐ¾Ð¸ÑÐº Ñ‡Ð°Ñ‚Ð¾Ð²",
-                      border: OutlineInputBorder(),
+            Container(
+              color: Colors.grey[200],
+              padding: const EdgeInsets.all(8),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: TextField(
+                      controller: _messageController,
+                      decoration: const InputDecoration(
+                        hintText: "Введите сообщение",
+                        border: OutlineInputBorder(),
+                      ),
+                      minLines: 1,
+                      maxLines: 8,
                     ),
-                    onChanged: (value) {
-                      _searchChats();
-                    },
                   ),
-                ),
-                const SizedBox(width: 8),
-                // ÐšÐ½Ð¾Ð¿ÐºÐ° Ð¿Ð¾Ð¸ÑÐºÐ°
-                IconButton(
-                  icon: const Icon(Icons.search),
-                  onPressed: _searchChats,
+                  const SizedBox(width: 8),
+                  IconButton(
+                    icon: const Icon(Icons.send),
+                    onPressed: _sendMessage,
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMessageBubble(MessageEntity msg) {
+    final alignment =
+        msg.role == "USER" ? Alignment.centerRight : Alignment.centerLeft;
+    final bgColor = msg.role == "USER" ? Colors.blue[100] : Colors.grey[300];
+
+    return Container(
+      alignment: alignment,
+      margin: const EdgeInsets.symmetric(vertical: 4),
+      child: Column(
+        crossAxisAlignment: msg.role == "USER"
+            ? CrossAxisAlignment.end
+            : CrossAxisAlignment.start,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(10),
+            constraints: const BoxConstraints(maxWidth: 550),
+            decoration: BoxDecoration(
+              color: bgColor,
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                MarkdownBody(
+                  data: msg.text,
+                  selectable: true,
+                  styleSheet: MarkdownStyleSheet.fromTheme(Theme.of(context)),
+                  imageBuilder: (uri, title, alt) {
+                    return Image.network(uri.toString());
+                  },
                 ),
               ],
             ),
           ),
-
-          // Ð¡Ð¿Ð¸ÑÐ¾Ðº Ñ‡Ð°Ñ‚Ð¾Ð²
-          Expanded(
-            child: ListView.builder(
-              itemCount: _filteredChats.length,
-              itemBuilder: (context, index) {
-                final chatName = _filteredChats[index];
-                return ListTile(
-                  title: Text(chatName),
-                  onTap: () {
-                    // Ð—Ð°ÐºÑ€Ñ‹Ð²Ð°ÐµÐ¼ Drawer
-                    Navigator.of(context).pop();
-                    // Ð”Ð¾Ð¿. Ð»Ð¾Ð³Ð¸ÐºÐ°: Ð¿ÐµÑ€ÐµÑ…Ð¾Ð´ Ðº ÑÐºÑ€Ð°Ð½Ñƒ Ñ‡Ð°Ñ‚Ð°
-                    print("ÐžÑ‚ÐºÑ€Ñ‹Ð²Ð°ÐµÐ¼ Ñ‡Ð°Ñ‚: $chatName");
+          // Время
+          const SizedBox(height: 2),
+          const Text(
+            "14:04, 2.3.2025",
+            style: TextStyle(fontSize: 10, color: Colors.grey),
+          ),
+          // Кнопки под сообщением
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Кнопка копирования (всегда)
+              IconButton(
+                icon: const Icon(Icons.copy),
+                iconSize: 16,
+                onPressed: () {
+                  // Пока без реализации
+                },
+              ),
+              // Кнопка перегенерации (только для сообщений чат-бота)
+              if (!(msg.role == "USER"))
+                IconButton(
+                  icon: const Icon(Icons.autorenew), // "зацикленная стрелка"
+                  iconSize: 16,
+                  onPressed: () {
+                    // Пока без реализации
                   },
-                );
-              },
-            ),
+                ),
+              // Кнопка удаления (только для сообщений пользователя)
+              if (msg.role == "USER")
+                IconButton(
+                  icon: const Icon(Icons.delete),
+                  iconSize: 16,
+                  onPressed: () {
+                    // Пока без реализации
+                  },
+                ),
+            ],
           ),
         ],
       ),
@@ -403,13 +1158,12 @@ class _WidgetChatsState extends State<WidgetChats> {
   }
 }
 import 'package:flutter/material.dart';
+// Импортируем ваш файл с диалогом "Создание чат-бота"
+// Убедитесь, что путь верный, например:
+import 'package:promts_application_1/features/chatbot/view/widgets/widget_create_chat_bots.dart';
 
-/// Ð’Ð¸Ð´Ð¶ÐµÑ‚ Ñ‡Ð°Ñ‚-Ð±Ð¾Ñ‚Ð¾Ð² (endDrawer), Ð² ÐºÐ¾Ñ‚Ð¾Ñ€Ð¾Ð¼ ÐµÑÑ‚ÑŒ:
-///  - ÐšÐ½Ð¾Ð¿ÐºÐ° ÑÐ¾Ð·Ð´Ð°Ð½Ð¸Ñ Ñ‡Ð°Ñ‚-Ð±Ð¾Ñ‚Ð° (ÑÐ»ÐµÐ²Ð°),
-///  - Ð¡Ñ‚Ñ€Ð¾ÐºÐ° Ð¿Ð¾Ð¸ÑÐºÐ° Ð¸ ÐºÐ½Ð¾Ð¿ÐºÐ° Ð¿Ð¾Ð¸ÑÐºÐ°,
-///  - Ð¡Ð¿Ð¸ÑÐ¾Ðº Ñ‡Ð°Ñ‚-Ð±Ð¾Ñ‚Ð¾Ð², ÐºÐ°Ð¶Ð´Ñ‹Ð¹ ÑÐ»ÐµÐ¼ÐµÐ½Ñ‚ Ð¸Ð¼ÐµÐµÑ‚ Ð¸ÐºÐ¾Ð½ÐºÑƒ "!" Ð´Ð»Ñ Ð¿Ñ€Ð¾ÑÐ¼Ð¾Ñ‚Ñ€Ð° Ð¸Ð½Ñ„Ð¾.
 class WidgetChatBots extends StatefulWidget {
-  const WidgetChatBots({Key? key}) : super(key: key);
+  const WidgetChatBots({super.key});
 
   @override
   State<WidgetChatBots> createState() => _WidgetChatBotsState();
@@ -418,45 +1172,125 @@ class WidgetChatBots extends StatefulWidget {
 class _WidgetChatBotsState extends State<WidgetChatBots> {
   final TextEditingController _searchController = TextEditingController();
 
-  /// ÐŸÑ€Ð¸Ð¼ÐµÑ€ Ð´Ð°Ð½Ð½Ñ‹Ñ… Ð¾ Ñ‡Ð°Ñ‚-Ð±Ð¾Ñ‚Ð°Ñ… (Ð² Ñ€ÐµÐ°Ð»ÑŒÐ½Ð¾Ð¼ Ð¿Ñ€Ð¸Ð»Ð¾Ð¶ÐµÐ½Ð¸Ð¸ Ð²Ñ‹ Ð¼Ð¾Ð¶ÐµÑ‚Ðµ Ð¿Ð¾Ð»ÑƒÑ‡Ð°Ñ‚ÑŒ Ð¸Ñ… Ñ Ð±ÑÐºÐµÐ½Ð´Ð°).
+  /// Пример данных о чат-ботах (в реальном приложении вы можете получать их с бэкенда).
   final List<Map<String, dynamic>> _allChatBots = [
     {
       "id": 1,
-      "chatBotName": "ÐŸÐ¾Ð¼Ð¾Ñ‰Ð½Ð¸Ðº Ð¿Ð¾ Ð¿Ñ€Ð¾Ð³Ñ€Ð°Ð¼Ð¼Ð¸Ñ€Ð¾Ð²Ð°Ð½Ð¸ÑŽ",
-      "chatBotDesc": "ÐŸÐ¾Ð¼Ð¾Ð³Ð°ÐµÑ‚ Ñ Ð²Ð¾Ð¿Ñ€Ð¾ÑÐ°Ð¼Ð¸ Ð¿Ð¾ Python, Java Ð¸ Ð´Ñ€ÑƒÐ³Ð¸Ð¼ ÑÐ·Ñ‹ÐºÐ°Ð¼.",
+      "chatBotName": "Помощник по программированию",
+      "chatBotDesc": "Помогает с вопросами по Python, Java и другим языкам.",
       "messagesToday": 123,
       "totalMessages": 1000,
       "isSelectedByRedact": true
     },
     {
       "id": 2,
-      "chatBotName": "Ð¤Ð¸Ð½Ð°Ð½ÑÐ¾Ð²Ñ‹Ð¹ ÑÐ¾Ð²ÐµÑ‚Ð½Ð¸Ðº",
-      "chatBotDesc": "ÐŸÐ¾Ð¼Ð¾Ð³Ð°ÐµÑ‚ Ñ Ð²Ð¾Ð¿Ñ€Ð¾ÑÐ°Ð¼Ð¸ Ð¿Ð¾ Ð¸Ð½Ð²ÐµÑÑ‚Ð¸Ñ†Ð¸ÑÐ¼ Ð¸ Ð±ÑŽÐ´Ð¶ÐµÑ‚Ñƒ.",
+      "chatBotName": "Финансовый советник",
+      "chatBotDesc": "Помогает с вопросами по инвестициям и бюджету.",
       "messagesToday": 87,
       "totalMessages": 500,
       "isSelectedByRedact": false
     },
     {
       "id": 3,
-      "chatBotName": "ÐÐ¾Ð²Ñ‹Ð¹ Ð¿Ð¾Ð¼Ð¾Ñ‰Ð½Ð¸Ðº",
-      "chatBotDesc": "ÐžÐ¿Ð¸ÑÐ°Ð½Ð¸Ðµ Ð½Ð¾Ð²Ð¾Ð³Ð¾ Ð¿Ð¾Ð¼Ð¾Ñ‰Ð½Ð¸ÐºÐ°.",
+      "chatBotName": "Новый помощник",
+      "chatBotDesc": "Описание нового помощника.",
+      "messagesToday": 0,
+      "totalMessages": 0,
+      "isSelectedByRedact": false
+    },
+            {
+      "id": 4,
+      "chatBotName": "Новый помощник",
+      "chatBotDesc": "Описание нового помощника.",
+      "messagesToday": 0,
+      "totalMessages": 0,
+      "isSelectedByRedact": false
+    },
+        {
+      "id": 5,
+      "chatBotName": "Новый помощник",
+      "chatBotDesc": "Описание нового помощника.",
+      "messagesToday": 0,
+      "totalMessages": 0,
+      "isSelectedByRedact": false
+    },
+        {
+      "id": 6,
+      "chatBotName": "Новый помощник",
+      "chatBotDesc": "Описание нового помощника.",
+      "messagesToday": 0,
+      "totalMessages": 0,
+      "isSelectedByRedact": false
+    },
+        {
+      "id": 7,
+      "chatBotName": "Новый помощник",
+      "chatBotDesc": "Описание нового помощника.",
+      "messagesToday": 0,
+      "totalMessages": 0,
+      "isSelectedByRedact": false
+    },
+        {
+      "id": 8,
+      "chatBotName": "Новый помощник",
+      "chatBotDesc": "Описание нового помощника.",
+      "messagesToday": 0,
+      "totalMessages": 0,
+      "isSelectedByRedact": false
+    },
+        {
+      "id": 9,
+      "chatBotName": "Новый помощник",
+      "chatBotDesc": "Описание нового помощника.",
+      "messagesToday": 0,
+      "totalMessages": 0,
+      "isSelectedByRedact": false
+    },
+        {
+      "id": 10,
+      "chatBotName": "Новый помощник",
+      "chatBotDesc": "Описание нового помощника.",
+      "messagesToday": 0,
+      "totalMessages": 0,
+      "isSelectedByRedact": false
+    },
+        {
+      "id": 11,
+      "chatBotName": "Новый помощник",
+      "chatBotDesc": "Описание нового помощника.",
+      "messagesToday": 0,
+      "totalMessages": 0,
+      "isSelectedByRedact": false
+    },
+        {
+      "id": 12,
+      "chatBotName": "Новый помощник",
+      "chatBotDesc": "Описание нового помощника.",
+      "messagesToday": 0,
+      "totalMessages": 0,
+      "isSelectedByRedact": false
+    },
+        {
+      "id": 13,
+      "chatBotName": "Новый помощник",
+      "chatBotDesc": "Описание нового помощника.",
       "messagesToday": 0,
       "totalMessages": 0,
       "isSelectedByRedact": false
     },
   ];
 
-  /// Ð¡Ð¿Ð¸ÑÐ¾Ðº Ð¾Ñ‚Ñ„Ð¸Ð»ÑŒÑ‚Ñ€Ð¾Ð²Ð°Ð½Ð½Ñ‹Ñ… Ñ‡Ð°Ñ‚-Ð±Ð¾Ñ‚Ð¾Ð² (Ð¿Ð¾Ð¸ÑÐº).
+  /// Список отфильтрованных чат-ботов (поиск).
   List<Map<String, dynamic>> _filteredChatBots = [];
 
   @override
   void initState() {
     super.initState();
-    // Ð˜Ð·Ð½Ð°Ñ‡Ð°Ð»ÑŒÐ½Ð¾ Ð¿Ð¾ÐºÐ°Ð·Ñ‹Ð²Ð°ÐµÐ¼ Ð²ÑÐµÑ… Ñ‡Ð°Ñ‚-Ð±Ð¾Ñ‚Ð¾Ð²
+    // Изначально показываем всех чат-ботов
     _filteredChatBots = List.from(_allChatBots);
   }
 
-  /// Ð›Ð¾Ð³Ð¸ÐºÐ° Ð¿Ð¾Ð¸ÑÐºÐ° Ñ‡Ð°Ñ‚-Ð±Ð¾Ñ‚Ð¾Ð²
+  /// Логика поиска чат-ботов
   void _searchChatBots() {
     final query = _searchController.text.trim().toLowerCase();
     setState(() {
@@ -471,67 +1305,221 @@ class _WidgetChatBotsState extends State<WidgetChatBots> {
     });
   }
 
-  /// Ð¡Ð¾Ð·Ð´Ð°Ð½Ð¸Ðµ Ð½Ð¾Ð²Ð¾Ð³Ð¾ Ñ‡Ð°Ñ‚-Ð±Ð¾Ñ‚Ð° (Ð¿Ð¾ÐºÐ° Ð¿Ñ€Ð¾ÑÑ‚Ð¾ Ð¿Ñ€Ð¸Ð¼ÐµÑ€)
+  /// Функция открытия окна "Создание чат-бота"
   void _createChatBot() {
-    // Ð—Ð°ÐºÑ€Ñ‹Ð²Ð°ÐµÐ¼ Drawer
-    Navigator.of(context).pop();
-    // TODO: Ð·Ð´ÐµÑÑŒ Ð»Ð¾Ð³Ð¸ÐºÐ° Ð´Ð»Ñ ÑÐºÑ€Ð°Ð½Ð° ÑÐ¾Ð·Ð´Ð°Ð½Ð¸Ñ Ñ‡Ð°Ñ‚-Ð±Ð¾Ñ‚Ð°
-    print("ÐžÑ‚ÐºÑ€Ñ‹Ñ‚ÑŒ ÑÐºÑ€Ð°Ð½ ÑÐ¾Ð·Ð´Ð°Ð½Ð¸Ñ Ð½Ð¾Ð²Ð¾Ð³Ð¾ Ñ‡Ð°Ñ‚-Ð±Ð¾Ñ‚Ð°");
-  }
-
-  /// ÐŸÑ€Ð¾ÑÐ¼Ð¾Ñ‚Ñ€ Ð¸Ð½Ñ„Ð¾Ñ€Ð¼Ð°Ñ†Ð¸Ð¸ Ð¾ Ñ‡Ð°Ñ‚-Ð±Ð¾Ñ‚Ðµ (Ð¸ÐºÐ¾Ð½ÐºÐ° "!")
-  void _showBotInfo(Map<String, dynamic> bot) {
     showDialog(
       context: context,
-      builder: (_) => AlertDialog(
-        title: Text(bot["chatBotName"] ?? "Ð§Ð°Ñ‚-Ð±Ð¾Ñ‚"),
-        content: Text(bot["chatBotDesc"] ?? "Ð‘ÐµÐ· Ð¾Ð¿Ð¸ÑÐ°Ð½Ð¸Ñ"),
+      builder: (BuildContext context) {
+        // Открываем диалог "Создание чат-бота"
+        return const WidgetCreateChatBots();
+      },
+    );
+  }
+
+  /// Просмотр информации о чат-боте (иконка "!")
+void _showBotInfo(Map<String, dynamic> bot) {
+  showDialog(
+    context: context,
+    builder: (BuildContext context) {
+      // Извлекаем данные из `bot`
+      final chatBotName = bot["chatBotName"] ?? "Без названия";
+      final chatBotDesc = bot["chatBotDesc"] ?? "";
+      final totalMessages = bot["totalMessages"] ?? 0;
+      final messagesToday = bot["messagesToday"] ?? 0;
+      final canUseMemory = bot["canUseMemory"] ?? false;
+      final canUpdateMemory = bot["canUpdateMemory"] ?? false;
+      const modelName = "Yandex GPT 5 Pro"; 
+      // ^ Или если в bot есть поле bot["modelUriName"], используйте его
+      const dateCreate = "3.03.2025"; 
+      // ^ Замените на реальное поле, если есть bot["dateCreate"], 
+      //   иначе можно оставить статическое
+
+      final contextChat = bot["context"] ?? ""; 
+      // ^ Если в bot хранится контекст под другим ключом, подставьте его.
+
+      return AlertDialog(
+        title: const Text("Характеристики чат-бота"),
+        content: SizedBox(
+          width:400,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Название
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text("Название:"),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: TextField(
+                      readOnly: true,
+                      controller: TextEditingController(text: chatBotName),
+                      decoration: const InputDecoration(
+                        isDense: true,
+                        border: OutlineInputBorder(),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 10),
+
+              // Описание
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text("Описание:"),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: TextField(
+                      readOnly: true,
+                      controller: TextEditingController(text: chatBotDesc),
+                      decoration: const InputDecoration(
+                        border: OutlineInputBorder(),
+                      ),
+                      minLines: 3,
+                      maxLines: 3,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+
+              // Кол-во сообщений за все время
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text("Кол-во сообщений за все время:"),
+                  Text("$totalMessages"),
+                ],
+              ),
+              const SizedBox(height: 6),
+
+              // Кол-во сообщений за день
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text("Кол-во сообщений за день:"),
+                  Text("$messagesToday"),
+                ],
+              ),
+              const SizedBox(height: 10),
+
+              // Контекст чата (текст)
+              const Text("Контекст чата:"),
+              const SizedBox(height: 6),
+              TextField(
+                readOnly: true,
+                controller: TextEditingController(text: contextChat),
+                decoration: const InputDecoration(
+                  border: OutlineInputBorder(),
+                ),
+                minLines: 3,
+                maxLines: 3,
+              ),
+              const SizedBox(height: 8),
+
+              // Использовать ли память (Switch, read-only)
+              Row(
+                children: [
+                  const Expanded(child: Text("Использовать ли память в чате?")),
+                  Switch(
+                    value: canUseMemory,
+                    onChanged: null, // null => Switch недоступен для изменения
+                  ),
+                ],
+              ),
+              const SizedBox(height: 6),
+
+              // Может ли чат изменять память (Switch, read-only)
+              Row(
+                children: [
+                  const Expanded(child: Text("Может ли чат изменять память пользователя?")),
+                  Switch(
+                    value: canUpdateMemory,
+                    onChanged: null,
+                  ),
+                ],
+              ),
+              const SizedBox(height: 10),
+
+              // Используемая нейросеть
+              const Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text("Исп-мая нейросеть:"),
+                  Text(modelName),
+                ],
+              ),
+              const SizedBox(height: 10),
+
+              // Дата создания
+              const Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text("Дата создания:"),
+                  Text(dateCreate),
+                ],
+              ),
+              const SizedBox(height: 16),
+            ],
+          ),
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
-            child: const Text("Ð—Ð°ÐºÑ€Ñ‹Ñ‚ÑŒ"),
+            child: const Text("Отмена"),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              // Логика "Начать общаться!"
+              Navigator.of(context).pop();
+              // Например, можно создать чат по этому боту или перейти на экран чата
+            },
+            child: const Text("Начать общаться!"),
           ),
         ],
-      ),
-    );
-  }
+      );
+    },
+  );
+}
 
   @override
   Widget build(BuildContext context) {
     return SafeArea(
       child: Column(
         children: [
-          // Ð—Ð°Ð³Ð¾Ð»Ð¾Ð²Ð¾Ðº (Ð½ÐµÐ¾Ð±ÑÐ·Ð°Ñ‚ÐµÐ»ÑŒÐ½Ð¾)
+          // Заголовок (необязательно)
           const ListTile(
             title: Text(
-              "Ð¡Ð¿Ð¸ÑÐ¾Ðº Ñ‡Ð°Ñ‚-Ð±Ð¾Ñ‚Ð¾Ð²",
+              "Список чат-ботов",
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
           ),
-          // Ð¡Ñ‚Ñ€Ð¾ÐºÐ° Ð¿Ð¾Ð¸ÑÐºÐ° + ÐºÐ½Ð¾Ð¿ÐºÐ° ÑÐ¾Ð·Ð´Ð°Ð½Ð¸Ñ Ñ‡Ð°Ñ‚-Ð±Ð¾Ñ‚Ð° + ÐºÐ½Ð¾Ð¿ÐºÐ° Ð¿Ð¾Ð¸ÑÐºÐ°
+          // Строка поиска + кнопка создания чат-бота + кнопка поиска
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 8.0),
             child: Row(
               children: [
-                // (5.3) ÐšÐ½Ð¾Ð¿ÐºÐ° ÑÐ¾Ð·Ð´Ð°Ð½Ð¸Ñ ÑÐ²Ð¾ÐµÐ³Ð¾ Ñ‡Ð°Ñ‚-Ð±Ð¾Ñ‚Ð° (ÑÐ»ÐµÐ²Ð°)
+                // Кнопка создания своего чат-бота (слева)
                 ElevatedButton(
                   onPressed: _createChatBot,
-                  child: const Text("Ð¡Ð¾Ð·Ð´Ð°Ñ‚ÑŒ Ñ‡Ð°Ñ‚-Ð±Ð¾Ñ‚Ð°"),
+                  child: const Text("+"),
                 ),
                 const SizedBox(width: 8),
-                // (5.1) Ð¡Ñ‚Ñ€Ð¾ÐºÐ° Ð¿Ð¾Ð¸ÑÐºÐ° Ñ‡Ð°Ñ‚Ð¾Ð² Ð¿Ð¾ Ð½Ð°Ð·Ð²Ð°Ð½Ð¸ÑŽ
+                // Строка поиска чатов по названию
                 Expanded(
                   child: TextField(
                     controller: _searchController,
                     decoration: const InputDecoration(
-                      labelText: "ÐŸÐ¾Ð¸ÑÐº Ñ‡Ð°Ñ‚-Ð±Ð¾Ñ‚Ð¾Ð²",
+                      labelText: "Поиск чат-ботов",
                       border: OutlineInputBorder(),
                     ),
                     onChanged: (value) => _searchChatBots(),
                   ),
                 ),
                 const SizedBox(width: 8),
-                // (5.1.1) ÐšÐ½Ð¾Ð¿ÐºÐ° Ð¿Ð¾Ð¸ÑÐºÐ°
+                // Кнопка поиска
                 IconButton(
                   icon: const Icon(Icons.search),
                   onPressed: _searchChatBots,
@@ -539,25 +1527,26 @@ class _WidgetChatBotsState extends State<WidgetChatBots> {
               ],
             ),
           ),
-          // (5.2) Ð¡Ð¿Ð¸ÑÐ¾Ðº Ñ‡Ð°Ñ‚-Ð±Ð¾Ñ‚Ð¾Ð²
+          // Список чат-ботов
           Expanded(
             child: ListView.builder(
               itemCount: _filteredChatBots.length,
               itemBuilder: (context, index) {
                 final bot = _filteredChatBots[index];
                 return ListTile(
-                  title: Text(bot["chatBotName"] ?? "Ð‘ÐµÐ· Ð½Ð°Ð·Ð²Ð°Ð½Ð¸Ñ"),
-                  subtitle: Text(bot["chatBotDesc"] ?? "Ð‘ÐµÐ· Ð¾Ð¿Ð¸ÑÐ°Ð½Ð¸Ñ"),
-                  // (5.2.1) ÐšÐ½Ð¾Ð¿ÐºÐ° Ð´Ð»Ñ Ð¿Ñ€Ð¾ÑÐ¼Ð¾Ñ‚Ñ€Ð° Ð¸Ð½Ñ„Ð¾Ñ€Ð¼Ð°Ñ†Ð¸Ð¸ Ð¾ Ñ‡Ð°Ñ‚-Ð±Ð¾Ñ‚Ðµ (Ð¸ÐºÐ¾Ð½ÐºÐ° "!")
+                  title: Text(bot["chatBotName"] ?? "Без названия"),
+                  subtitle: Text(
+                    (bot["chatBotDesc"] ?? "Без описания") +
+                        "\nСегодня ${bot["messagesToday"]} сообщений",
+                  ),
+                  // Кнопка для просмотра информации о чат-боте (иконка "!")
                   trailing: IconButton(
                     icon: const Icon(Icons.info_outline),
                     onPressed: () => _showBotInfo(bot),
                   ),
                   onTap: () {
-                    // Ð—Ð°ÐºÑ€Ñ‹Ð²Ð°ÐµÐ¼ Drawer
+                    // Закрываем Drawer
                     Navigator.of(context).pop();
-                    // TODO: Ð»Ð¾Ð³Ð¸ÐºÐ° Ð¾Ñ‚ÐºÑ€Ñ‹Ñ‚Ð¸Ñ/Ð¸ÑÐ¿Ð¾Ð»ÑŒÐ·Ð¾Ð²Ð°Ð½Ð¸Ñ Ð²Ñ‹Ð±Ñ€Ð°Ð½Ð½Ð¾Ð³Ð¾ Ñ‡Ð°Ñ‚-Ð±Ð¾Ñ‚Ð°
-                    print("Ð’Ñ‹Ð±Ñ€Ð°Ð½ Ñ‡Ð°Ñ‚-Ð±Ð¾Ñ‚: ${bot["chatBotName"]}");
                   },
                 );
               },
@@ -569,277 +1558,579 @@ class _WidgetChatBotsState extends State<WidgetChatBots> {
   }
 }
 import 'package:flutter/material.dart';
-import 'widget_app_bar.dart';
-import 'widget_chats.dart';
-import 'widget_neuro_button.dart';
-import 'widget_chat_bots.dart';
-import 'widget_snack_bar.dart';
 
-class WidgetMainScreen extends StatefulWidget {
-  const WidgetMainScreen({Key? key}) : super(key: key);
+/// Диалоговое окно «Создание чат-бота»
+class WidgetCreateChatBots extends StatefulWidget {
+  const WidgetCreateChatBots({super.key});
 
   @override
-  _WidgetMainScreenState createState() => _WidgetMainScreenState();
+  State<WidgetCreateChatBots> createState() => _WidgetCreateChatBotsState();
 }
 
-class _WidgetMainScreenState extends State<WidgetMainScreen> {
-  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
-  final TextEditingController _messageController = TextEditingController();
+class _WidgetCreateChatBotsState extends State<WidgetCreateChatBots> {
+  // Поля для ввода (название, описание, контекст)
+  final TextEditingController _botNameController = TextEditingController();
+  final TextEditingController _botDescController = TextEditingController();
+  final TextEditingController _botContextController = TextEditingController();
+
+  // Температура (dropdown)
+  double _temperature = 1.0;
+  final List<double> _tempValues = [0.0, 0.5, 1.0, 1.5, 2.0];
+
+  // Используемая нейросеть (dropdown)
+  String _selectedNetwork = "Yandex GPT 5 pro";
+  final List<String> _availableNetworks = [
+    "DeepSeek V3",
+    "DeepSeek R1",
+    "Yandex GPT 5 pro",
+    "Yandex GPT 5 Lite",
+    "ChatGPT 4o mini",
+    "ChatGPT 4o",
+    "ChatGPT o1",
+    "Qwen-Max",
+    "Qwen-Turbo",
+  ];
+
+  // Флаги (Switch) для различных настроек
+  bool _canEditModel = true; // Можно ли изменять модель чата?
+  bool _canEditContext = true; // Можно ли менять контекст чата?
+  bool _canUseMemory = false; // Может ли чат использовать память?
+  bool _canUpdateMemory = false; // Может ли чат обновлять память пользователя?
 
   @override
-
-  
   void dispose() {
-    _messageController.dispose();
+    _botNameController.dispose();
+    _botDescController.dispose();
+    _botContextController.dispose();
     super.dispose();
   }
 
-  void _sendMessage() {
-    final text = _messageController.text;
-    print("ÐžÑ‚Ð¿Ñ€Ð°Ð²Ð»ÐµÐ½Ð¾ ÑÐ¾Ð¾Ð±Ñ‰ÐµÐ½Ð¸Ðµ: $text");
-    _messageController.clear();
+  /// Нажатие на кнопку «Создать»
+  void _handleCreate() {
+    // final newBotData = {
+    //   "botName": _botNameController.text.trim(),
+    //   "botDesc": _botDescController.text.trim(),
+    //   "temperature": _temperature,
+    //   "modelUriName": _selectedNetwork,
+    //   "canEditModel": _canEditModel,
+    //   "context": _botContextController.text.trim(),
+    //   "canEditContext": _canEditContext,
+    //   "canUseMemory": _canUseMemory,
+    //   "canUpdateMemory": _canUpdateMemory,
+    // };
+
+    // Закрываем диалог
+    Navigator.of(context).pop();
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      key: _scaffoldKey,
+    return AlertDialog(
+      title: const Text("Создание чат-бота"),
+      content: SizedBox(
+        width: 400, // Зафиксированная ширина окна
 
-      // Ð›ÐµÐ²Ñ‹Ð¹ Drawer (ÑÐ¿Ð¸ÑÐ¾Ðº Ñ‡Ð°Ñ‚Ð¾Ð²)
-      drawer: SizedBox(
-        width: 350,
-        child: Drawer(
-          child: WidgetChats(),
-        ),
-      ),
-
-      // ÐŸÑ€Ð°Ð²Ñ‹Ð¹ Drawer (ÑÐ¿Ð¸ÑÐ¾Ðº Ñ‡Ð°Ñ‚-Ð±Ð¾Ñ‚Ð¾Ð²) - ÐµÑÐ»Ð¸ Ð±Ð¾Ð»ÑŒÑˆÐµ Ð½Ðµ Ð½ÑƒÐ¶ÐµÐ½, Ð¼Ð¾Ð¶ÐµÑ‚Ðµ ÑƒÐ´Ð°Ð»Ð¸Ñ‚ÑŒ
-      endDrawer: SizedBox(
-        width: 350,
-        child: Drawer(
-          child: WidgetChatBots(),
-        ),
-      ),
-
-      // AppBar c Ð¾Ð´Ð½Ð¸Ð¼ ÐºÐ¾Ð»Ð±ÑÐºÐ¾Ð¼
-      appBar: WidgetAppBar(
-        onMenuPressed: () {
-          // ÐžÑ‚ÐºÑ€Ñ‹Ð²Ð°ÐµÐ¼ Ð»ÐµÐ²Ñ‹Ð¹ Drawer
-          _scaffoldKey.currentState?.openDrawer();
-        },
-      ),
-
-      body: SafeArea(
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
           children: [
-            // ÐšÐ½Ð¾Ð¿ÐºÐ° Ð²Ñ‹Ð±Ð¾Ñ€Ð° Ð½ÐµÐ¹Ñ€Ð¾ÑÐµÑ‚Ð¸ + ÐºÐ½Ð¾Ð¿ÐºÐ° Ð½Ð°ÑÑ‚Ñ€Ð¾ÐµÐº
-            Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: WidgetNeuroButton(),
-            ),
-            // ÐžÑÐ½Ð¾Ð²Ð½Ð°Ñ Ñ‡Ð°ÑÑ‚ÑŒ ÑÐºÑ€Ð°Ð½Ð°
-            Expanded(
-              child: Center(
-                child: Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      // Ð¢ÐµÐºÑÑ‚ "Ð°Ð±Ð²Ð³Ð´"
-                      const Text(
-                        "Ð°Ð±Ð²Ð³Ð´",
-                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                      ),
-                      const SizedBox(height: 16),
-                      // Ð¡Ñ‚Ñ€Ð¾ÐºÐ° Ð²Ð²Ð¾Ð´Ð° (Ð¾Ð³Ñ€Ð°Ð½Ð¸Ñ‡ÐµÐ½Ð¸Ðµ 900 px) + ÐºÐ½Ð¾Ð¿ÐºÐ° Ð¾Ñ‚Ð¿Ñ€Ð°Ð²ÐºÐ¸
-                      ConstrainedBox(
-                        constraints: const BoxConstraints(maxWidth: 900),
-                        child: Row(
-                          children: [
-                            Expanded(
-                              child: TextField(
-                                controller: _messageController,
-                                decoration: const InputDecoration(
-                                  labelText: "Ð’Ð²ÐµÐ´Ð¸Ñ‚Ðµ ÑÐ¾Ð¾Ð±Ñ‰ÐµÐ½Ð¸Ðµ",
-                                  border: OutlineInputBorder(),
-                                ),
-                                keyboardType: TextInputType.multiline,
-                                minLines: 1,
-                                maxLines: 8,
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            IconButton(
-                              icon: const Icon(Icons.send),
-                              onPressed: _sendMessage,
-                              tooltip: "ÐžÑ‚Ð¿Ñ€Ð°Ð²Ð¸Ñ‚ÑŒ",
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
+            // Название чат-бота
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text("Название чат-бота:"),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: TextField(
+                    controller: _botNameController,
+                    decoration: const InputDecoration(
+                      border: OutlineInputBorder(),
+                      isDense: true,
+                    ),
                   ),
                 ),
-              ),
+              ],
+            ),
+            const SizedBox(height: 10),
+
+            // Описание чат-бота
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text("Описание чат-бота:"),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: TextField(
+                    controller: _botDescController,
+                    decoration: const InputDecoration(
+                      border: OutlineInputBorder(),
+                    ),
+                    keyboardType: TextInputType.multiline,
+                    minLines: 3,
+                    maxLines: 3,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+
+            // Температура
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text("Температура чата:"),
+                DropdownButton<double>(
+                  value: _temperature,
+                  items: _tempValues.map((temp) {
+                    return DropdownMenuItem<double>(
+                      value: temp,
+                      child: Text(temp.toString()),
+                    );
+                  }).toList(),
+                  onChanged: (val) {
+                    if (val != null) {
+                      setState(() {
+                        _temperature = val;
+                      });
+                    }
+                  },
+                ),
+              ],
+            ),
+            const SizedBox(height: 10),
+
+            // Используемая нейросеть
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text("Используемая нейросеть:"),
+                DropdownButton<String>(
+                  value: _selectedNetwork,
+                  items: _availableNetworks.map((net) {
+                    return DropdownMenuItem<String>(
+                      value: net,
+                      child: Text(net),
+                    );
+                  }).toList(),
+                  onChanged: (val) {
+                    if (val != null) {
+                      setState(() {
+                        _selectedNetwork = val;
+                      });
+                    }
+                  },
+                ),
+              ],
+            ),
+            const SizedBox(height: 10),
+
+            // Можно ли изменять модель чата?
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text("Можно ли изменять модель чата?"),
+                Switch(
+                  value: _canEditModel,
+                  onChanged: (val) {
+                    setState(() {
+                      _canEditModel = val;
+                    });
+                  },
+                ),
+              ],
+            ),
+            const SizedBox(height: 10),
+
+            // Контекст чата
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text("Контекст чата:"),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: TextField(
+                    controller: _botContextController,
+                    decoration: const InputDecoration(
+                      border: OutlineInputBorder(),
+                    ),
+                    minLines: 3,
+                    maxLines: 3,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+
+            // Можно ли менять контекст чата?
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text("Можно ли менять контекст чата?"),
+                Switch(
+                  value: _canEditContext,
+                  onChanged: (val) {
+                    setState(() {
+                      _canEditContext = val;
+                    });
+                  },
+                ),
+              ],
+            ),
+            const SizedBox(height: 10),
+
+            // Может ли чат использовать память?
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text("Может ли чат использовать память?"),
+                Switch(
+                  value: _canUseMemory,
+                  onChanged: (val) {
+                    setState(() {
+                      _canUseMemory = val;
+                    });
+                  },
+                ),
+              ],
+            ),
+            const SizedBox(height: 10),
+
+            // Может ли чат обновлять память?
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text("Может ли чат обновлять память пользователя?"),
+                Switch(
+                  value: _canUpdateMemory,
+                  onChanged: (val) {
+                    setState(() {
+                      _canUpdateMemory = val;
+                    });
+                  },
+                ),
+              ],
             ),
           ],
         ),
       ),
-    );
-  }
-}
-import 'package:flutter/material.dart';
-import 'package:promts_application_1/features/chat/view/widget_chat_create_settings.dart';
-/// Ð’Ð¸Ð´Ð¶ÐµÑ‚ Ð²Ñ‹Ð±Ð¾Ñ€Ð° Ð½ÐµÐ¹Ñ€Ð¾ÑÐµÑ‚Ð¸ (DropdownButton) + ÐºÐ½Ð¾Ð¿ÐºÐ° Ð½Ð°ÑÑ‚Ñ€Ð¾ÐµÐº Ñ‡Ð°Ñ‚Ð°.
-/// ÐœÐ°ÐºÑÐ¸Ð¼Ð°Ð»ÑŒÐ½Ð°Ñ ÑˆÐ¸Ñ€Ð¸Ð½Ð° Ð²Ñ‹Ð¿Ð°Ð´Ð°ÑŽÑ‰ÐµÐ³Ð¾ ÑÐ¿Ð¸ÑÐºÐ° Ð¾Ð³Ñ€Ð°Ð½Ð¸Ñ‡ÐµÐ½Ð° 375 px.
-class WidgetNeuroButton extends StatefulWidget {
-  const WidgetNeuroButton({Key? key}) : super(key: key);
-
-  @override
-  State<WidgetNeuroButton> createState() => _WidgetNeuroButtonState();
-}
-
-class _WidgetNeuroButtonState extends State<WidgetNeuroButton> {
-  // ÐŸÐ¾ ÑƒÐ¼Ð¾Ð»Ñ‡Ð°Ð½Ð¸ÑŽ Ð²Ñ‹Ð±Ñ€Ð°Ð½Ð½Ð°Ñ Ð½ÐµÐ¹Ñ€Ð¾ÑÐµÑ‚ÑŒ
-  String _selectedNetwork = "DeepSeek V3";
-
-  // Ð¡Ð¿Ð¸ÑÐ¾Ðº Ð´Ð¾ÑÑ‚ÑƒÐ¿Ð½Ñ‹Ñ… Ð½ÐµÐ¹Ñ€Ð¾ÑÐµÑ‚ÐµÐ¹ Ñ Ð¾Ð¿Ð¸ÑÐ°Ð½Ð¸ÑÐ¼Ð¸
-  final List<Map<String, String>> _networks = [
-    {
-      'name': 'DeepSeek V3',
-      'desc': 'ÐœÐ¾Ñ‰Ð½Ð°Ñ Ð¼Ð¾Ð´ÐµÐ»ÑŒ Ð´Ð»Ñ Ð³ÐµÐ½ÐµÑ€Ð°Ñ†Ð¸Ð¸ Ñ‚ÐµÐºÑÑ‚Ð°.',
-    },
-    {
-      'name': 'DeepSeek R1',
-      'desc': 'Ð£Ð»ÑƒÑ‡ÑˆÐµÐ½Ð½Ð°Ñ Ð¼Ð¾Ð´ÐµÐ»ÑŒ DeepSeek.',
-    },
-    {
-      'name': 'YandexGPT 5 pro',
-      'desc': 'Ð¡Ð°Ð¼Ð°Ñ Ð¿Ñ€Ð¾Ð´Ð²Ð¸Ð½ÑƒÑ‚Ð°Ñ Ñ€ÑƒÑÑÐºÐ°Ñ Ð¼Ð¾Ð´ÐµÐ»ÑŒ.',
-    },
-    {
-      'name': 'YandexGPT 5 Lite',
-      'desc': 'Ð£Ð¿Ñ€Ð¾Ñ‰Ñ‘Ð½Ð½Ð°Ñ Ð²ÐµÑ€ÑÐ¸Ñ YandexGPT 5.',
-    },
-    {
-      'name': 'ChatGPT 4o mini',
-      'desc': 'Ð›Ñ‘Ð³ÐºÐ°Ñ Ð²ÐµÑ€ÑÐ¸Ñ ChatGPT 4o.',
-    },
-    {
-      'name': 'ChatGPT 4o',
-      'desc': 'ÐŸÐ¾Ð»Ð½Ð¾Ñ†ÐµÐ½Ð½Ð°Ñ Ð²ÐµÑ€ÑÐ¸Ñ ChatGPT 4o.',
-    },
-    {
-      'name': 'ChatGPT o1',
-      'desc': 'Ð­ÐºÑÐ¿ÐµÑ€Ð¸Ð¼ÐµÐ½Ñ‚Ð°Ð»ÑŒÐ½Ð°Ñ Ð¼Ð¾Ð´ÐµÐ»ÑŒ ChatGPT.',
-    },
-    {
-      'name': 'Qwen-Max',
-      'desc': 'Ð Ð°ÑÑˆÐ¸Ñ€ÐµÐ½Ð½Ð°Ñ Ð²ÐµÑ€ÑÐ¸Ñ Qwen.',
-    },
-    {
-      'name': 'Qwen-Turbo',
-      'desc': 'Ð£ÑÐºÐ¾Ñ€ÐµÐ½Ð½Ð°Ñ Ð²ÐµÑ€ÑÐ¸Ñ Qwen.',
-    },
-  ];
-
-  // ÐžÐ±Ñ€Ð°Ð±Ð°Ñ‚Ñ‹Ð²Ð°ÐµÐ¼ Ð²Ñ‹Ð±Ð¾Ñ€ Ð½Ð¾Ð²Ð¾Ð¹ Ð½ÐµÐ¹Ñ€Ð¾ÑÐµÑ‚Ð¸
-  void _onNetworkChanged(String newNetwork) {
-    setState(() {
-      _selectedNetwork = newNetwork;
-    });
-  }
-
-  // ÐžÑ‚ÐºÑ€Ñ‹Ð²Ð°ÐµÐ¼ Ð¾ÐºÐ½Ð¾ Ð½Ð°ÑÑ‚Ñ€Ð¾ÐµÐº Ð¿Ð¾ Ñ†ÐµÐ½Ñ‚Ñ€Ñƒ ÑÐºÑ€Ð°Ð½Ð° (Ð¿Ñ€Ð¸Ð¼ÐµÑ€ Ñ AlertDialog)
-void _openSettingsDialog() {
-  showDialog(
-    context: context,
-    builder: (_) => WidgetChatCreateSettings(
-      chatId: 54719041,
-      temperature: 1.0,
-      contextChat: "ÐžÐ¿Ð¸ÑÐ°Ð½Ð¸Ðµ...",
-      useMemory: true,
-      updateMemory: false,
-      onSave: (updatedData) {
-        // Ð—Ð´ÐµÑÑŒ Ð¾Ð±Ñ€Ð°Ð±Ð¾Ñ‚ÐºÐ° Ð½Ð¾Ð²Ñ‹Ñ… Ð´Ð°Ð½Ð½Ñ‹Ñ… Ñ‡Ð°Ñ‚Ð°
-        // updatedData['temperature'], updatedData['contextChat'], Ð¸ Ñ‚.Ð´.
-        print("ÐÐ¾Ð²Ñ‹Ðµ Ð½Ð°ÑÑ‚Ñ€Ð¾Ð¹ÐºÐ¸ Ñ‡Ð°Ñ‚Ð°: $updatedData");
-        // TODO: Ð¾Ñ‚Ð¿Ñ€Ð°Ð²Ð¸Ñ‚ÑŒ Ð¸Ð·Ð¼ÐµÐ½ÐµÐ½Ð¸Ñ Ð½Ð° Ð±ÑÐºÐµÐ½Ð´
-      },
-    ),
-  );
-}
-
-
-  @override
-  Widget build(BuildContext context) {
-    // ÐŸÑ€Ð¾Ð²ÐµÑ€ÑÐµÐ¼, ÑÐ²Ð»ÑÐµÑ‚ÑÑ Ð»Ð¸ ÑƒÑÑ‚Ñ€Ð¾Ð¹ÑÑ‚Ð²Ð¾ "Ð¾Ñ‡ÐµÐ½ÑŒ ÑƒÐ·ÐºÐ¸Ð¼" (Ð´Ð»Ñ ÑƒÐ¼ÐµÐ½ÑŒÑˆÐµÐ½Ð¸Ñ ÑˆÑ€Ð¸Ñ„Ñ‚Ð° Ð¾Ð¿Ð¸ÑÐ°Ð½Ð¸Ñ, Ð¿Ñ€Ð¸ Ð¶ÐµÐ»Ð°Ð½Ð¸Ð¸)
-    final isSmallWidth = MediaQuery.of(context).size.width < 350;
-
-    return Row(
-      children: [
-        // Flexible, Ñ‡Ñ‚Ð¾Ð±Ñ‹ Ð½Ðµ Â«Ð²Ñ‹Ñ‚Ð°Ð»ÐºÐ¸Ð²Ð°Ñ‚ÑŒÂ» Ð´Ñ€ÑƒÐ³Ð¸Ðµ ÑÐ»ÐµÐ¼ÐµÐ½Ñ‚Ñ‹
-        Flexible(
-          // ConstrainedBox Ð¾Ð³Ñ€Ð°Ð½Ð¸Ñ‡Ð¸Ð²Ð°ÐµÑ‚ ÑˆÐ¸Ñ€Ð¸Ð½Ñƒ Ð² 375 Ð¿Ð¸ÐºÑÐµÐ»ÐµÐ¹ Ð¼Ð°ÐºÑÐ¸Ð¼ÑƒÐ¼
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 375),
-            child: DropdownButtonHideUnderline(
-              child: DropdownButton<String>(
-                isExpanded: true, // Ð Ð°ÑÑ‚ÑÐ³Ð¸Ð²Ð°ÐµÐ¼ Ð´Ð¾ Ð´Ð¾ÑÑ‚ÑƒÐ¿Ð½Ð¾Ð¹ ÑˆÐ¸Ñ€Ð¸Ð½Ñ‹ (Ð½Ð¾ Ð½Ðµ Ð±Ð¾Ð»ÐµÐµ 375)
-                value: _selectedNetwork,
-                items: _networks.map((net) {
-                  return DropdownMenuItem<String>(
-                    value: net['name'],
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        // ÐÐ°Ð·Ð²Ð°Ð½Ð¸Ðµ Ð½ÐµÐ¹Ñ€Ð¾ÑÐµÑ‚Ð¸
-                        Text(
-                          net['name'] ?? '',
-                          style: const TextStyle(fontWeight: FontWeight.bold),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        // ÐžÐ¿Ð¸ÑÐ°Ð½Ð¸Ðµ Ð½ÐµÐ¹Ñ€Ð¾ÑÐµÑ‚Ð¸ (Ð¾Ð³Ñ€Ð°Ð½Ð¸Ñ‡Ð¸Ð²Ð°ÐµÐ¼ 2 ÑÑ‚Ñ€Ð¾ÐºÐ°Ð¼Ð¸)
-                        if (net['desc'] != null && net['desc']!.isNotEmpty)
-                          Text(
-                            net['desc']!,
-                            style: TextStyle(
-                              fontSize: isSmallWidth ? 10 : 12,
-                              color: Colors.grey,
-                            ),
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                      ],
-                    ),
-                  );
-                }).toList(),
-                onChanged: (value) {
-                  if (value != null) {
-                    _onNetworkChanged(value);
-                  }
-                },
-              ),
-            ),
-          ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Text("Отмена"),
         ),
-        const SizedBox(width: 10),
-        // ÐšÐ½Ð¾Ð¿ÐºÐ° Ð½Ð°ÑÑ‚Ñ€Ð¾ÐµÐº (Ð¸ÐºÐ¾Ð½ÐºÐ° ÑˆÐµÑÑ‚ÐµÑ€Ñ‘Ð½ÐºÐ°)
-        IconButton(
-          icon: const Icon(Icons.settings),
-          onPressed: _openSettingsDialog,
+        ElevatedButton(
+          onPressed: _handleCreate,
+          child: const Text("Создать"),
         ),
       ],
     );
   }
 }
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:promts_application_1/core/cubits/data_cubit.dart';
+import 'package:promts_application_1/features/neuro/cubits/neuro_cubit.dart';
+import 'package:promts_application_1/features/neuro/data/models/neuro_model.dart';
+import 'package:promts_application_1/features/neuro/domain/entities/neuro_entity.dart';
+import 'package:promts_application_1/features/user/cubit/user_cubit.dart';
+import 'package:promts_application_1/features/user/domain/entities/user_entity.dart';
+import 'package:promts_application_1/features/user/view/widgets/widget_user_settings.dart';
+import '../../../chatbot/view/widgets/widget_chat_bots.dart';
+
+/// AppBar с кнопкой Promts и дополнительным callback для нее.
+class WidgetAppBar extends StatelessWidget implements PreferredSizeWidget {
+  final VoidCallback onMenuPressed; // для открытия левого Drawer
+  final VoidCallback onPromtsPressed; // callback для кнопки Promts
+
+  const WidgetAppBar({
+    super.key,
+    required this.onMenuPressed,
+    required this.onPromtsPressed,
+  });
+
+  @override
+  Size get preferredSize => const Size.fromHeight(kToolbarHeight);
+
+  @override
+  Widget build(BuildContext context) {
+    return AppBar(
+      automaticallyImplyLeading: false,
+      title: Row(
+        children: [
+          // Кнопка открытия NavigationDrawer (иконка "3 полоски")
+          IconButton(
+            icon: const Icon(Icons.menu),
+            onPressed: onMenuPressed,
+          ),
+          // Кнопка "Promts"
+          TextButton(
+            onPressed: onPromtsPressed, // вызываем переданный callback
+            child: const Text(
+              "Promts",
+              style: TextStyle(fontSize: 20, color: Colors.black),
+            ),
+          ),
+          // Центр AppBar (название чата)
+          const Expanded(
+            child: Text(
+              "Обычный чат-бот",
+              textAlign: TextAlign.center,
+              style: TextStyle(fontWeight: FontWeight.w600),
+            ),
+          ),
+          // Кнопка настроек пользователя (иконка человечка)
+          IconButton(
+            icon: const Icon(Icons.person),
+            onPressed: () {
+              showDialog(
+                context: context,
+                builder: (_) => BlocBuilder<UserCubit, DataState<UserEntity>>(
+                  builder: (context, state) {
+                    if (state is DataLoading<UserEntity>) {
+                      // Показываем диалог с индикатором
+                      return const AlertDialog(
+                        title: Text("Загрузка профиля"),
+                        content: SizedBox(
+                          width: 400,
+                          height: 450,
+                          child: Center(child: CircularProgressIndicator()),
+                        ),
+                      );
+                    }
+                    if (state is DataError<UserEntity>) {
+                      // Показываем ошибку с кнопкой закрыть
+                      return AlertDialog(
+                        title: const Text("Ошибка"),
+                        content: Text(state.message),
+                        actions: [
+                          TextButton(
+                            onPressed: () => Navigator.of(context).pop(),
+                            child: const Text("Закрыть"),
+                          ),
+                        ],
+                      );
+                    }
+                    if (state is DataLoaded<UserEntity>) {
+                      final user = state.data;
+                      return BlocBuilder<NeuroCubit,
+                          DataState<List<NeuroEntity>>>(
+                        builder: (context, neuroState) {
+                          if (neuroState is DataLoading<List<NeuroEntity>>) {
+                            return const AlertDialog(
+                              title: Text("Загрузка нейросетей"),
+                              content: SizedBox(
+                                height: 100,
+                                child:
+                                    Center(child: CircularProgressIndicator()),
+                              ),
+                            );
+                          }
+                          if (neuroState is DataError<List<NeuroEntity>>) {
+                            return AlertDialog(
+                              title: const Text("Ошибка"),
+                              content: Text(neuroState.message),
+                              actions: [
+                                TextButton(
+                                  onPressed: () => Navigator.of(context).pop(),
+                                  child: const Text("Закрыть"),
+                                ),
+                              ],
+                            );
+                          }
+                          if (neuroState is DataLoaded<List<NeuroEntity>>) {
+                            final List<NeuroModel> neuroList =
+                                neuroState.data.cast<NeuroModel>();
+
+                            final models =
+                                neuroList;
+                            final current = neuroList
+                                .firstWhere(
+                                    (e) => e.id == user.standartModelUrild,
+                                    orElse: () => neuroList.first)
+                                .id;
+
+                            return WidgetUserSettings(
+                              userEntity: user,
+                              selectedModelId: current,
+                              availableModels: models,
+                              onSave: (updatedData) {
+                                Navigator.of(context).pop();
+                                // …
+                              },
+                            );
+                          }
+                          return const SizedBox.shrink();
+                        },
+                      );
+                    }
+                    return const SizedBox.shrink();
+                  },
+                ),
+              );
+            },
+          ),
+
+          // Кнопка открытия виджета чат-ботов
+          IconButton(
+            icon: const Icon(Icons.android),
+            onPressed: () {
+              showAdaptiveDialog(
+                context: context,
+                builder: (BuildContext dialogContext) {
+                  return const Dialog(
+                    child: SizedBox(
+                      width: 600,
+                      child: WidgetChatBots(),
+                    ),
+                  );
+                },
+              );
+            },
+          ),
+        ],
+      ),
+    );
+  }
+}
+import 'package:flutter/material.dart';
+import 'package:promts_application_1/core/config/config.dart';
+import 'package:promts_application_1/di/locator.dart';
+import 'widget_app_bar.dart';
+import 'package:promts_application_1/features/chat/view/widgets/widget_chats.dart';
+import 'package:promts_application_1/features/neuro/view/widget_neuro_button.dart';
+import 'package:promts_application_1/features/chat/view/widgets/widget_chat_page.dart';
+
+class WidgetMainScreen extends StatefulWidget {
+  const WidgetMainScreen({super.key});
+
+  @override
+  State<WidgetMainScreen> createState() => _WidgetMainScreenState();
+}
+
+class _WidgetMainScreenState extends State<WidgetMainScreen> {
+  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
+
+  bool _showChatPage = false;
+  final appConfig = getIt<AppConfig>();
+  final TextEditingController _messageController = TextEditingController();
+
+  @override
+  void dispose() {
+    _messageController.dispose();
+    super.dispose();
+  }
+
+  void _openChatWithMessage() {
+    final text = _messageController.text.trim();
+    if (text.isEmpty) return;
+    _messageController.clear();
+    setState(() {
+      _showChatPage = true;
+    });
+  }
+
+  void _openChat(int chatId) {
+    _messageController.clear();
+    setState(() {
+      _showChatPage = true;
+    });
+  }
+
+  void _closeChat() {
+    setState(() {
+      _showChatPage = false;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      key: _scaffoldKey,
+      drawer: SizedBox(
+        width: 350,
+        child: Drawer(
+          child: WidgetChats(
+            onChatSelected: _openChat,
+          ),
+        ),
+      ),
+      appBar: WidgetAppBar(
+        onMenuPressed: () {
+          _scaffoldKey.currentState?.openDrawer();
+        },
+        onPromtsPressed: () {
+          _closeChat();
+        },
+      ),
+      body: Column(
+        children: [
+          const Padding(
+            padding: EdgeInsets.all(16.0),
+            child: WidgetNeuroButton(),
+          ),
+          Expanded(
+            child: _showChatPage ? const WidgetChatPage() : _buildMainContent(),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMainContent() {
+    return SafeArea(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(
+            child: Center(
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Text(
+                      "Приветствую",
+                      style:
+                          TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 16),
+                    ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: 900),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: TextField(
+                              controller: _messageController,
+                              decoration: const InputDecoration(
+                                labelText: "Введите сообщение",
+                                border: OutlineInputBorder(),
+                              ),
+                              keyboardType: TextInputType.multiline,
+                              minLines: 1,
+                              maxLines: 8,
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          IconButton(
+                            icon: const Icon(Icons.send),
+                            onPressed: _openChatWithMessage,
+                            tooltip: "Отправить",
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+import 'package:flutter/material.dart';
 
 class WidgetSnackBar {
-  /// ÐŸÐ¾ÐºÐ°Ð·Ñ‹Ð²Ð°ÐµÑ‚ SnackBar Ñ Ñ‚ÐµÐºÑÑ‚Ð¾Ð¼ Ð¾ÑˆÐ¸Ð±ÐºÐ¸ [errorMessage].
-  /// Ð¦Ð²ÐµÑ‚ Ñ„Ð¾Ð½Ð° â€” ÐºÑ€Ð°ÑÐ½Ñ‹Ð¹, Ð´Ð»Ð¸Ñ‚ÐµÐ»ÑŒÐ½Ð¾ÑÑ‚ÑŒ â€” 3 ÑÐµÐºÑƒÐ½Ð´Ñ‹.
   static void showError(BuildContext context, String errorMessage) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -850,31 +2141,659 @@ class WidgetSnackBar {
     );
   }
 }
+class MessageEntity {
+  final int id;
+  final int chatId;
+  final int modelUriId;
+  final bool oldMessage;
+  final String role;
+  final String text;
+  final String type;
+  final DateTime dateCreate;
+
+  MessageEntity({
+    required this.id,
+    required this.chatId,
+    required this.modelUriId,
+    required this.oldMessage,
+    required this.role,
+    required this.text,
+    required this.type,
+    required this.dateCreate,
+  });
+}
+// ignore: depend_on_referenced_packages
+import 'package:promts_application_1/core/cubits/data_cubit.dart';
+import 'package:promts_application_1/features/neuro/domain/entities/neuro_entity.dart';
+import 'package:promts_application_1/features/neuro/domain/repositories/neuro_repository.dart';
+
+class NeuroCubit extends DataCubit<List<NeuroEntity>> {
+  final NeuroRepository repository;
+  NeuroCubit({ required this.repository }) : super(){
+    fetch();
+  }
+
+  void fetch() => load(() => repository.fetchNeuroData());
+}
+
+import 'package:promts_application_1/core/service/network_service.dart';
+import 'package:promts_application_1/di/locator.dart';
+import 'package:promts_application_1/features/neuro/data/models/neuro_model.dart';
+
+abstract class NeuroRemoteDataSource {
+  Future<List<NeuroModel>> getNeuroModelList();
+}
+
+class NeuroRemoteDataSourceImpl implements NeuroRemoteDataSource {
+  final ApiService api = getIt<ApiService>();
+
+  NeuroRemoteDataSourceImpl();
+
+  @override
+  Future<List<NeuroModel>> getNeuroModelList() async {
+    //TODO Обратно поменять на гет запрос, а то нгрок хуета какая-то
+    return api.postList<NeuroModel>(
+      '/neuro',
+      fromJsonItem: (json) => NeuroModel.fromJson(json),
+    );
+  }
+}
+import 'package:promts_application_1/features/neuro/data/datasources/neuro_datasource.dart';
+import 'package:promts_application_1/features/neuro/domain/entities/neuro_entity.dart';
+import 'package:promts_application_1/features/neuro/domain/repositories/neuro_repository.dart';
+
+class NeuroRepositoryImpl implements NeuroRepository {
+  final NeuroRemoteDataSource remoteDataSource;
+
+  NeuroRepositoryImpl({required this.remoteDataSource});
+
+  @override
+  Future<List<NeuroEntity>> fetchNeuroData() async {
+    return await remoteDataSource.getNeuroModelList();
+  }
+}
+import 'package:promts_application_1/features/neuro/domain/entities/neuro_entity.dart';
+
+class NeuroModel extends NeuroEntity {
+  NeuroModel({
+    required super.id,
+    required super.name,
+    required super.systemName,
+    required super.desc,
+  });
+
+  factory NeuroModel.fromJson(Map<String, dynamic> json) {
+    return NeuroModel(
+      id: json['id'],
+      name: json['name'],
+      systemName: json['systemName'],
+      desc: json['desc'],
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'name': name,
+      'systemName': systemName,
+      'desc': desc,
+    };
+  }
+}
+class NeuroEntity {
+  final int id;
+  final String name;
+  final String systemName;
+  final String desc;
+
+  NeuroEntity({
+    required this.id,
+    required this.name,
+    required this.systemName,
+    required this.desc,
+  });
+}
+import 'package:promts_application_1/features/neuro/domain/entities/neuro_entity.dart';
+
+abstract class NeuroRepository {
+  Future<List<NeuroEntity>> fetchNeuroData();
+}
+import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:promts_application_1/core/cubits/data_cubit.dart';
+import 'package:promts_application_1/features/neuro/cubits/neuro_cubit.dart';
+import 'package:promts_application_1/features/chat/view/widgets/widget_chat_create_settings.dart';
+import 'package:promts_application_1/features/neuro/domain/entities/neuro_entity.dart';
+import 'package:promts_application_1/features/user/cubit/user_cubit.dart';
+import 'package:promts_application_1/features/user/domain/entities/user_entity.dart';
+
+class WidgetNeuroButton extends StatefulWidget {
+  const WidgetNeuroButton({super.key});
+
+  @override
+  State<WidgetNeuroButton> createState() => _WidgetNeuroButtonState();
+}
+
+class _WidgetNeuroButtonState extends State<WidgetNeuroButton> {
+  String? _selectedNetwork;
+  bool changedNeuro = false;
+
+  @override
+  void initState() {
+    super.initState();
+    // Один раз запрашиваем оба списка
+    context.read<NeuroCubit>().fetch();
+    context.read<UserCubit>().fetch();
+  }
+
+  // Открытие диалога настроек чата
+  void _openSettingsDialog() {
+    showDialog(
+      context: context,
+      builder: (_) => WidgetChatCreateSettings(
+        chatId: 54719041,
+        temperature: 1.0,
+        contextChat: "Описание...",
+        useMemory: true,
+        updateMemory: false,
+        onSave: (updatedData) {
+          // Обработка сохранения настроек
+        },
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isSmallWidth = MediaQuery.of(context).size.width < 350;
+
+    return BlocBuilder<NeuroCubit, DataState<List<NeuroEntity>>>(
+      builder: (context, neuroState) {
+        if (neuroState is DataLoading<List<NeuroEntity>>) {
+          return buildShowingMessage(isSmallWidth, "Идет загрузка..", "Пожалуйста подождите", true);
+        } else if (neuroState is DataLoaded<List<NeuroEntity>>) {
+          final neuroList = neuroState.data;
+          if (neuroList.isEmpty) {
+            //return const Text('Список нейросетей пуст');
+            return buildShowingMessage(isSmallWidth, "Список нейросетей пуст", "Делать нечего)", true);
+          }
+          return BlocBuilder<UserCubit, DataState<UserEntity>>(
+              builder: (context, userState) {
+            if (userState is DataLoading<UserEntity>) {
+              return buildShowingMessage(isSmallWidth, "Идет загрузка..", "Пожалуйста подождите", true);
+            }
+            if (userState is DataError<UserEntity>) {
+              //return const Text('Ошибка в загрузке пользователя');
+              return buildShowingMessage(isSmallWidth, "Ошибка в загрузке", "Пожалуйста обновите страницу", false);
+            }
+            if (userState is DataLoaded<UserEntity>) {
+              for (var e in neuroState.data) {
+                if (!changedNeuro) {
+                  if (e.id == userState.data.standartModelUrild) {
+                    _selectedNetwork = e.name;
+                  }
+                }
+              }
+              return Row(
+                children: [
+                  Flexible(
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: 375, minHeight: 50),
+                      child: DropdownButtonHideUnderline(
+                        child: DropdownButton<String>(
+                          isExpanded: true,
+                          value: _selectedNetwork,
+                          items: neuroList.map((neuro) {
+                            return DropdownMenuItem<String>(
+                              value: neuro.name,
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  // Название нейросети
+                                  Text(
+                                    neuro.name,
+                                    style: const TextStyle(
+                                        fontWeight: FontWeight.bold),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                  // Описание (если есть)
+                                  if (neuro.desc.isNotEmpty)
+                                    Text(
+                                      neuro.desc,
+                                      style: TextStyle(
+                                        fontSize: isSmallWidth ? 10 : 12,
+                                        color: Colors.grey,
+                                      ),
+                                      maxLines: 2,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                ],
+                              ),
+                            );
+                          }).toList(),
+                          onChanged: (value) {
+                            if (value != null) {
+                              setState(() {
+                                changedNeuro = true;
+                                _selectedNetwork = value;
+                              });
+                            }
+                          },
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  // Кнопка настроек
+                  IconButton(
+                    icon: const Icon(Icons.settings),
+                    onPressed: _openSettingsDialog,
+                  ),
+                ],
+              );
+            }
+            return Container();
+          });
+        } else if (neuroState is DataError<List<NeuroEntity>>) {
+          return buildShowingMessage(isSmallWidth, "Ошибка в загрузке", "Пожалуйста обновите страницу", false);
+        }
+        return Container();
+      },
+    );
+  }
+
+  Widget buildShowingMessage(bool isSmallWidth, String titleText, String desc, bool isLoading) {
+    return Row(
+      children: [
+        Flexible(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 375, minHeight: 50),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Название нейросети
+                Text(
+                  titleText,
+                  style: const TextStyle(fontWeight: FontWeight.bold),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                Text(
+                  desc,
+                  style: TextStyle(
+                    fontSize: isSmallWidth ? 10 : 12,
+                    color: Colors.grey,
+                  ),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+            ),
+          ),
+        ),
+        const SizedBox(width: 7),
+        if (isLoading) const Center(child: CircularProgressIndicator()),
+      ],
+    );
+  }
+}
 import 'package:flutter/material.dart';
 
+class WidgetNeuroChatSetting extends StatefulWidget {
+  final int chatId;               // ID чата
+  final double temperature;       // Температура чата
+  final String contextChat;       // Контекст чата
+  final bool useMemory;           // Использовать ли память в чате?
+  final bool updateMemory;        // Может ли чат изменять память пользователя?
+  final String dateCreate;        // Дата создания (строкой)
+  final bool starredChat;         // Закреплён ли чат
+  final ValueChanged<Map<String, dynamic>> onSave; // Колбэк при сохранении
+
+  const WidgetNeuroChatSetting({
+    super.key,
+    required this.chatId,
+    required this.temperature,
+    required this.contextChat,
+    required this.useMemory,
+    required this.updateMemory,
+    required this.dateCreate,
+    required this.starredChat,
+    required this.onSave,
+  });
+
+  @override
+  State<WidgetNeuroChatSetting> createState() => _WidgetNeuroChatSettingState();
+}
+
+class _WidgetNeuroChatSettingState extends State<WidgetNeuroChatSetting> {
+  late double _temperature;
+  late TextEditingController _contextController;
+  late bool _useMemory;
+  late bool _updateMemory;
+  late bool _starredChat;
+
+  @override
+  void initState() {
+    super.initState();
+    _temperature = widget.temperature;
+    _contextController = TextEditingController(text: widget.contextChat);
+    _useMemory = widget.useMemory;
+    _updateMemory = widget.updateMemory;
+    _starredChat = widget.starredChat;
+  }
+
+  @override
+  void dispose() {
+    _contextController.dispose();
+    super.dispose();
+  }
+
+  /// Нажатие на кнопку "Сохранить"
+  void _handleSave() {
+    final updatedData = {
+      'chatId': widget.chatId,
+      'temperature': _temperature,
+      'contextChat': _contextController.text,
+      'useMemory': _useMemory,
+      'updateMemory': _updateMemory,
+      'dateCreate': widget.dateCreate,
+      'starredChat': _starredChat,
+    };
+    widget.onSave(updatedData);
+    Navigator.of(context).pop();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text("Настройки чата"),
+      content: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // ID чата
+            Row(
+              children: [
+                const Text("ID чата: "),
+                Text(
+                  widget.chatId.toString(),
+                  style: const TextStyle(color: Colors.blue),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+
+            // Температура
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text("Температура чата:"),
+                DropdownButton<double>(
+                  value: _temperature,
+                  items: [0.0, 0.5, 1.0, 1.5, 2.0].map((temp) {
+                    return DropdownMenuItem<double>(
+                      value: temp,
+                      child: Text(temp.toString()),
+                    );
+                  }).toList(),
+                  onChanged: (val) {
+                    if (val != null) {
+                      setState(() {
+                        _temperature = val;
+                      });
+                    }
+                  },
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+
+            // Контекст чата
+            const Align(
+              alignment: Alignment.centerLeft,
+              child: Text("Контекст чата:"),
+            ),
+            TextField(
+              controller: _contextController,
+              decoration: const InputDecoration(
+                border: OutlineInputBorder(),
+              ),
+              minLines: 2,
+              maxLines: 4,
+            ),
+            const SizedBox(height: 8),
+
+            // Использовать ли память в чате?
+            Row(
+              children: [
+                const Expanded(child: Text("Использовать ли память в чате?")),
+                Switch(
+                  value: _useMemory,
+                  onChanged: (val) {
+                    setState(() {
+                      _useMemory = val;
+                    });
+                  },
+                ),
+              ],
+            ),
+
+            // Может ли чат изменять память?
+            Row(
+              children: [
+                const Expanded(child: Text("Может ли чат изменять память пользователя?")),
+                Switch(
+                  value: _updateMemory,
+                  onChanged: (val) {
+                    setState(() {
+                      _updateMemory = val;
+                    });
+                  },
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+
+            // Дата создания (read-only)
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text("Дата создания:"),
+                Text(widget.dateCreate),
+              ],
+            ),
+            const SizedBox(height: 8),
+
+            // Закрепить чат?
+            Row(
+              children: [
+                const Expanded(child: Text("Закрепить чат?")),
+                Switch(
+                  value: _starredChat,
+                  onChanged: (val) {
+                    setState(() {
+                      _starredChat = val;
+                    });
+                  },
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Text("Отмена"),
+        ),
+        ElevatedButton(
+          onPressed: _handleSave,
+          child: const Text("Сохранить"),
+        ),
+      ],
+    );
+  }
+}
+// ignore: depend_on_referenced_packages
+import 'package:promts_application_1/core/cubits/data_cubit.dart';
+import 'package:promts_application_1/features/user/domain/repositories/user_repository.dart';
+import '../domain/entities/user_entity.dart';
+
+class UserCubit extends DataCubit<UserEntity> {
+  final UserRepository repository;
+  UserCubit({required this.repository}) : super() {
+    fetch();
+  }
+
+  void fetch() => load(() => repository.getUser());
+
+  /// Обновить настройки на сервере
+  Future<void> updateSettings(Map<String, dynamic> body) {
+    return load(() => repository.updateSettings(body));
+  }
+}
+import 'package:promts_application_1/core/service/network_service.dart';
+import 'package:promts_application_1/di/locator.dart';
+import 'package:promts_application_1/features/user/data/models/user_model.dart';
+
+abstract class UserRemoteDataSource {
+  Future<UserModel> getUserModel();
+  Future<UserModel> updateUserSettings(Map<String, dynamic> body);
+}
+
+class UserRemoteDataSourceImpl implements UserRemoteDataSource {
+  final ApiService api = getIt<ApiService>();
+
+  UserRemoteDataSourceImpl();
+
+  @override
+  Future<UserModel> getUserModel() async {
+    //TODO Обратно поменять на гет запрос, а то нгрок хуета какая-то
+    return api.post<UserModel>(
+      '/user',
+      fromJson: (json) => UserModel.fromJson(json),
+    );
+  }
+
+  @override
+  Future<UserModel> updateUserSettings(Map<String, dynamic> body) {
+    return api.put<UserModel>(
+      '/user/settings', // PUT на конкретный ресурс
+      body: body,
+      fromJson: (json) => UserModel.fromJson(json),
+    );
+  }
+}
+import 'package:promts_application_1/features/user/data/datasources/user_data_source.dart';
+import 'package:promts_application_1/features/user/domain/entities/user_entity.dart';
+import 'package:promts_application_1/features/user/domain/repositories/user_repository.dart';
+
+class UserRepositoryImpl implements UserRepository {
+  final UserRemoteDataSource remoteDataSource;
+
+  UserRepositoryImpl({required this.remoteDataSource});
+
+  @override
+  Future<UserEntity> getUser() async {
+    final res = await remoteDataSource.getUserModel();
+    return res;
+  }
+
+  @override
+  Future<UserEntity> updateSettings(Map<String, dynamic> body) async {
+    final model = await remoteDataSource.updateUserSettings(body);
+    return model;
+  }
+}
+import 'package:promts_application_1/features/user/domain/entities/user_entity.dart';
+
+class UserModel extends UserEntity {
+  UserModel({
+    required super.id,
+    required super.email,
+    required super.role,
+    required super.money,
+    required super.memory,
+    required super.memoryEnabled,
+    required super.aiCanUpdateMemory,
+    required super.standartModelUrild,
+  });
+
+  factory UserModel.fromJson(Map<String, dynamic> json) {
+    return UserModel(
+      id: json['id'] as int,
+      email: json['email'] as String,
+      role: json['role'] as String,
+      money: (json['money'] as num).toDouble(),
+      memory: json['memory'] as String? ?? '',
+      // безопасное чтение булевых полей
+      memoryEnabled: json['memoryEnabled'] as bool? ?? false,
+      aiCanUpdateMemory: json['aiCanUpdateMemory'] as bool? ?? false,
+      // ключ в JSON называется standardModelUriId
+      standartModelUrild: json['standardModelUriId'] as int? ?? 0,
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'email': email,
+      'role': role,
+      'money': money,
+      'memory': memory,
+      'memoryEnabled': memoryEnabled,
+      'aiCanUpdateMemory': aiCanUpdateMemory,
+      'standardModelUriId': standartModelUrild,
+    };
+  }
+}
+class UserEntity {
+  final int id;
+  final String email;
+  final String role;
+  final double money;
+  final String memory;
+  final bool memoryEnabled;
+  final bool aiCanUpdateMemory;
+  final int standartModelUrild;
+
+  UserEntity({
+    required this.id,
+    required this.email,
+    required this.role,
+    required this.money,
+    required this.memory,
+    required this.memoryEnabled,
+    required this.aiCanUpdateMemory,
+    required this.standartModelUrild,
+  });
+}
+import '../entities/user_entity.dart';
+
+abstract class UserRepository {
+  Future<UserEntity> getUser();
+  Future<UserEntity> updateSettings(Map<String, dynamic> body);
+}
+import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:promts_application_1/features/neuro/data/models/neuro_model.dart';
+import 'package:promts_application_1/features/user/cubit/user_cubit.dart';
+import 'package:promts_application_1/features/user/domain/entities/user_entity.dart';
+
 class WidgetUserSettings extends StatefulWidget {
-  final String email;              
-  final int userId;                
-  final double balance;            
-  final bool memoryEnabled;        
-  final bool aiCanUpdateMemory;    
-  final String memory;             
-  final String selectedModel;      
-  final List<String> availableModels; 
+  final UserEntity userEntity;
+  final int selectedModelId;
+  final List<NeuroModel> availableModels;
   final ValueChanged<Map<String, dynamic>> onSave;
 
   const WidgetUserSettings({
-    Key? key,
-    required this.email,
-    required this.userId,
-    required this.balance,
-    required this.memoryEnabled,
-    required this.aiCanUpdateMemory,
-    required this.memory,
-    required this.selectedModel,
+    super.key,
+    required this.userEntity,
+    required this.selectedModelId,
     required this.availableModels,
     required this.onSave,
-  }) : super(key: key);
+  });
 
   @override
   State<WidgetUserSettings> createState() => _WidgetUserSettingsState();
@@ -884,17 +2803,21 @@ class _WidgetUserSettingsState extends State<WidgetUserSettings> {
   late TextEditingController _memoryController;
   late bool _memoryEnabled;
   late bool _aiCanUpdateMemory;
-  late String _selectedModel;
+  late int _selectedModelId;
   late double _balance;
 
   @override
   void initState() {
     super.initState();
-    _memoryController = TextEditingController(text: widget.memory);
-    _memoryEnabled = widget.memoryEnabled;
-    _aiCanUpdateMemory = widget.aiCanUpdateMemory;
-    _selectedModel = widget.selectedModel;
-    _balance = widget.balance;
+    _initFromEntity(widget.userEntity);
+  }
+
+  void _initFromEntity(UserEntity user) {
+    _memoryController = TextEditingController(text: user.memory);
+    _memoryEnabled = user.memoryEnabled;
+    _aiCanUpdateMemory = user.aiCanUpdateMemory;
+    _selectedModelId = widget.selectedModelId;
+    _balance = user.money;
   }
 
   @override
@@ -903,35 +2826,47 @@ class _WidgetUserSettingsState extends State<WidgetUserSettings> {
     super.dispose();
   }
 
-  void _handleSave() {
+  void _refreshSettings() {
+    context.read<UserCubit>().fetch();
+  }
+
+  void _handleSave() async {
     final updatedData = {
       'memory': _memoryController.text,
       'memoryEnabled': _memoryEnabled,
       'aiCanUpdateMemory': _aiCanUpdateMemory,
-      'selectedModel': _selectedModel,
-      'balance': _balance,
+      'standardModelUriId': _selectedModelId,
     };
-    widget.onSave(updatedData);
-    Navigator.of(context).pop();
+
+    context.read<UserCubit>().updateSettings(updatedData);
   }
 
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: const Text("ÐÐ°ÑÑ‚Ñ€Ð¾Ð¹ÐºÐ¸ Ð¿Ð¾Ð»ÑŒÐ·Ð¾Ð²Ð°Ñ‚ÐµÐ»Ñ"),
-      // Ð’Ð¼ÐµÑÑ‚Ð¾ SingleChildScrollView Ð¸ÑÐ¿Ð¾Ð»ÑŒÐ·ÑƒÐµÐ¼ Ñ„Ð¸ÐºÑÐ¸Ñ€Ð¾Ð²Ð°Ð½Ð½Ñ‹Ðµ Ñ€Ð°Ð·Ð¼ÐµÑ€Ñ‹ ÐºÐ¾Ð½Ñ‚ÐµÐ¹Ð½ÐµÑ€Ð°
+      title: Row(
+        children: [
+          const Text("Настройки пользователя"),
+          const Spacer(),
+          IconButton(
+            tooltip: 'Обновить',
+            icon: const Icon(Icons.refresh),
+            onPressed: _refreshSettings,
+          ),
+        ],
+      ),
       content: SizedBox(
-        width: 400,   // Ð—Ð°Ñ„Ð¸ÐºÑÐ¸Ñ€Ð¾Ð²Ð°Ð½Ð½Ð°Ñ ÑˆÐ¸Ñ€Ð¸Ð½Ð° Ð¾ÐºÐ½Ð°
-        height: 400,  // Ð—Ð°Ñ„Ð¸ÐºÑÐ¸Ñ€Ð¾Ð²Ð°Ð½Ð½Ð°Ñ Ð²Ñ‹ÑÐ¾Ñ‚Ð° Ð¾ÐºÐ½Ð°
+        width: 400,
+        height: 450,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // 1) ÐŸÐ¾Ñ‡Ñ‚Ð°
+            // 1) Почта
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text("Ð­Ð». Ð¿Ð¾Ñ‡Ñ‚Ð°:"),
-                Flexible(child: Text(widget.email)),
+                const Text("Эл. почта:"),
+                Flexible(child: Text(widget.userEntity.email)),
               ],
             ),
             const SizedBox(height: 8),
@@ -941,19 +2876,19 @@ class _WidgetUserSettingsState extends State<WidgetUserSettings> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 const Text("ID:"),
-                Text(widget.userId.toString()),
+                Text(widget.userEntity.id.toString()),
               ],
             ),
             const SizedBox(height: 8),
 
-            // 3) Ð‘Ð°Ð»Ð°Ð½Ñ + ÐºÐ½Ð¾Ð¿ÐºÐ° "+"
+            // 3) Баланс + кнопка "+"
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text("Ð‘Ð°Ð»Ð°Ð½Ñ:"),
+                const Text("Баланс:"),
                 Row(
                   children: [
-                    Text("${_balance.toStringAsFixed(2)} Ñ€ÑƒÐ±."),
+                    Text("${_balance.toStringAsFixed(2)} руб."),
                     IconButton(
                       icon: const Icon(Icons.add),
                       onPressed: () {
@@ -968,10 +2903,10 @@ class _WidgetUserSettingsState extends State<WidgetUserSettings> {
             ),
             const SizedBox(height: 8),
 
-            // 4) Ð˜ÑÐ¿Ð¾Ð»ÑŒÐ·Ð¾Ð²Ð°Ñ‚ÑŒ Ð»Ð¸ Ð¿Ð°Ð¼ÑÑ‚ÑŒ?
+            // 4) Использовать ли память?
             Row(
               children: [
-                Expanded(child: Text("Ð˜ÑÐ¿Ð¾Ð»ÑŒÐ·Ð¾Ð²Ð°Ñ‚ÑŒ Ð»Ð¸ Ð¿Ð°Ð¼ÑÑ‚ÑŒ Ð² Ñ‡Ð°Ñ‚Ð°Ñ…?")),
+                const Expanded(child: Text("Использовать ли память в чатах?")),
                 Switch(
                   value: _memoryEnabled,
                   onChanged: (val) {
@@ -984,10 +2919,11 @@ class _WidgetUserSettingsState extends State<WidgetUserSettings> {
             ),
             const SizedBox(height: 8),
 
-            // 5) ÐœÐ¾Ð³ÑƒÑ‚ Ð»Ð¸ Ñ‡Ð°Ñ‚Ñ‹ Ð¸Ð·Ð¼ÐµÐ½ÑÑ‚ÑŒ Ð¿Ð°Ð¼ÑÑ‚ÑŒ?
+            // 5) Могут ли чаты изменять память?
             Row(
               children: [
-                Expanded(child: Text("ÐœÐ¾Ð³ÑƒÑ‚ Ð»Ð¸ Ñ‡Ð°Ñ‚Ñ‹ Ð¸Ð·Ð¼ÐµÐ½ÑÑ‚ÑŒ Ð¿Ð°Ð¼ÑÑ‚ÑŒ Ð¿Ð¾Ð»ÑŒÐ·Ð¾Ð²Ð°Ñ‚ÐµÐ»Ñ?")),
+                const Expanded(
+                    child: Text("Могут ли чаты изменять память пользователя?")),
                 Switch(
                   value: _aiCanUpdateMemory,
                   onChanged: (val) {
@@ -1000,23 +2936,24 @@ class _WidgetUserSettingsState extends State<WidgetUserSettings> {
             ),
             const SizedBox(height: 8),
 
-            // 6) ÐœÐ¾Ð´ÐµÐ»ÑŒ Ð¿Ð¾ ÑƒÐ¼Ð¾Ð»Ñ‡Ð°Ð½Ð¸ÑŽ (Dropdown)
+            // 6) Модель по умолчанию (Dropdown)
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text("ÐœÐ¾Ð´ÐµÐ»ÑŒ Ñ‡Ð°Ñ‚Ð°:"),
-                DropdownButton<String>(
-                  value: _selectedModel,
+                const Text("Модель чата:"),
+                DropdownButton<int>(
+                  // текущее выбранное значение — это id
+                  value: _selectedModelId,
                   items: widget.availableModels.map((model) {
-                    return DropdownMenuItem<String>(
-                      value: model,
-                      child: Text(model),
+                    return DropdownMenuItem<int>(
+                      value: model.id, // id модели
+                      child: Text(model.name), // имя, которое показываем
                     );
                   }).toList(),
                   onChanged: (val) {
                     if (val != null) {
                       setState(() {
-                        _selectedModel = val;
+                        _selectedModelId = val;
                       });
                     }
                   },
@@ -1025,18 +2962,18 @@ class _WidgetUserSettingsState extends State<WidgetUserSettings> {
             ),
             const SizedBox(height: 8),
 
-            // 7) ÐŸÐ¾Ð»Ðµ "ÐŸÐ°Ð¼ÑÑ‚ÑŒ" - Ñ‡Ñ‚Ð¾Ð±Ñ‹ Ð¾ÐºÐ½Ð¾ Ð½Ðµ Ñ€Ð°ÑÑ‚ÑÐ³Ð¸Ð²Ð°Ð»Ð¾ÑÑŒ, Ð¸ÑÐ¿Ð¾Ð»ÑŒÐ·ÑƒÐµÐ¼ Expanded + Ð²Ð½ÑƒÑ‚Ñ€ÐµÐ½Ð½Ð¸Ð¹ ÑÐºÑ€Ð¾Ð»Ð»
+            // 7) Поле "Память" - чтобы окно не растягивалось, используем Expanded + внутренний скролл
             Expanded(
-            child: TextField(
-              controller: _memoryController,
-              decoration: const InputDecoration(
-                labelText: "ÐŸÐ°Ð¼ÑÑ‚ÑŒ Ð¿Ð¾Ð»ÑŒÐ·Ð¾Ð²Ð°Ñ‚ÐµÐ»Ñ",
-                border: OutlineInputBorder(),
+              child: TextField(
+                controller: _memoryController,
+                decoration: const InputDecoration(
+                  labelText: "Память пользователя",
+                  border: OutlineInputBorder(),
+                ),
+                keyboardType: TextInputType.multiline,
+                minLines: 3,
+                maxLines: 5,
               ),
-              keyboardType: TextInputType.multiline,
-              minLines: 3,
-              maxLines: 5,
-            ),
             ),
           ],
         ),
@@ -1044,11 +2981,11 @@ class _WidgetUserSettingsState extends State<WidgetUserSettings> {
       actions: [
         TextButton(
           onPressed: () => Navigator.of(context).pop(),
-          child: const Text("ÐžÑ‚Ð¼ÐµÐ½Ð°"),
+          child: const Text("Отмена"),
         ),
         ElevatedButton(
           onPressed: _handleSave,
-          child: const Text("Ð¡Ð¾Ñ…Ñ€Ð°Ð½Ð¸Ñ‚ÑŒ"),
+          child: const Text("Сохранить"),
         ),
       ],
     );

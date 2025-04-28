@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:promts_application_1/features/chat/domain/entities/chat_entity.dart';
+import 'package:promts_application_1/features/chat/cubits/chat_cubit.dart';
+import 'package:promts_application_1/core/cubits/data_cubit.dart';
 
-/// NavigationDrawer, который показывает список чатов пользователя.
 class WidgetChats extends StatefulWidget {
-  const WidgetChats({super.key});
+  final ValueChanged<int> onChatSelected;
+  const WidgetChats({super.key, required this.onChatSelected});
 
   @override
   State<WidgetChats> createState() => _WidgetChatsState();
@@ -10,97 +14,107 @@ class WidgetChats extends StatefulWidget {
 
 class _WidgetChatsState extends State<WidgetChats> {
   final TextEditingController _searchController = TextEditingController();
-
-  // Список чатов для примера
-  final List<String> _chats = [
-    "Первый чат",
-    "Второй чат",
-    "Третий чат",
-    "Четвёртый чат",
-  ];
-
-  // Результаты поиска
-  List<String> _filteredChats = [];
+  String _query = '';
 
   @override
   void initState() {
     super.initState();
-    // Изначально показываем все чаты
-    _filteredChats = List.from(_chats);
-  }
-
-  // Логика поиска
-  void _searchChats() {
-    final query = _searchController.text.toLowerCase().trim();
-    setState(() {
-      if (query.isEmpty) {
-        _filteredChats = List.from(_chats);
-      } else {
-        _filteredChats = _chats.where((chat) {
-          return chat.toLowerCase().contains(query);
-        }).toList();
-      }
+    _searchController.addListener(() {
+      setState(() {
+        _query = _searchController.text.trim().toLowerCase();
+      });
     });
   }
 
   @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  void selectChat(int id) {
+    widget.onChatSelected(id);
+    Navigator.of(context).pop();
+  }
+
+  void _refreshChats() {
+    context.read<ChatCubit>().fetchChats();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    // Drawer по умолчанию «накрывает» экран, 
-    // но ширину Drawer мы будем ограничивать в Scaffold (см. далее).
     return SafeArea(
       child: Column(
         children: [
-          // Заголовок (необязательно)
-          const ListTile(
-            title: Text(
+          // Заголовок и поле поиска всегда отображаются
+          ListTile(
+            title: const Text(
               "Мои чаты",
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
-          ),
-
-          // Строка поиска
-          Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: Row(
-              children: [
-                // Поле ввода
-                Expanded(
-                  child: TextField(
-                    controller: _searchController,
-                    decoration: const InputDecoration(
-                      labelText: "Поиск чатов",
-                      border: OutlineInputBorder(),
-                    ),
-                    onChanged: (value) {
-                      _searchChats();
-                    },
-                  ),
-                ),
-                const SizedBox(width: 8),
-                // Кнопка поиска
-                IconButton(
-                  icon: const Icon(Icons.search),
-                  onPressed: _searchChats,
-                ),
-              ],
+            trailing: IconButton(
+              icon: const Icon(Icons.refresh),
+              tooltip: 'Обновить чаты',
+              onPressed: _refreshChats,
             ),
           ),
-
-          // Список чатов
+          Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: TextField(
+              controller: _searchController,
+              decoration: const InputDecoration(
+                labelText: 'Поиск чатов',
+                border: OutlineInputBorder(),
+                prefixIcon: Icon(Icons.search),
+              ),
+            ),
+          ),
+          // Контентная область
           Expanded(
-            child: ListView.builder(
-              itemCount: _filteredChats.length,
-              itemBuilder: (context, index) {
-                final chatName = _filteredChats[index];
-                return ListTile(
-                  title: Text(chatName),
-                  onTap: () {
-                    // Закрываем Drawer
-                    Navigator.of(context).pop();
-                    // Доп. логика: переход к экрану чата
-                    print("Открываем чат: $chatName");
-                  },
-                );
+            child: BlocBuilder<ChatCubit, DataState<List<ChatEntity>>>(
+              builder: (context, state) {
+                if (state is DataLoading) {
+                  return const Center(child: CircularProgressIndicator());
+                } else if (state is DataError) {
+                  return Center(child: Text('Ошибка: ${state.toString()}'));
+                } else if (state is DataLoaded<List<ChatEntity>>) {
+                  final sorted = [...state.data]
+                    ..sort((a, b) {
+                      if (a.starredChat && !b.starredChat) return -1;
+                      if (!a.starredChat && b.starredChat) return 1;
+                      return b.dateEdit.compareTo(a.dateEdit);
+                    });
+
+                  final filtered = _query.isEmpty
+                      ? sorted
+                      : sorted
+                          .where((chat) =>
+                              chat.chatName.toLowerCase().contains(_query))
+                          .toList();
+
+                  if (filtered.isEmpty) {
+                    return const Center(child: Text('Чатов не найдено'));
+                  }
+
+                  return ListView.builder(
+                    itemCount: filtered.length,
+                    itemBuilder: (ctx, idx) {
+                      final chat = filtered[idx];
+                      return ListTile(
+                        leading: chat.starredChat
+                            ? const Icon(Icons.star, color: Colors.amber)
+                            : const Icon(Icons.chat_bubble_outline),
+                        title: Text(chat.chatName),
+                        subtitle: Text(
+                          'Изменён: ${chat.dateEdit.toLocal().toIso8601String().split('T').first}',
+                        ),
+                        onTap: () => selectChat(chat.id),
+                      );
+                    },
+                  );
+                }
+                // default
+                return const SizedBox.shrink();
               },
             ),
           ),
