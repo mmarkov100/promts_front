@@ -1,6 +1,6 @@
 class AppConfig {
   final String _baseUrl;
-  final String _jwtToken;
+  late String _jwtToken;
   AppConfig(this._baseUrl, this._jwtToken);
 
   final int _userId = 2;
@@ -19,4 +19,9 @@ class AppConfig {
 
     return _userId;
   }
+
+  void setJwtToken(String token) {
+  _jwtToken = token;
+}
+
 }

@@ -3,9 +3,14 @@ import 'package:get_it/get_it.dart';
 import 'package:promts_application_1/core/config/config.dart';
 import 'package:promts_application_1/core/service/network_service.dart';
 import 'package:promts_application_1/features/auth/cubits/auth_cubit.dart';
+import 'package:promts_application_1/features/auth/cubits/login_cubit.dart';
+import 'package:promts_application_1/features/auth/cubits/register_cubit.dart';
 import 'package:promts_application_1/features/auth/data/datasources/auth_remote_data_source.dart';
+import 'package:promts_application_1/features/auth/data/datasources/register_remote_data_source.dart';
 import 'package:promts_application_1/features/auth/data/implimintations/auth_repository_impl.dart';
+import 'package:promts_application_1/features/auth/data/implimintations/register_repository_impl.dart';
 import 'package:promts_application_1/features/auth/domain/repositories/auth_repository.dart';
+import 'package:promts_application_1/features/auth/domain/repositories/register_repository.dart';
 import 'package:promts_application_1/features/chat/cubits/chat_cubit.dart';
 import 'package:promts_application_1/features/chat/data/datasources/chat_datasource.dart';
 import 'package:promts_application_1/features/chat/data/implimentations/chat_repository_impl.dart';
@@ -60,4 +65,15 @@ void setup(int appMode, String baseUrl, String jwtToken) {
     () => ChatRepositoryImpl(remoteDataSource: getIt()),
   );
   getIt.registerFactory(() => ChatCubit(repository: getIt()));
+  // Login
+  getIt.registerFactory(() => LoginCubit(repository: getIt()));
+
+  // Регистрация компонентов регистрации
+  getIt.registerLazySingleton<RegisterRemoteDataSource>(
+    () => RegisterRemoteDataSourceImpl(),
+  );
+  getIt.registerLazySingleton<RegisterRepository>(
+    () => RegisterRepositoryImpl(remoteDataSource: getIt()),
+  );
+  getIt.registerFactory(() => RegisterCubit(repository: getIt()));
 }

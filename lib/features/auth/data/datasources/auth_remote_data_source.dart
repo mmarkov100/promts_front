@@ -1,9 +1,13 @@
 import 'package:promts_application_1/core/service/network_service.dart';
 import 'package:promts_application_1/di/locator.dart';
 import 'package:promts_application_1/features/auth/data/models/token_check_model.dart';
+import 'package:promts_application_1/features/auth/domain/entities/login_entity.dart';
+import '../models/login_model.dart';
 
 abstract class AuthRemoteDataSource {
   Future<TokenCheckModel> tokenCheck();
+  Future<LoginModel> login(String email, String password);
+    Future<LoginEntity> register(String email, String password);
 }
 
 class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
@@ -19,4 +23,25 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
       fromJson: (json) => TokenCheckModel.fromJson(json),
     );
   }
+    @override
+  Future<LoginModel> login(String email, String password) async {
+    return api.post<LoginModel>(
+      '/auth/log',
+      body: {
+        'email': email,
+        'password': password,
+      },
+      fromJson: (json) => LoginModel.fromJson(json),
+    );
+  }
+
+    @override
+  Future<LoginEntity> register(String email, String password) async {
+    return api.post<LoginEntity>(
+      '/auth/reg',
+      body: {'email': email, 'password': password},
+      fromJson: (json) => LoginModel.fromJson(json),
+    );
+  }
 }
+
