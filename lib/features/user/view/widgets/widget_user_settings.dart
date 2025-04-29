@@ -129,7 +129,7 @@ class _WidgetUserSettingsState extends State<WidgetUserSettings> {
             // 4) Использовать ли память?
             Row(
               children: [
-                const Expanded(child: Text("Использовать ли память в чатах?")),
+                const Expanded(child: Text("Использовать ли память в новых чатах?")),
                 Switch(
                   value: _memoryEnabled,
                   onChanged: (val) {
@@ -146,7 +146,7 @@ class _WidgetUserSettingsState extends State<WidgetUserSettings> {
             Row(
               children: [
                 const Expanded(
-                    child: Text("Могут ли чаты изменять память пользователя?")),
+                    child: Text("Могут ли новые чаты изменять память пользователя?")),
                 Switch(
                   value: _aiCanUpdateMemory,
                   onChanged: (val) {

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:promts_application_1/core/config/config.dart';
 import 'package:promts_application_1/di/locator.dart';
 import 'package:promts_application_1/features/chat/domain/entities/chat_entity.dart';
+import 'package:promts_application_1/features/user/domain/entities/user_entity.dart';
 import 'widget_app_bar.dart';
 import 'package:promts_application_1/features/chat/view/widgets/widget_chats.dart';
 import 'package:promts_application_1/features/neuro/view/widget_neuro_button.dart';
@@ -19,6 +20,7 @@ class _WidgetMainScreenState extends State<WidgetMainScreen> {
 
   bool _showChatPage = false;
   ChatEntity? _currentChat;
+  UserEntity? _currentUser;
   final appConfig = getIt<AppConfig>();
   final TextEditingController _messageController = TextEditingController();
 
@@ -76,7 +78,10 @@ class _WidgetMainScreenState extends State<WidgetMainScreen> {
         children: [
           Padding(
             padding: const EdgeInsets.all(16.0),
-            child: WidgetNeuroButton(currentChat: _currentChat),
+            child: WidgetNeuroButton(
+              currentChat: _currentChat,
+              currentUser: _currentUser,
+            ),
           ),
           Expanded(
             child: _showChatPage ? const WidgetChatPage() : _buildMainContent(),

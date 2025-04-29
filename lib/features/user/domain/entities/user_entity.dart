@@ -6,7 +6,7 @@ class UserEntity {
   final String memory;
   final bool memoryEnabled;
   final bool aiCanUpdateMemory;
-  final int standartModelUrild;
+  final int standartModelUriId;
 
   UserEntity({
     required this.id,
@@ -16,6 +16,6 @@ class UserEntity {
     required this.memory,
     required this.memoryEnabled,
     required this.aiCanUpdateMemory,
-    required this.standartModelUrild,
+    required this.standartModelUriId,
   });
 }

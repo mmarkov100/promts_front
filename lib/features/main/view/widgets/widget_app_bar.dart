@@ -9,10 +9,9 @@ import 'package:promts_application_1/features/user/domain/entities/user_entity.d
 import 'package:promts_application_1/features/user/view/widgets/widget_user_settings.dart';
 import '../../../chatbot/view/widgets/widget_chat_bots.dart';
 
-/// AppBar с кнопкой Promts и дополнительным callback для нее.
 class WidgetAppBar extends StatelessWidget implements PreferredSizeWidget {
-  final VoidCallback onMenuPressed; // для открытия левого Drawer
-  final VoidCallback onPromtsPressed; // callback для кнопки Promts
+  final VoidCallback onMenuPressed;
+  final VoidCallback onPromtsPressed;
 
   const WidgetAppBar({
     super.key,
@@ -29,20 +28,17 @@ class WidgetAppBar extends StatelessWidget implements PreferredSizeWidget {
       automaticallyImplyLeading: false,
       title: Row(
         children: [
-          // Кнопка открытия NavigationDrawer (иконка "3 полоски")
           IconButton(
             icon: const Icon(Icons.menu),
             onPressed: onMenuPressed,
           ),
-          // Кнопка "Promts"
           TextButton(
-            onPressed: onPromtsPressed, // вызываем переданный callback
+            onPressed: onPromtsPressed,
             child: const Text(
               "Promts",
               style: TextStyle(fontSize: 20, color: Colors.black),
             ),
           ),
-          // Центр AppBar (название чата)
           const Expanded(
             child: Text(
               "Обычный чат-бот",
@@ -50,7 +46,6 @@ class WidgetAppBar extends StatelessWidget implements PreferredSizeWidget {
               style: TextStyle(fontWeight: FontWeight.w600),
             ),
           ),
-          // Кнопка настроек пользователя (иконка человечка)
           IconButton(
             icon: const Icon(Icons.person),
             onPressed: () {
@@ -59,7 +54,6 @@ class WidgetAppBar extends StatelessWidget implements PreferredSizeWidget {
                 builder: (_) => BlocBuilder<UserCubit, DataState<UserEntity>>(
                   builder: (context, state) {
                     if (state is DataLoading<UserEntity>) {
-                      // Показываем диалог с индикатором
                       return const AlertDialog(
                         title: Text("Загрузка профиля"),
                         content: SizedBox(
@@ -70,7 +64,6 @@ class WidgetAppBar extends StatelessWidget implements PreferredSizeWidget {
                       );
                     }
                     if (state is DataError<UserEntity>) {
-                      // Показываем ошибку с кнопкой закрыть
                       return AlertDialog(
                         title: const Text("Ошибка"),
                         content: Text(state.message),
@@ -112,15 +105,12 @@ class WidgetAppBar extends StatelessWidget implements PreferredSizeWidget {
                           if (neuroState is DataLoaded<List<NeuroEntity>>) {
                             final List<NeuroModel> neuroList =
                                 neuroState.data.cast<NeuroModel>();
-
-                            final models =
-                                neuroList;
+                            final models = neuroList;
                             final current = neuroList
                                 .firstWhere(
-                                    (e) => e.id == user.standartModelUrild,
+                                    (e) => e.id == user.standartModelUriId,
                                     orElse: () => neuroList.first)
                                 .id;
-
                             return WidgetUserSettings(
                               userEntity: user,
                               selectedModelId: current,
@@ -141,8 +131,6 @@ class WidgetAppBar extends StatelessWidget implements PreferredSizeWidget {
               );
             },
           ),
-
-          // Кнопка открытия виджета чат-ботов
           IconButton(
             icon: const Icon(Icons.android),
             onPressed: () {

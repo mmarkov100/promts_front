@@ -11,22 +11,21 @@ import 'package:promts_application_1/features/user/domain/entities/user_entity.d
 
 class WidgetNeuroButton extends StatefulWidget {
   final ChatEntity? currentChat;
-  const WidgetNeuroButton({super.key, this.currentChat});
+  final UserEntity? currentUser;
+  const WidgetNeuroButton({super.key, this.currentChat, this.currentUser});
 
   @override
   State<WidgetNeuroButton> createState() => _WidgetNeuroButtonState();
 }
 
 class _WidgetNeuroButtonState extends State<WidgetNeuroButton> {
-  String? _selectedNetwork;
-  bool changedNeuro = false;
+  NeuroEntity? _selectedNeuro;
+  bool _changedNeuro = false;
+  bool _userLoaded = false;
 
   @override
   void initState() {
     super.initState();
-    // Один раз запрашиваем оба списка
-    context.read<NeuroCubit>().fetch();
-    context.read<UserCubit>().fetch();
   }
 
   // Открытие диалога настроек чата
@@ -55,7 +54,7 @@ class _WidgetNeuroButtonState extends State<WidgetNeuroButton> {
         builder: (_) => WidgetChatCreateSettings(
           chatId: 0,
           temperature: 1.0,
-          contextChat: "",
+          contextChat: '',
           useMemory: false,
           updateMemory: false,
           onSave: (data) {
@@ -79,28 +78,36 @@ class _WidgetNeuroButtonState extends State<WidgetNeuroButton> {
         } else if (neuroState is DataLoaded<List<NeuroEntity>>) {
           final neuroList = neuroState.data;
           if (neuroList.isEmpty) {
-            //return const Text('Список нейросетей пуст');
             return buildShowingMessage(
                 isSmallWidth, "Список нейросетей пуст", "Делать нечего)", true);
           }
           return BlocBuilder<UserCubit, DataState<UserEntity>>(
               builder: (context, userState) {
-            if (userState is DataLoading<UserEntity>) {
+            if (userState is DataLoading<UserEntity> && !_userLoaded) {
               return buildShowingMessage(isSmallWidth, "Идет загрузка..",
                   "Пожалуйста подождите", true);
             }
             if (userState is DataError<UserEntity>) {
-              //return const Text('Ошибка в загрузке пользователя');
               return buildShowingMessage(isSmallWidth, "Ошибка в загрузке",
                   "Пожалуйста обновите страницу", false);
             }
-            if (userState is DataLoaded<UserEntity>) {
+            if (userState is DataLoaded<UserEntity> && !_userLoaded) {
               for (var e in neuroState.data) {
-                if (!changedNeuro) {
-                  if (e.id == userState.data.standartModelUrild) {
-                    _selectedNetwork = e.name;
+                if (!_changedNeuro) {
+                  if (e.id == userState.data.standartModelUriId) {
+                    _selectedNeuro = e;
                   }
                 }
+              }
+              _userLoaded = true;
+            }
+            if ((userState is DataLoaded<UserEntity> ||
+                    userState is DataLoading<UserEntity>) &&
+                _userLoaded) {
+              if (widget.currentChat == null) {
+                _selectedNeuro = neuroList.firstWhere((e) => e.id == widget.currentUser?.standartModelUriId);
+              } else {
+                _selectedNeuro = neuroList.firstWhere((e) => e.id == widget.currentChat?.modelUriId);
               }
               return Row(
                 children: [
@@ -109,12 +116,14 @@ class _WidgetNeuroButtonState extends State<WidgetNeuroButton> {
                       constraints:
                           const BoxConstraints(maxWidth: 375, minHeight: 50),
                       child: DropdownButtonHideUnderline(
-                        child: DropdownButton<String>(
+                        child: DropdownButton<NeuroEntity>(
                           isExpanded: true,
-                          value: _selectedNetwork,
+                          value: _selectedNeuro,
+                          hint: const Text(
+                              "Выберите нейросеть"), // вот эта строка
                           items: neuroList.map((neuro) {
-                            return DropdownMenuItem<String>(
-                              value: neuro.name,
+                            return DropdownMenuItem<NeuroEntity>(
+                              value: neuro,
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
@@ -141,11 +150,11 @@ class _WidgetNeuroButtonState extends State<WidgetNeuroButton> {
                               ),
                             );
                           }).toList(),
-                          onChanged: (value) {
-                            if (value != null) {
+                          onChanged: (neuro) {
+                            if (neuro != null) {
                               setState(() {
-                                changedNeuro = true;
-                                _selectedNetwork = value;
+                                _changedNeuro = true;
+                                _selectedNeuro = neuro;
                               });
                             }
                           },
