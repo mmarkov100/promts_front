@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+// ignore: depend_on_referenced_packages
+import 'package:collection/collection.dart';
 import 'package:promts_application_1/core/cubits/data_cubit.dart';
 import 'package:promts_application_1/features/chat/domain/entities/chat_entity.dart';
 import 'package:promts_application_1/features/neuro/cubits/neuro_cubit.dart';
@@ -20,12 +22,23 @@ class WidgetNeuroButton extends StatefulWidget {
 
 class _WidgetNeuroButtonState extends State<WidgetNeuroButton> {
   NeuroEntity? _selectedNeuro;
+  NeuroEntity? _standardNeuro;
   bool _changedNeuro = false;
   bool _userLoaded = false;
+  List<NeuroEntity> neuroList = [];
 
   @override
-  void initState() {
-    super.initState();
+  void didUpdateWidget(covariant WidgetNeuroButton old) {
+    super.didUpdateWidget(old);
+    if (widget.currentChat?.id != old.currentChat?.id) {
+      setState(() {
+        _changedNeuro = false;
+        final id = widget.currentChat?.modelUriId ??
+            widget.currentUser?.standartModelUriId;
+        _selectedNeuro =
+            neuroList.firstWhereOrNull((e) => e.id == id) ?? _standardNeuro;
+      });
+    }
   }
 
   // Открытие диалога настроек чата
@@ -76,7 +89,7 @@ class _WidgetNeuroButtonState extends State<WidgetNeuroButton> {
           return buildShowingMessage(
               isSmallWidth, "Идет загрузка..", "Пожалуйста подождите", true);
         } else if (neuroState is DataLoaded<List<NeuroEntity>>) {
-          final neuroList = neuroState.data;
+          neuroList = neuroState.data;
           if (neuroList.isEmpty) {
             return buildShowingMessage(
                 isSmallWidth, "Список нейросетей пуст", "Делать нечего)", true);
@@ -92,22 +105,27 @@ class _WidgetNeuroButtonState extends State<WidgetNeuroButton> {
                   "Пожалуйста обновите страницу", false);
             }
             if (userState is DataLoaded<UserEntity> && !_userLoaded) {
-              for (var e in neuroState.data) {
-                if (!_changedNeuro) {
-                  if (e.id == userState.data.standartModelUriId) {
-                    _selectedNeuro = e;
-                  }
-                }
-              }
+              // инициализация из профиля
+              _standardNeuro = neuroList.firstWhereOrNull(
+                  (e) => e.id == userState.data.standartModelUriId);
+              _selectedNeuro = _standardNeuro;
               _userLoaded = true;
             }
-            if ((userState is DataLoaded<UserEntity> ||
-                    userState is DataLoading<UserEntity>) &&
-                _userLoaded) {
-              if (widget.currentChat == null) {
-                _selectedNeuro = neuroList.firstWhere((e) => e.id == widget.currentUser?.standartModelUriId);
-              } else {
-                _selectedNeuro = neuroList.firstWhere((e) => e.id == widget.currentChat?.modelUriId);
+
+            if (_userLoaded) {
+              if (!_changedNeuro) {
+                if (widget.currentChat == null) {
+                  _selectedNeuro = _standardNeuro;
+                } else {
+                  final chatId = widget.currentChat!.modelUriId;
+                  _selectedNeuro =
+                      neuroList.firstWhereOrNull((e) => e.id == chatId) ??
+                          _standardNeuro;
+                  if (userState is DataLoaded<UserEntity>) {
+                    _standardNeuro = neuroList.firstWhereOrNull(
+                        (e) => e.id == userState.data.standartModelUriId);
+                  }
+                }
               }
               return Row(
                 children: [
@@ -213,7 +231,6 @@ class _WidgetNeuroButtonState extends State<WidgetNeuroButton> {
           ),
         ),
         const SizedBox(width: 7),
-        if (isLoading) const Center(child: CircularProgressIndicator()),
       ],
     );
   }

@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:promts_application_1/core/config/config.dart';
+import 'package:promts_application_1/core/cubits/data_cubit.dart';
 import 'package:promts_application_1/di/locator.dart';
 import 'package:promts_application_1/features/chat/domain/entities/chat_entity.dart';
+import 'package:promts_application_1/features/user/cubit/user_cubit.dart';
 import 'package:promts_application_1/features/user/domain/entities/user_entity.dart';
 import 'widget_app_bar.dart';
 import 'package:promts_application_1/features/chat/view/widgets/widget_chats.dart';
@@ -20,7 +23,7 @@ class _WidgetMainScreenState extends State<WidgetMainScreen> {
 
   bool _showChatPage = false;
   ChatEntity? _currentChat;
-  UserEntity? _currentUser;
+  //UserEntity? _currentUser;
   final appConfig = getIt<AppConfig>();
   final TextEditingController _messageController = TextEditingController();
 
@@ -78,9 +81,23 @@ class _WidgetMainScreenState extends State<WidgetMainScreen> {
         children: [
           Padding(
             padding: const EdgeInsets.all(16.0),
-            child: WidgetNeuroButton(
-              currentChat: _currentChat,
-              currentUser: _currentUser,
+            child: BlocBuilder<UserCubit, DataState<UserEntity>>(
+              builder: (context, userState) {
+                UserEntity? user;
+                if (userState is DataLoaded<UserEntity>) {
+                  user = userState.data;
+                  //_currentUser = user;
+                }
+                return Column(
+                  children: [
+                    WidgetNeuroButton(
+                      currentChat: _currentChat,
+                      currentUser:
+                          user,
+                    ),
+                  ],
+                );
+              },
             ),
           ),
           Expanded(
