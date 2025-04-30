@@ -3,7 +3,6 @@ import 'package:promts_application_1/features/auth/domain/entities/token_check_e
 import 'package:promts_application_1/features/auth/domain/repositories/auth_repository.dart';
 import '../../domain/entities/login_entity.dart';
 
-
 class AuthRepositoryImpl implements AuthRepository {
   final AuthRemoteDataSource remoteDataSource;
 
@@ -15,13 +14,8 @@ class AuthRepositoryImpl implements AuthRepository {
     return tokenCheckModel;
   }
 
-   @override
+  @override
   Future<LoginEntity> login(String email, String password) {
     return remoteDataSource.login(email, password);
-  }
-
-    @override
-  Future<LoginEntity> register(String email, String password) {
-    return remoteDataSource.register(email, password);
   }
 }

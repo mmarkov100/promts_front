@@ -9,7 +9,7 @@ class UserModel extends UserEntity {
     required super.memory,
     required super.memoryEnabled,
     required super.aiCanUpdateMemory,
-    required super.standartModelUrild,
+    required super.standartModelUriId,
   });
 
   factory UserModel.fromJson(Map<String, dynamic> json) {
@@ -23,7 +23,7 @@ class UserModel extends UserEntity {
       memoryEnabled: json['memoryEnabled'] as bool? ?? false,
       aiCanUpdateMemory: json['aiCanUpdateMemory'] as bool? ?? false,
       // ключ в JSON называется standardModelUriId
-      standartModelUrild: json['standardModelUriId'] as int? ?? 0,
+      standartModelUriId: json['standardModelUriId'] as int? ?? 0,
     );
   }
 
@@ -36,7 +36,7 @@ class UserModel extends UserEntity {
       'memory': memory,
       'memoryEnabled': memoryEnabled,
       'aiCanUpdateMemory': aiCanUpdateMemory,
-      'standardModelUriId': standartModelUrild,
+      'standardModelUriId': standartModelUriId,
     };
   }
 }

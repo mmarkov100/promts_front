@@ -1,32 +1,45 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+// ignore: depend_on_referenced_packages
+import 'package:collection/collection.dart';
 import 'package:promts_application_1/core/cubits/data_cubit.dart';
+import 'package:promts_application_1/features/chat/cubits/chat_cubit.dart';
 import 'package:promts_application_1/features/chat/domain/entities/chat_entity.dart';
 import 'package:promts_application_1/features/neuro/cubits/neuro_cubit.dart';
 import 'package:promts_application_1/features/chat/view/widgets/widget_chat_create_settings.dart';
 import 'package:promts_application_1/features/neuro/domain/entities/neuro_entity.dart';
-import 'package:promts_application_1/features/neuro/view/widget_neuro_chat_setting.dart';
+import 'package:promts_application_1/features/chat/view/widgets/widget_chat_setting.dart';
 import 'package:promts_application_1/features/user/cubit/user_cubit.dart';
 import 'package:promts_application_1/features/user/domain/entities/user_entity.dart';
 
 class WidgetNeuroButton extends StatefulWidget {
   final ChatEntity? currentChat;
-  const WidgetNeuroButton({super.key, this.currentChat});
+  final UserEntity? currentUser;
+  const WidgetNeuroButton({super.key, this.currentChat, this.currentUser});
 
   @override
   State<WidgetNeuroButton> createState() => _WidgetNeuroButtonState();
 }
 
 class _WidgetNeuroButtonState extends State<WidgetNeuroButton> {
-  String? _selectedNetwork;
-  bool changedNeuro = false;
+  NeuroEntity? _selectedNeuro;
+  NeuroEntity? _standardNeuro;
+  bool _changedNeuro = false;
+  bool _userLoaded = false;
+  List<NeuroEntity> neuroList = [];
 
   @override
-  void initState() {
-    super.initState();
-    // Один раз запрашиваем оба списка
-    context.read<NeuroCubit>().fetch();
-    context.read<UserCubit>().fetch();
+  void didUpdateWidget(covariant WidgetNeuroButton old) {
+    super.didUpdateWidget(old);
+    if (widget.currentChat?.id != old.currentChat?.id) {
+      setState(() {
+        _changedNeuro = false;
+        final id = widget.currentChat?.modelUriId ??
+            widget.currentUser?.standartModelUriId;
+        _selectedNeuro =
+            neuroList.firstWhereOrNull((e) => e.id == id) ?? _standardNeuro;
+      });
+    }
   }
 
   // Открытие диалога настроек чата
@@ -35,18 +48,27 @@ class _WidgetNeuroButtonState extends State<WidgetNeuroButton> {
       final c = widget.currentChat!;
       showDialog(
         context: context,
-        builder: (_) => WidgetNeuroChatSetting(
-          chatId: c.id,
-          temperature: c.temperature,
-          contextChat: c.context,
-          useMemory: c.useMemory,
-          updateMemory: c.updateMemory,
-          dateCreate: c.dateCreate.toString(),
-          starredChat: c.starredChat,
-          onSave: (data) {
-            // TODO: здесь пока просто логируем/обновляем локально
-            print("Новые настройки чата: \$data");
-          },
+        builder: (_) => BlocProvider.value(
+          value: context.read<ChatCubit>(),
+          child: WidgetChatSettings(
+            chatId: c.id,
+            temperature: c.temperature,
+            contextChat: c.context,
+            useMemory: c.useMemory,
+            updateMemory: c.updateMemory,
+            dateCreate: c.dateCreate.toIso8601String(),
+            starredChat: c.starredChat,
+            canEditContext: c.canEditContext, // NEW
+            canUseMemory: c.canUseMemory, // NEW
+            canUpdateMemory: c.canUpdateMemory, // NEW
+            onSave: (data) async {
+              await context
+                  .read<ChatCubit>()
+                  .saveSettings(data); // теперь это Future
+            },
+            usedNeuroId: _selectedNeuro?.id,
+            canEditModelUri: c.canUpdateMemory,
+          ),
         ),
       );
     } else {
@@ -55,7 +77,7 @@ class _WidgetNeuroButtonState extends State<WidgetNeuroButton> {
         builder: (_) => WidgetChatCreateSettings(
           chatId: 0,
           temperature: 1.0,
-          contextChat: "",
+          contextChat: '',
           useMemory: false,
           updateMemory: false,
           onSave: (data) {
@@ -77,28 +99,41 @@ class _WidgetNeuroButtonState extends State<WidgetNeuroButton> {
           return buildShowingMessage(
               isSmallWidth, "Идет загрузка..", "Пожалуйста подождите", true);
         } else if (neuroState is DataLoaded<List<NeuroEntity>>) {
-          final neuroList = neuroState.data;
+          neuroList = neuroState.data;
           if (neuroList.isEmpty) {
-            //return const Text('Список нейросетей пуст');
             return buildShowingMessage(
                 isSmallWidth, "Список нейросетей пуст", "Делать нечего)", true);
           }
           return BlocBuilder<UserCubit, DataState<UserEntity>>(
               builder: (context, userState) {
-            if (userState is DataLoading<UserEntity>) {
+            if (userState is DataLoading<UserEntity> && !_userLoaded) {
               return buildShowingMessage(isSmallWidth, "Идет загрузка..",
                   "Пожалуйста подождите", true);
             }
             if (userState is DataError<UserEntity>) {
-              //return const Text('Ошибка в загрузке пользователя');
               return buildShowingMessage(isSmallWidth, "Ошибка в загрузке",
                   "Пожалуйста обновите страницу", false);
             }
-            if (userState is DataLoaded<UserEntity>) {
-              for (var e in neuroState.data) {
-                if (!changedNeuro) {
-                  if (e.id == userState.data.standartModelUrild) {
-                    _selectedNetwork = e.name;
+            if (userState is DataLoaded<UserEntity> && !_userLoaded) {
+              // инициализация из профиля
+              _standardNeuro = neuroList.firstWhereOrNull(
+                  (e) => e.id == userState.data.standartModelUriId);
+              _selectedNeuro = _standardNeuro;
+              _userLoaded = true;
+            }
+
+            if (_userLoaded) {
+              if (!_changedNeuro) {
+                if (widget.currentChat == null) {
+                  _selectedNeuro = _standardNeuro;
+                } else {
+                  final chatId = widget.currentChat!.modelUriId;
+                  _selectedNeuro =
+                      neuroList.firstWhereOrNull((e) => e.id == chatId) ??
+                          _standardNeuro;
+                  if (userState is DataLoaded<UserEntity>) {
+                    _standardNeuro = neuroList.firstWhereOrNull(
+                        (e) => e.id == userState.data.standartModelUriId);
                   }
                 }
               }
@@ -109,12 +144,14 @@ class _WidgetNeuroButtonState extends State<WidgetNeuroButton> {
                       constraints:
                           const BoxConstraints(maxWidth: 375, minHeight: 50),
                       child: DropdownButtonHideUnderline(
-                        child: DropdownButton<String>(
+                        child: DropdownButton<NeuroEntity>(
                           isExpanded: true,
-                          value: _selectedNetwork,
+                          value: _selectedNeuro,
+                          hint: const Text(
+                              "Выберите нейросеть"), // вот эта строка
                           items: neuroList.map((neuro) {
-                            return DropdownMenuItem<String>(
-                              value: neuro.name,
+                            return DropdownMenuItem<NeuroEntity>(
+                              value: neuro,
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
@@ -141,11 +178,11 @@ class _WidgetNeuroButtonState extends State<WidgetNeuroButton> {
                               ),
                             );
                           }).toList(),
-                          onChanged: (value) {
-                            if (value != null) {
+                          onChanged: (neuro) {
+                            if (neuro != null) {
                               setState(() {
-                                changedNeuro = true;
-                                _selectedNetwork = value;
+                                _changedNeuro = true;
+                                _selectedNeuro = neuro;
                               });
                             }
                           },
@@ -204,7 +241,6 @@ class _WidgetNeuroButtonState extends State<WidgetNeuroButton> {
           ),
         ),
         const SizedBox(width: 7),
-        if (isLoading) const Center(child: CircularProgressIndicator()),
       ],
     );
   }

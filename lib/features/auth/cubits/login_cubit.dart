@@ -10,7 +10,4 @@ class LoginCubit extends DataCubit<LoginEntity> {
   Future<void> login(String email, String password) async {
     await load(() => repository.login(email, password));
   }
-  Future<void> register(String email, String password) async {
-  await load(() => repository.register(email, password));
-}
 }

@@ -10,16 +10,17 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:promts_application_1/di/locator.dart';
 import 'package:promts_application_1/features/auth/cubits/auth_cubit.dart';
+import 'package:promts_application_1/features/auth/cubits/login_cubit.dart';
+import 'package:promts_application_1/features/auth/cubits/register_cubit.dart';
 import 'package:promts_application_1/features/auth/view/splash_screen_auth.dart';
 import 'package:promts_application_1/features/chat/cubits/chat_cubit.dart';
 import 'package:promts_application_1/features/neuro/cubits/neuro_cubit.dart';
 import 'package:promts_application_1/features/user/cubit/user_cubit.dart';
 
 void main() {
-  
   // 0 - продовый, 1 - тестовый (вообще пока не работает)
-  //setup(0, "https://1042-104-253-187-142.ngrok-free.app", "1234jwt");
-  setup(0, "https://a610-104-253-187-142.ngrok-free.app", "1234jwt");
+  setup(0, "http://localhost:8090", "1234jwt");
+  //setup(0, "https://a610-104-253-187-142.ngrok-free.app", "1234jwt");
   runApp(
     MultiBlocProvider(
       providers: [
@@ -27,6 +28,8 @@ void main() {
         BlocProvider(create: (_) => getIt<NeuroCubit>()),
         BlocProvider(create: (_) => getIt<UserCubit>()),
         BlocProvider(create: (_) => getIt<ChatCubit>()),
+        BlocProvider(create: (_) => getIt<LoginCubit>()),
+        BlocProvider(create: (_) => getIt<RegisterCubit>()),
       ],
       child: const MyApp(),
     ),
@@ -48,7 +51,7 @@ class MyApp extends StatelessWidget {
 }
 class AppConfig {
   final String _baseUrl;
-  final String _jwtToken;
+  late String _jwtToken;
   AppConfig(this._baseUrl, this._jwtToken);
 
   final int _userId = 2;
@@ -67,6 +70,11 @@ class AppConfig {
 
     return _userId;
   }
+
+  void setJwtToken(String token) {
+  _jwtToken = token;
+}
+
 }
 // lib/core/cubits/data_cubit.dart
 
@@ -249,9 +257,14 @@ import 'package:get_it/get_it.dart';
 import 'package:promts_application_1/core/config/config.dart';
 import 'package:promts_application_1/core/service/network_service.dart';
 import 'package:promts_application_1/features/auth/cubits/auth_cubit.dart';
+import 'package:promts_application_1/features/auth/cubits/login_cubit.dart';
+import 'package:promts_application_1/features/auth/cubits/register_cubit.dart';
 import 'package:promts_application_1/features/auth/data/datasources/auth_remote_data_source.dart';
+import 'package:promts_application_1/features/auth/data/datasources/register_remote_data_source.dart';
 import 'package:promts_application_1/features/auth/data/implimintations/auth_repository_impl.dart';
+import 'package:promts_application_1/features/auth/data/implimintations/register_repository_impl.dart';
 import 'package:promts_application_1/features/auth/domain/repositories/auth_repository.dart';
+import 'package:promts_application_1/features/auth/domain/repositories/register_repository.dart';
 import 'package:promts_application_1/features/chat/cubits/chat_cubit.dart';
 import 'package:promts_application_1/features/chat/data/datasources/chat_datasource.dart';
 import 'package:promts_application_1/features/chat/data/implimentations/chat_repository_impl.dart';
@@ -306,6 +319,17 @@ void setup(int appMode, String baseUrl, String jwtToken) {
     () => ChatRepositoryImpl(remoteDataSource: getIt()),
   );
   getIt.registerFactory(() => ChatCubit(repository: getIt()));
+  // Login
+  getIt.registerFactory(() => LoginCubit(repository: getIt()));
+
+  // Регистрация компонентов регистрации
+  getIt.registerLazySingleton<RegisterRemoteDataSource>(
+    () => RegisterRemoteDataSourceImpl(),
+  );
+  getIt.registerLazySingleton<RegisterRepository>(
+    () => RegisterRepositoryImpl(remoteDataSource: getIt()),
+  );
+  getIt.registerFactory(() => RegisterCubit(repository: getIt()));
 }
 // ignore: depend_on_referenced_packages
 import 'package:promts_application_1/core/cubits/data_cubit.dart';
@@ -320,12 +344,41 @@ class AuthCubit extends DataCubit<TokenCheckEntity> {
 
   void fetch() => load(() => repository.checkToken());
 }
+import 'package:promts_application_1/core/cubits/data_cubit.dart';
+import 'package:promts_application_1/features/auth/domain/entities/login_entity.dart';
+import 'package:promts_application_1/features/auth/domain/repositories/auth_repository.dart';
+
+class LoginCubit extends DataCubit<LoginEntity> {
+  final AuthRepository repository;
+
+  LoginCubit({required this.repository}) : super();
+
+  Future<void> login(String email, String password) async {
+    await load(() => repository.login(email, password));
+  }
+}
+import 'package:promts_application_1/core/cubits/data_cubit.dart';
+import 'package:promts_application_1/features/auth/domain/entities/register_entity.dart';
+import 'package:promts_application_1/features/auth/domain/repositories/register_repository.dart';
+
+
+class RegisterCubit extends DataCubit<RegisterEntity> {
+  final RegisterRepository repository;
+
+  RegisterCubit({required this.repository}) : super();
+
+  Future<void> register(String email, String password) async {
+    await load(() => repository.register(email, password));
+  }
+}
 import 'package:promts_application_1/core/service/network_service.dart';
 import 'package:promts_application_1/di/locator.dart';
 import 'package:promts_application_1/features/auth/data/models/token_check_model.dart';
+import '../models/login_model.dart';
 
 abstract class AuthRemoteDataSource {
   Future<TokenCheckModel> tokenCheck();
+  Future<LoginModel> login(String email, String password);
 }
 
 class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
@@ -341,10 +394,46 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
       fromJson: (json) => TokenCheckModel.fromJson(json),
     );
   }
+
+  @override
+  Future<LoginModel> login(String email, String password) async {
+    return api.post<LoginModel>(
+      '/auth/log',
+      body: {
+        'email': email,
+        'password': password,
+      },
+      fromJson: (json) => LoginModel.fromJson(json),
+    );
+  }
+}
+import 'package:promts_application_1/core/service/network_service.dart';
+import 'package:promts_application_1/di/locator.dart';
+import '../models/register_model.dart';
+
+abstract class RegisterRemoteDataSource {
+  Future<RegisterModel> register(String email, String password);
+}
+
+class RegisterRemoteDataSourceImpl implements RegisterRemoteDataSource {
+  final ApiService api = getIt<ApiService>();
+
+  @override
+  Future<RegisterModel> register(String email, String password) {
+    return api.post<RegisterModel>(
+      '/auth/reg',
+      body: {
+        'email': email,
+        'password': password,
+      },
+      fromJson: (json) => RegisterModel.fromJson(json),
+    );
+  }
 }
 import 'package:promts_application_1/features/auth/data/datasources/auth_remote_data_source.dart';
 import 'package:promts_application_1/features/auth/domain/entities/token_check_entity.dart';
 import 'package:promts_application_1/features/auth/domain/repositories/auth_repository.dart';
+import '../../domain/entities/login_entity.dart';
 
 class AuthRepositoryImpl implements AuthRepository {
   final AuthRemoteDataSource remoteDataSource;
@@ -355,6 +444,51 @@ class AuthRepositoryImpl implements AuthRepository {
   Future<TokenCheckEntity> checkToken() async {
     final tokenCheckModel = await remoteDataSource.tokenCheck();
     return tokenCheckModel;
+  }
+
+  @override
+  Future<LoginEntity> login(String email, String password) {
+    return remoteDataSource.login(email, password);
+  }
+}
+import '../../domain/entities/register_entity.dart';
+import '../../domain/repositories/register_repository.dart';
+import '../datasources/register_remote_data_source.dart';
+
+class RegisterRepositoryImpl implements RegisterRepository {
+  final RegisterRemoteDataSource remoteDataSource;
+
+  RegisterRepositoryImpl({required this.remoteDataSource});
+
+  @override
+  Future<RegisterEntity> register(String email, String password) {
+    return remoteDataSource.register(email, password);
+  }
+}
+import '../../domain/entities/login_entity.dart';
+
+class LoginModel extends LoginEntity {
+  LoginModel({required super.token});
+
+  factory LoginModel.fromJson(Map<String, dynamic> json) {
+    return LoginModel(
+      token: json['token'] as String,
+    );
+  }
+}
+import '../../domain/entities/register_entity.dart';
+
+class RegisterModel extends RegisterEntity {
+  RegisterModel({
+    required super.success,
+    required super.message,
+  });
+
+  factory RegisterModel.fromJson(Map<String, dynamic> json) {
+    return RegisterModel(
+      success: json['success'] as bool? ?? false,
+      message: json['message'] as String? ?? '',
+    );
   }
 }
 import 'package:promts_application_1/features/auth/domain/entities/token_check_entity.dart';
@@ -381,6 +515,20 @@ class TokenCheckModel extends TokenCheckEntity {
     }
   }
 }
+class LoginEntity {
+  final String token;
+
+  LoginEntity({required this.token});
+}
+class RegisterEntity {
+  final bool success;
+  final String message;
+
+  RegisterEntity({
+    required this.success,
+    required this.message,
+  });
+}
 class TokenCheckEntity {
   final bool success;
   final String message;
@@ -393,11 +541,28 @@ class TokenCheckEntity {
   });
 }
 import 'package:promts_application_1/features/auth/domain/entities/token_check_entity.dart';
+import '../entities/login_entity.dart';
 
 abstract class AuthRepository {
   Future<TokenCheckEntity> checkToken();
+  Future<LoginEntity> login(String email, String password);
+}
+import '../entities/register_entity.dart';
+
+abstract class RegisterRepository {
+  Future<RegisterEntity> register(String email, String password);
 }
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:promts_application_1/di/locator.dart';
+import 'package:promts_application_1/features/auth/cubits/login_cubit.dart';
+import 'package:promts_application_1/features/auth/cubits/register_cubit.dart';
+import 'package:promts_application_1/features/auth/domain/entities/login_entity.dart';
+import 'package:promts_application_1/features/auth/domain/entities/register_entity.dart';
+import 'package:promts_application_1/features/main/view/widgets/widget_main_screen.dart';
+import 'package:promts_application_1/core/config/config.dart';
+import 'package:promts_application_1/core/cubits/data_cubit.dart';
+import 'package:promts_application_1/features/main/view/widgets/widget_snack_bar.dart';
 
 class LoginPageScreen extends StatefulWidget {
   const LoginPageScreen({super.key});
@@ -407,11 +572,191 @@ class LoginPageScreen extends StatefulWidget {
 }
 
 class _LoginPageScreenState extends State<LoginPageScreen> {
+  final TextEditingController _emailController = TextEditingController();
+  final TextEditingController _passwordController = TextEditingController();
+  final TextEditingController _confirmPasswordController = TextEditingController();
+
+  bool _isLogin = true; // true — экран входа, false — экран регистрации
+  bool _isLoading = false;
+  bool _passwordVisible = false; // для скрытия/показа пароля
+
+  Future<void> _onLoginPressed() async {
+    final email = _emailController.text.trim();
+    final password = _passwordController.text.trim();
+
+    if (email.isEmpty || password.isEmpty) {
+      WidgetSnackBar.showError(context, "Заполните все поля");
+      return;
+    }
+
+    final loginCubit = context.read<LoginCubit>();
+    await loginCubit.login(email, password);
+  }
+
+  Future<void> _onRegisterPressed() async {
+    final email = _emailController.text.trim();
+    final password = _passwordController.text.trim();
+    final confirmPassword = _confirmPasswordController.text.trim();
+
+    if (email.isEmpty || password.isEmpty || confirmPassword.isEmpty) {
+      WidgetSnackBar.showError(context, "Заполните все поля");
+      return;
+    }
+
+    if (password != confirmPassword) {
+      WidgetSnackBar.showError(context, "Пароли не совпадают");
+      return;
+    }
+
+    final registerCubit = context.read<RegisterCubit>();
+    await registerCubit.register(email, password);
+  }
+
+  void _toggleMode() {
+    setState(() {
+      _isLogin = !_isLogin;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
-    return const Text(
-      'ПОШЕЛ и ВЫПОЛНИЛ ЛОГИН СТРАНИЦА ЛОГИНА, СУКААА', 
-      style: TextStyle(fontSize: 24),
+    return MultiBlocListener(
+      listeners: [
+        BlocListener<LoginCubit, DataState<LoginEntity>>(
+          listener: (context, state) {
+            if (state is DataLoading<LoginEntity>) {
+              setState(() {
+                _isLoading = true;
+              });
+            } else if (state is DataLoaded<LoginEntity>) {
+              final token = state.data.token;
+              getIt<AppConfig>().setJwtToken(token);
+
+              Navigator.of(context).pushReplacement(
+                MaterialPageRoute(builder: (_) => const WidgetMainScreen()),
+              );
+            } else if (state is DataError<LoginEntity>) {
+              WidgetSnackBar.showError(context, state.message);
+              setState(() {
+                _isLoading = false;
+              });
+            }
+          },
+        ),
+        BlocListener<RegisterCubit, DataState<RegisterEntity>>(
+          listener: (context, state) {
+            if (state is DataLoading<RegisterEntity>) {
+              setState(() {
+                _isLoading = true;
+              });
+            } else if (state is DataLoaded<RegisterEntity>) {
+              WidgetSnackBar.showError(context, state.data.message);
+              setState(() {
+                _isLogin = true; // Переходим на экран входа
+                _isLoading = false;
+              });
+            } else if (state is DataError<RegisterEntity>) {
+              WidgetSnackBar.showError(context, state.message);
+              setState(() {
+                _isLoading = false;
+              });
+            }
+          },
+        ),
+      ],
+      child: Scaffold(
+        body: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 400),
+            child: Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      _isLogin ? "Вход в систему" : "Регистрация",
+                      style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 24),
+                    TextField(
+                      controller: _emailController,
+                      decoration: const InputDecoration(
+                        labelText: "Почта",
+                        border: OutlineInputBorder(),
+                      ),
+                      keyboardType: TextInputType.emailAddress,
+                    ),
+                    const SizedBox(height: 16),
+                    TextField(
+                      controller: _passwordController,
+                      obscureText: !_passwordVisible,
+                      decoration: InputDecoration(
+                        labelText: "Пароль",
+                        border: const OutlineInputBorder(),
+                        suffixIcon: IconButton(
+                          icon: Icon(
+                            _passwordVisible ? Icons.visibility : Icons.visibility_off,
+                          ),
+                          onPressed: () {
+                            setState(() {
+                              _passwordVisible = !_passwordVisible;
+                            });
+                          },
+                        ),
+                      ),
+                    ),
+                    if (!_isLogin) ...[
+                      const SizedBox(height: 16),
+                      TextField(
+                        controller: _confirmPasswordController,
+                        obscureText: !_passwordVisible,
+                        decoration: InputDecoration(
+                          labelText: "Подтверждение пароля",
+                          border: const OutlineInputBorder(),
+                          suffixIcon: IconButton(
+                            icon: Icon(
+                              _passwordVisible ? Icons.visibility : Icons.visibility_off,
+                            ),
+                            onPressed: () {
+                              setState(() {
+                                _passwordVisible = !_passwordVisible;
+                              });
+                            },
+                          ),
+                        ),
+                      ),
+                    ],
+                    const SizedBox(height: 24),
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton(
+                        onPressed: _isLoading
+                            ? null
+                            : _isLogin
+                                ? _onLoginPressed
+                                : _onRegisterPressed,
+                        child: _isLoading
+                            ? const CircularProgressIndicator(color: Colors.white)
+                            : Text(_isLogin ? "Войти" : "Зарегистрироваться"),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    TextButton(
+                      onPressed: _isLoading ? null : _toggleMode,
+                      child: Text(
+                        _isLogin
+                            ? "Нет аккаунта? Зарегистрироваться"
+                            : "Уже есть аккаунт? Войти",
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
     );
   }
 }
@@ -453,11 +798,32 @@ import 'package:promts_application_1/features/chat/domain/repositories/chat_repo
 
 class ChatCubit extends DataCubit<List<ChatEntity>> {
   final ChatRepository repository;
-  ChatCubit({required this.repository}) : super(){
+  ChatCubit({required this.repository}) : super() {
     fetchChats();
   }
 
   void fetchChats() => load(() => repository.fetchChats());
+
+  Future<void> saveSettings(Map<String, dynamic> body) async {
+    try {
+      final updated = await repository.updateChat(body);
+
+      if (state is DataLoaded<List<ChatEntity>>) {
+        final currentChats = (state as DataLoaded<List<ChatEntity>>).data;
+        final newChats = currentChats.map((chat) {
+          return chat.id == updated.id ? updated : chat;
+        }).toList();
+
+        emit(DataLoaded<List<ChatEntity>>(newChats));
+      } else {
+        // если список не был загружен, загрузим его заново
+        fetchChats();
+      }
+    } catch (e, st) {
+      print("Ошибка при обновлении чата: $e\n$st");
+      emit(DataError<List<ChatEntity>>(e.toString()));
+    }
+  }
 }
 import 'package:promts_application_1/core/service/network_service.dart';
 import 'package:promts_application_1/di/locator.dart';
@@ -465,6 +831,7 @@ import 'package:promts_application_1/features/chat/data/models/chat_model.dart';
 
 abstract class ChatRemoteDataSource {
   Future<List<ChatModel>> fetchChats();
+  Future<ChatModel> updateChatSettings(Map<String, dynamic> body);
 }
 
 class ChatRemoteDataSourceImpl implements ChatRemoteDataSource {
@@ -475,6 +842,15 @@ class ChatRemoteDataSourceImpl implements ChatRemoteDataSource {
     return _api.postList<ChatModel>(
       '/chats/get',
       fromJsonItem: (json) => ChatModel.fromJson(json),
+    );
+  }
+
+  @override
+  Future<ChatModel> updateChatSettings(Map<String, dynamic> body) {
+    return _api.put<ChatModel>(
+      '/chats/new',
+      body: body,
+      fromJson: ChatModel.fromJson,
     );
   }
 }
@@ -491,6 +867,10 @@ class ChatRepositoryImpl implements ChatRepository {
   Future<List<ChatEntity>> fetchChats() async {
     return await remoteDataSource.fetchChats();
   }
+
+  @override
+  Future<ChatEntity> updateChat(Map<String, dynamic> body) =>
+      remoteDataSource.updateChatSettings(body);
 }
 import 'package:promts_application_1/features/chat/domain/entities/chat_entity.dart';
 
@@ -574,8 +954,9 @@ class ChatEntity {
 }
 import 'package:promts_application_1/features/chat/domain/entities/chat_entity.dart';
 
-abstract class ChatRepository{
+abstract class ChatRepository {
   Future<List<ChatEntity>> fetchChats();
+  Future<ChatEntity> updateChat(Map<String, dynamic> body);
 }
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -584,7 +965,7 @@ import 'package:promts_application_1/features/chat/cubits/chat_cubit.dart';
 import 'package:promts_application_1/core/cubits/data_cubit.dart';
 
 class WidgetChats extends StatefulWidget {
-  final ValueChanged<int> onChatSelected;
+  final ValueChanged<ChatEntity> onChatSelected;
   const WidgetChats({super.key, required this.onChatSelected});
 
   @override
@@ -611,8 +992,8 @@ class _WidgetChatsState extends State<WidgetChats> {
     super.dispose();
   }
 
-  void selectChat(int id) {
-    widget.onChatSelected(id);
+  void selectChat(ChatEntity chat) {
+    widget.onChatSelected(chat);
     Navigator.of(context).pop();
   }
 
@@ -687,7 +1068,7 @@ class _WidgetChatsState extends State<WidgetChats> {
                         subtitle: Text(
                           'Изменён: ${chat.dateEdit.toLocal().toIso8601String().split('T').first}',
                         ),
-                        onTap: () => selectChat(chat.id),
+                        onTap: () => selectChat(chat),
                       );
                     },
                   );
@@ -985,11 +1366,7 @@ void main() {
 
 Для создания ссылок используйте следующий синтаксис:
 
-[Официальный сайт Dart](https://dart.dev)
-
 А чтобы добавить изображение, используйте такой формат:
-
-![Пример изображения](https://images.pexels.com/photos/56866/garden-rose-red-pink-56866.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1)
 
 ### Таблицы
 
@@ -1154,6 +1531,172 @@ Markdown — это простой и удобный способ создани
           ),
         ],
       ),
+    );
+  }
+}
+import 'package:flutter/material.dart';
+
+class WidgetChatSettings extends StatefulWidget {
+  final int chatId; // ID чата
+  final double temperature; // Температура чата
+  final String contextChat; // Контекст чата
+  final bool useMemory; // Использовать ли память в чате?
+  final bool updateMemory; // Может ли чат изменять память?
+  final String dateCreate; // Дата создания
+  final bool starredChat; // Закреплён ли чат
+  final ValueChanged<Map<String, dynamic>> onSave;
+  final int? usedNeuroId;
+  final bool canEditContext;
+  final bool canUseMemory;
+  final bool canUpdateMemory;
+  final bool canEditModelUri;
+  
+  const WidgetChatSettings({
+    super.key,
+    required this.chatId,
+    required this.temperature,
+    required this.contextChat,
+    required this.useMemory,
+    required this.updateMemory,
+    required this.dateCreate,
+    required this.starredChat,
+    required this.onSave,
+    required this.canEditContext,
+    required this.canUseMemory,
+    required this.canUpdateMemory,
+    required this.usedNeuroId,
+    required this.canEditModelUri,
+  });
+
+  @override
+  State<WidgetChatSettings> createState() => _WidgetChatSettingsState();
+}
+
+class _WidgetChatSettingsState extends State<WidgetChatSettings> {
+  late double _temperature;
+  late List<double> _tempOptions;
+  late TextEditingController _contextController;
+  late bool _useMemory;
+  late bool _updateMemory;
+  late bool _starredChat;
+
+  @override
+  void initState() {
+    super.initState();
+    _temperature = widget.temperature;
+
+    // Собираем базовый список и добавляем в него текущее значение, если его там нет
+    _tempOptions = [0.0, 0.5, 1.0, 1.5, 2.0];
+    if (!_tempOptions.contains(_temperature)) {
+      _tempOptions.add(_temperature);
+      _tempOptions.sort();
+    }
+
+    _contextController = TextEditingController(text: widget.contextChat);
+    _useMemory = widget.useMemory;
+    _updateMemory = widget.updateMemory;
+    _starredChat = widget.starredChat;
+  }
+
+  @override
+  void dispose() {
+    _contextController.dispose();
+    super.dispose();
+  }
+
+  void _handleSave() {
+    final updatedData = {
+      'chatId': widget.chatId,
+      'modelUriId': widget.usedNeuroId,
+      'temperature': _temperature,
+      'context': _contextController.text,
+      'useMemory': _useMemory,
+      'updateMemory': _updateMemory,
+      'starredChat': _starredChat,
+    };
+    widget.onSave(updatedData);
+    Navigator.of(context).pop();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text("Настройки чата"),
+      content: SingleChildScrollView(
+        child: Column(mainAxisSize: MainAxisSize.min, children: [
+          // ID
+          Row(children: [
+            const Text("ID чата: "),
+            Text(widget.chatId.toString(),
+                style: const TextStyle(color: Colors.blue)),
+          ]),
+          const SizedBox(height: 8),
+
+          // Температура
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text("Температура чата:"),
+              DropdownButton<double>(
+                value: _temperature,
+                items: _tempOptions.map((t) {
+                  return DropdownMenuItem<double>(
+                    value: t,
+                    child: Text(t.toString()),
+                  );
+                }).toList(),
+                onChanged: (val) {
+                  if (val != null) setState(() => _temperature = val);
+                },
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+
+          // Контекст
+          const Align(
+              alignment: Alignment.centerLeft, child: Text("Контекст чата:")),
+          TextField(
+            controller: _contextController,
+            decoration: const InputDecoration(border: OutlineInputBorder()),
+            minLines: 2,
+            maxLines: 4,
+          ),
+          const SizedBox(height: 8),
+
+          // Использовать память?
+          Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+            const Text("Использовать память?"),
+            Switch(
+                value: _useMemory,
+                onChanged: (v) => setState(() => _useMemory = v)),
+          ]),
+          const SizedBox(height: 8),
+
+          // Обновлять память?
+          Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+            const Text("Обновлять память?"),
+            Switch(
+                value: _updateMemory,
+                onChanged: (v) => setState(() => _updateMemory = v)),
+          ]),
+          const SizedBox(height: 8),
+
+          // Закреплён ли чат?
+          Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+            const Text("Закрепить чат?"),
+            Switch(
+                value: _starredChat,
+                onChanged: (v) => setState(() => _starredChat = v)),
+          ]),
+        ]),
+      ),
+      actions: [
+        TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text("Отмена")),
+        ElevatedButton(onPressed: _handleSave, child: const Text("Сохранить")),
+      ],
     );
   }
 }
@@ -1836,10 +2379,9 @@ import 'package:promts_application_1/features/user/domain/entities/user_entity.d
 import 'package:promts_application_1/features/user/view/widgets/widget_user_settings.dart';
 import '../../../chatbot/view/widgets/widget_chat_bots.dart';
 
-/// AppBar с кнопкой Promts и дополнительным callback для нее.
 class WidgetAppBar extends StatelessWidget implements PreferredSizeWidget {
-  final VoidCallback onMenuPressed; // для открытия левого Drawer
-  final VoidCallback onPromtsPressed; // callback для кнопки Promts
+  final VoidCallback onMenuPressed;
+  final VoidCallback onPromtsPressed;
 
   const WidgetAppBar({
     super.key,
@@ -1856,20 +2398,17 @@ class WidgetAppBar extends StatelessWidget implements PreferredSizeWidget {
       automaticallyImplyLeading: false,
       title: Row(
         children: [
-          // Кнопка открытия NavigationDrawer (иконка "3 полоски")
           IconButton(
             icon: const Icon(Icons.menu),
             onPressed: onMenuPressed,
           ),
-          // Кнопка "Promts"
           TextButton(
-            onPressed: onPromtsPressed, // вызываем переданный callback
+            onPressed: onPromtsPressed,
             child: const Text(
               "Promts",
               style: TextStyle(fontSize: 20, color: Colors.black),
             ),
           ),
-          // Центр AppBar (название чата)
           const Expanded(
             child: Text(
               "Обычный чат-бот",
@@ -1877,7 +2416,6 @@ class WidgetAppBar extends StatelessWidget implements PreferredSizeWidget {
               style: TextStyle(fontWeight: FontWeight.w600),
             ),
           ),
-          // Кнопка настроек пользователя (иконка человечка)
           IconButton(
             icon: const Icon(Icons.person),
             onPressed: () {
@@ -1886,7 +2424,6 @@ class WidgetAppBar extends StatelessWidget implements PreferredSizeWidget {
                 builder: (_) => BlocBuilder<UserCubit, DataState<UserEntity>>(
                   builder: (context, state) {
                     if (state is DataLoading<UserEntity>) {
-                      // Показываем диалог с индикатором
                       return const AlertDialog(
                         title: Text("Загрузка профиля"),
                         content: SizedBox(
@@ -1897,7 +2434,6 @@ class WidgetAppBar extends StatelessWidget implements PreferredSizeWidget {
                       );
                     }
                     if (state is DataError<UserEntity>) {
-                      // Показываем ошибку с кнопкой закрыть
                       return AlertDialog(
                         title: const Text("Ошибка"),
                         content: Text(state.message),
@@ -1939,15 +2475,12 @@ class WidgetAppBar extends StatelessWidget implements PreferredSizeWidget {
                           if (neuroState is DataLoaded<List<NeuroEntity>>) {
                             final List<NeuroModel> neuroList =
                                 neuroState.data.cast<NeuroModel>();
-
-                            final models =
-                                neuroList;
+                            final models = neuroList;
                             final current = neuroList
                                 .firstWhere(
-                                    (e) => e.id == user.standartModelUrild,
+                                    (e) => e.id == user.standartModelUriId,
                                     orElse: () => neuroList.first)
                                 .id;
-
                             return WidgetUserSettings(
                               userEntity: user,
                               selectedModelId: current,
@@ -1968,8 +2501,6 @@ class WidgetAppBar extends StatelessWidget implements PreferredSizeWidget {
               );
             },
           ),
-
-          // Кнопка открытия виджета чат-ботов
           IconButton(
             icon: const Icon(Icons.android),
             onPressed: () {
@@ -1992,8 +2523,13 @@ class WidgetAppBar extends StatelessWidget implements PreferredSizeWidget {
   }
 }
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:promts_application_1/core/config/config.dart';
+import 'package:promts_application_1/core/cubits/data_cubit.dart';
 import 'package:promts_application_1/di/locator.dart';
+import 'package:promts_application_1/features/chat/domain/entities/chat_entity.dart';
+import 'package:promts_application_1/features/user/cubit/user_cubit.dart';
+import 'package:promts_application_1/features/user/domain/entities/user_entity.dart';
 import 'widget_app_bar.dart';
 import 'package:promts_application_1/features/chat/view/widgets/widget_chats.dart';
 import 'package:promts_application_1/features/neuro/view/widget_neuro_button.dart';
@@ -2010,6 +2546,8 @@ class _WidgetMainScreenState extends State<WidgetMainScreen> {
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
 
   bool _showChatPage = false;
+  ChatEntity? _currentChat;
+  //UserEntity? _currentUser;
   final appConfig = getIt<AppConfig>();
   final TextEditingController _messageController = TextEditingController();
 
@@ -2028,9 +2566,10 @@ class _WidgetMainScreenState extends State<WidgetMainScreen> {
     });
   }
 
-  void _openChat(int chatId) {
+  void _openChat(ChatEntity chat) {
     _messageController.clear();
     setState(() {
+      _currentChat = chat;
       _showChatPage = true;
     });
   }
@@ -2038,6 +2577,7 @@ class _WidgetMainScreenState extends State<WidgetMainScreen> {
   void _closeChat() {
     setState(() {
       _showChatPage = false;
+      _currentChat = null;
     });
   }
 
@@ -2049,7 +2589,7 @@ class _WidgetMainScreenState extends State<WidgetMainScreen> {
         width: 350,
         child: Drawer(
           child: WidgetChats(
-            onChatSelected: _openChat,
+            onChatSelected: (chat) => _openChat(chat),
           ),
         ),
       ),
@@ -2063,9 +2603,26 @@ class _WidgetMainScreenState extends State<WidgetMainScreen> {
       ),
       body: Column(
         children: [
-          const Padding(
-            padding: EdgeInsets.all(16.0),
-            child: WidgetNeuroButton(),
+          Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: BlocBuilder<UserCubit, DataState<UserEntity>>(
+              builder: (context, userState) {
+                UserEntity? user;
+                if (userState is DataLoaded<UserEntity>) {
+                  user = userState.data;
+                  //_currentUser = user;
+                }
+                return Column(
+                  children: [
+                    WidgetNeuroButton(
+                      currentChat: _currentChat,
+                      currentUser:
+                          user,
+                    ),
+                  ],
+                );
+              },
+            ),
           ),
           Expanded(
             child: _showChatPage ? const WidgetChatPage() : _buildMainContent(),
@@ -2260,47 +2817,91 @@ abstract class NeuroRepository {
 }
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+// ignore: depend_on_referenced_packages
+import 'package:collection/collection.dart';
 import 'package:promts_application_1/core/cubits/data_cubit.dart';
+import 'package:promts_application_1/features/chat/cubits/chat_cubit.dart';
+import 'package:promts_application_1/features/chat/domain/entities/chat_entity.dart';
 import 'package:promts_application_1/features/neuro/cubits/neuro_cubit.dart';
 import 'package:promts_application_1/features/chat/view/widgets/widget_chat_create_settings.dart';
 import 'package:promts_application_1/features/neuro/domain/entities/neuro_entity.dart';
+import 'package:promts_application_1/features/chat/view/widgets/widget_chat_setting.dart';
 import 'package:promts_application_1/features/user/cubit/user_cubit.dart';
 import 'package:promts_application_1/features/user/domain/entities/user_entity.dart';
 
 class WidgetNeuroButton extends StatefulWidget {
-  const WidgetNeuroButton({super.key});
+  final ChatEntity? currentChat;
+  final UserEntity? currentUser;
+  const WidgetNeuroButton({super.key, this.currentChat, this.currentUser});
 
   @override
   State<WidgetNeuroButton> createState() => _WidgetNeuroButtonState();
 }
 
 class _WidgetNeuroButtonState extends State<WidgetNeuroButton> {
-  String? _selectedNetwork;
-  bool changedNeuro = false;
+  NeuroEntity? _selectedNeuro;
+  NeuroEntity? _standardNeuro;
+  bool _changedNeuro = false;
+  bool _userLoaded = false;
+  List<NeuroEntity> neuroList = [];
 
   @override
-  void initState() {
-    super.initState();
-    // Один раз запрашиваем оба списка
-    context.read<NeuroCubit>().fetch();
-    context.read<UserCubit>().fetch();
+  void didUpdateWidget(covariant WidgetNeuroButton old) {
+    super.didUpdateWidget(old);
+    if (widget.currentChat?.id != old.currentChat?.id) {
+      setState(() {
+        _changedNeuro = false;
+        final id = widget.currentChat?.modelUriId ??
+            widget.currentUser?.standartModelUriId;
+        _selectedNeuro =
+            neuroList.firstWhereOrNull((e) => e.id == id) ?? _standardNeuro;
+      });
+    }
   }
 
   // Открытие диалога настроек чата
   void _openSettingsDialog() {
-    showDialog(
-      context: context,
-      builder: (_) => WidgetChatCreateSettings(
-        chatId: 54719041,
-        temperature: 1.0,
-        contextChat: "Описание...",
-        useMemory: true,
-        updateMemory: false,
-        onSave: (updatedData) {
-          // Обработка сохранения настроек
-        },
-      ),
-    );
+    if (widget.currentChat != null) {
+      final c = widget.currentChat!;
+      showDialog(
+        context: context,
+        builder: (_) => BlocProvider.value(
+          value: context.read<ChatCubit>(),
+          child: WidgetChatSettings(
+            chatId: c.id,
+            temperature: c.temperature,
+            contextChat: c.context,
+            useMemory: c.useMemory,
+            updateMemory: c.updateMemory,
+            dateCreate: c.dateCreate.toIso8601String(),
+            starredChat: c.starredChat,
+            canEditContext: c.canEditContext, // NEW
+            canUseMemory: c.canUseMemory, // NEW
+            canUpdateMemory: c.canUpdateMemory, // NEW
+            onSave: (data) {
+              context.read<ChatCubit>().state;
+            },
+            usedNeuroId: _selectedNeuro?.id,
+            canEditModelUri: c.canUpdateMemory,
+          ),
+        ),
+      );
+    } else {
+      showDialog(
+        context: context,
+        builder: (_) => WidgetChatCreateSettings(
+          chatId: 0,
+          temperature: 1.0,
+          contextChat: '',
+          useMemory: false,
+          updateMemory: false,
+          onSave: (data) {
+            // TODO: тут запрос на создание нового чата
+            print("Создать чат с настройками: \$data");
+          },
+        ),
+      );
+    }
   }
 
   @override
@@ -2310,27 +2911,44 @@ class _WidgetNeuroButtonState extends State<WidgetNeuroButton> {
     return BlocBuilder<NeuroCubit, DataState<List<NeuroEntity>>>(
       builder: (context, neuroState) {
         if (neuroState is DataLoading<List<NeuroEntity>>) {
-          return buildShowingMessage(isSmallWidth, "Идет загрузка..", "Пожалуйста подождите", true);
+          return buildShowingMessage(
+              isSmallWidth, "Идет загрузка..", "Пожалуйста подождите", true);
         } else if (neuroState is DataLoaded<List<NeuroEntity>>) {
-          final neuroList = neuroState.data;
+          neuroList = neuroState.data;
           if (neuroList.isEmpty) {
-            //return const Text('Список нейросетей пуст');
-            return buildShowingMessage(isSmallWidth, "Список нейросетей пуст", "Делать нечего)", true);
+            return buildShowingMessage(
+                isSmallWidth, "Список нейросетей пуст", "Делать нечего)", true);
           }
           return BlocBuilder<UserCubit, DataState<UserEntity>>(
               builder: (context, userState) {
-            if (userState is DataLoading<UserEntity>) {
-              return buildShowingMessage(isSmallWidth, "Идет загрузка..", "Пожалуйста подождите", true);
+            if (userState is DataLoading<UserEntity> && !_userLoaded) {
+              return buildShowingMessage(isSmallWidth, "Идет загрузка..",
+                  "Пожалуйста подождите", true);
             }
             if (userState is DataError<UserEntity>) {
-              //return const Text('Ошибка в загрузке пользователя');
-              return buildShowingMessage(isSmallWidth, "Ошибка в загрузке", "Пожалуйста обновите страницу", false);
+              return buildShowingMessage(isSmallWidth, "Ошибка в загрузке",
+                  "Пожалуйста обновите страницу", false);
             }
-            if (userState is DataLoaded<UserEntity>) {
-              for (var e in neuroState.data) {
-                if (!changedNeuro) {
-                  if (e.id == userState.data.standartModelUrild) {
-                    _selectedNetwork = e.name;
+            if (userState is DataLoaded<UserEntity> && !_userLoaded) {
+              // инициализация из профиля
+              _standardNeuro = neuroList.firstWhereOrNull(
+                  (e) => e.id == userState.data.standartModelUriId);
+              _selectedNeuro = _standardNeuro;
+              _userLoaded = true;
+            }
+
+            if (_userLoaded) {
+              if (!_changedNeuro) {
+                if (widget.currentChat == null) {
+                  _selectedNeuro = _standardNeuro;
+                } else {
+                  final chatId = widget.currentChat!.modelUriId;
+                  _selectedNeuro =
+                      neuroList.firstWhereOrNull((e) => e.id == chatId) ??
+                          _standardNeuro;
+                  if (userState is DataLoaded<UserEntity>) {
+                    _standardNeuro = neuroList.firstWhereOrNull(
+                        (e) => e.id == userState.data.standartModelUriId);
                   }
                 }
               }
@@ -2338,14 +2956,17 @@ class _WidgetNeuroButtonState extends State<WidgetNeuroButton> {
                 children: [
                   Flexible(
                     child: ConstrainedBox(
-                      constraints: const BoxConstraints(maxWidth: 375, minHeight: 50),
+                      constraints:
+                          const BoxConstraints(maxWidth: 375, minHeight: 50),
                       child: DropdownButtonHideUnderline(
-                        child: DropdownButton<String>(
+                        child: DropdownButton<NeuroEntity>(
                           isExpanded: true,
-                          value: _selectedNetwork,
+                          value: _selectedNeuro,
+                          hint: const Text(
+                              "Выберите нейросеть"), // вот эта строка
                           items: neuroList.map((neuro) {
-                            return DropdownMenuItem<String>(
-                              value: neuro.name,
+                            return DropdownMenuItem<NeuroEntity>(
+                              value: neuro,
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
@@ -2372,11 +2993,11 @@ class _WidgetNeuroButtonState extends State<WidgetNeuroButton> {
                               ),
                             );
                           }).toList(),
-                          onChanged: (value) {
-                            if (value != null) {
+                          onChanged: (neuro) {
+                            if (neuro != null) {
                               setState(() {
-                                changedNeuro = true;
-                                _selectedNetwork = value;
+                                _changedNeuro = true;
+                                _selectedNeuro = neuro;
                               });
                             }
                           },
@@ -2396,14 +3017,16 @@ class _WidgetNeuroButtonState extends State<WidgetNeuroButton> {
             return Container();
           });
         } else if (neuroState is DataError<List<NeuroEntity>>) {
-          return buildShowingMessage(isSmallWidth, "Ошибка в загрузке", "Пожалуйста обновите страницу", false);
+          return buildShowingMessage(isSmallWidth, "Ошибка в загрузке",
+              "Пожалуйста обновите страницу", false);
         }
         return Container();
       },
     );
   }
 
-  Widget buildShowingMessage(bool isSmallWidth, String titleText, String desc, bool isLoading) {
+  Widget buildShowingMessage(
+      bool isSmallWidth, String titleText, String desc, bool isLoading) {
     return Row(
       children: [
         Flexible(
@@ -2433,204 +3056,6 @@ class _WidgetNeuroButtonState extends State<WidgetNeuroButton> {
           ),
         ),
         const SizedBox(width: 7),
-        if (isLoading) const Center(child: CircularProgressIndicator()),
-      ],
-    );
-  }
-}
-import 'package:flutter/material.dart';
-
-class WidgetNeuroChatSetting extends StatefulWidget {
-  final int chatId;               // ID чата
-  final double temperature;       // Температура чата
-  final String contextChat;       // Контекст чата
-  final bool useMemory;           // Использовать ли память в чате?
-  final bool updateMemory;        // Может ли чат изменять память пользователя?
-  final String dateCreate;        // Дата создания (строкой)
-  final bool starredChat;         // Закреплён ли чат
-  final ValueChanged<Map<String, dynamic>> onSave; // Колбэк при сохранении
-
-  const WidgetNeuroChatSetting({
-    super.key,
-    required this.chatId,
-    required this.temperature,
-    required this.contextChat,
-    required this.useMemory,
-    required this.updateMemory,
-    required this.dateCreate,
-    required this.starredChat,
-    required this.onSave,
-  });
-
-  @override
-  State<WidgetNeuroChatSetting> createState() => _WidgetNeuroChatSettingState();
-}
-
-class _WidgetNeuroChatSettingState extends State<WidgetNeuroChatSetting> {
-  late double _temperature;
-  late TextEditingController _contextController;
-  late bool _useMemory;
-  late bool _updateMemory;
-  late bool _starredChat;
-
-  @override
-  void initState() {
-    super.initState();
-    _temperature = widget.temperature;
-    _contextController = TextEditingController(text: widget.contextChat);
-    _useMemory = widget.useMemory;
-    _updateMemory = widget.updateMemory;
-    _starredChat = widget.starredChat;
-  }
-
-  @override
-  void dispose() {
-    _contextController.dispose();
-    super.dispose();
-  }
-
-  /// Нажатие на кнопку "Сохранить"
-  void _handleSave() {
-    final updatedData = {
-      'chatId': widget.chatId,
-      'temperature': _temperature,
-      'contextChat': _contextController.text,
-      'useMemory': _useMemory,
-      'updateMemory': _updateMemory,
-      'dateCreate': widget.dateCreate,
-      'starredChat': _starredChat,
-    };
-    widget.onSave(updatedData);
-    Navigator.of(context).pop();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return AlertDialog(
-      title: const Text("Настройки чата"),
-      content: SingleChildScrollView(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // ID чата
-            Row(
-              children: [
-                const Text("ID чата: "),
-                Text(
-                  widget.chatId.toString(),
-                  style: const TextStyle(color: Colors.blue),
-                ),
-              ],
-            ),
-            const SizedBox(height: 8),
-
-            // Температура
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                const Text("Температура чата:"),
-                DropdownButton<double>(
-                  value: _temperature,
-                  items: [0.0, 0.5, 1.0, 1.5, 2.0].map((temp) {
-                    return DropdownMenuItem<double>(
-                      value: temp,
-                      child: Text(temp.toString()),
-                    );
-                  }).toList(),
-                  onChanged: (val) {
-                    if (val != null) {
-                      setState(() {
-                        _temperature = val;
-                      });
-                    }
-                  },
-                ),
-              ],
-            ),
-            const SizedBox(height: 8),
-
-            // Контекст чата
-            const Align(
-              alignment: Alignment.centerLeft,
-              child: Text("Контекст чата:"),
-            ),
-            TextField(
-              controller: _contextController,
-              decoration: const InputDecoration(
-                border: OutlineInputBorder(),
-              ),
-              minLines: 2,
-              maxLines: 4,
-            ),
-            const SizedBox(height: 8),
-
-            // Использовать ли память в чате?
-            Row(
-              children: [
-                const Expanded(child: Text("Использовать ли память в чате?")),
-                Switch(
-                  value: _useMemory,
-                  onChanged: (val) {
-                    setState(() {
-                      _useMemory = val;
-                    });
-                  },
-                ),
-              ],
-            ),
-
-            // Может ли чат изменять память?
-            Row(
-              children: [
-                const Expanded(child: Text("Может ли чат изменять память пользователя?")),
-                Switch(
-                  value: _updateMemory,
-                  onChanged: (val) {
-                    setState(() {
-                      _updateMemory = val;
-                    });
-                  },
-                ),
-              ],
-            ),
-            const SizedBox(height: 8),
-
-            // Дата создания (read-only)
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                const Text("Дата создания:"),
-                Text(widget.dateCreate),
-              ],
-            ),
-            const SizedBox(height: 8),
-
-            // Закрепить чат?
-            Row(
-              children: [
-                const Expanded(child: Text("Закрепить чат?")),
-                Switch(
-                  value: _starredChat,
-                  onChanged: (val) {
-                    setState(() {
-                      _starredChat = val;
-                    });
-                  },
-                ),
-              ],
-            ),
-          ],
-        ),
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.of(context).pop(),
-          child: const Text("Отмена"),
-        ),
-        ElevatedButton(
-          onPressed: _handleSave,
-          child: const Text("Сохранить"),
-        ),
       ],
     );
   }
@@ -2717,7 +3142,7 @@ class UserModel extends UserEntity {
     required super.memory,
     required super.memoryEnabled,
     required super.aiCanUpdateMemory,
-    required super.standartModelUrild,
+    required super.standartModelUriId,
   });
 
   factory UserModel.fromJson(Map<String, dynamic> json) {
@@ -2731,7 +3156,7 @@ class UserModel extends UserEntity {
       memoryEnabled: json['memoryEnabled'] as bool? ?? false,
       aiCanUpdateMemory: json['aiCanUpdateMemory'] as bool? ?? false,
       // ключ в JSON называется standardModelUriId
-      standartModelUrild: json['standardModelUriId'] as int? ?? 0,
+      standartModelUriId: json['standardModelUriId'] as int? ?? 0,
     );
   }
 
@@ -2744,7 +3169,7 @@ class UserModel extends UserEntity {
       'memory': memory,
       'memoryEnabled': memoryEnabled,
       'aiCanUpdateMemory': aiCanUpdateMemory,
-      'standardModelUriId': standartModelUrild,
+      'standardModelUriId': standartModelUriId,
     };
   }
 }
@@ -2756,7 +3181,7 @@ class UserEntity {
   final String memory;
   final bool memoryEnabled;
   final bool aiCanUpdateMemory;
-  final int standartModelUrild;
+  final int standartModelUriId;
 
   UserEntity({
     required this.id,
@@ -2766,7 +3191,7 @@ class UserEntity {
     required this.memory,
     required this.memoryEnabled,
     required this.aiCanUpdateMemory,
-    required this.standartModelUrild,
+    required this.standartModelUriId,
   });
 }
 import '../entities/user_entity.dart';
@@ -2906,7 +3331,7 @@ class _WidgetUserSettingsState extends State<WidgetUserSettings> {
             // 4) Использовать ли память?
             Row(
               children: [
-                const Expanded(child: Text("Использовать ли память в чатах?")),
+                const Expanded(child: Text("Использовать ли память в новых чатах?")),
                 Switch(
                   value: _memoryEnabled,
                   onChanged: (val) {
@@ -2923,7 +3348,7 @@ class _WidgetUserSettingsState extends State<WidgetUserSettings> {
             Row(
               children: [
                 const Expanded(
-                    child: Text("Могут ли чаты изменять память пользователя?")),
+                    child: Text("Могут ли новые чаты изменять память пользователя?")),
                 Switch(
                   value: _aiCanUpdateMemory,
                   onChanged: (val) {
