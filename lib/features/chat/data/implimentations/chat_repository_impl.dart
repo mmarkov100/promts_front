@@ -11,4 +11,8 @@ class ChatRepositoryImpl implements ChatRepository {
   Future<List<ChatEntity>> fetchChats() async {
     return await remoteDataSource.fetchChats();
   }
+
+  @override
+  Future<ChatEntity> updateChat(Map<String, dynamic> body) =>
+      remoteDataSource.updateChatSettings(body);
 }

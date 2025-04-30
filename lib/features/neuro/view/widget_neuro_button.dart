@@ -3,11 +3,12 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 // ignore: depend_on_referenced_packages
 import 'package:collection/collection.dart';
 import 'package:promts_application_1/core/cubits/data_cubit.dart';
+import 'package:promts_application_1/features/chat/cubits/chat_cubit.dart';
 import 'package:promts_application_1/features/chat/domain/entities/chat_entity.dart';
 import 'package:promts_application_1/features/neuro/cubits/neuro_cubit.dart';
 import 'package:promts_application_1/features/chat/view/widgets/widget_chat_create_settings.dart';
 import 'package:promts_application_1/features/neuro/domain/entities/neuro_entity.dart';
-import 'package:promts_application_1/features/neuro/view/widget_neuro_chat_setting.dart';
+import 'package:promts_application_1/features/chat/view/widgets/widget_chat_setting.dart';
 import 'package:promts_application_1/features/user/cubit/user_cubit.dart';
 import 'package:promts_application_1/features/user/domain/entities/user_entity.dart';
 
@@ -47,18 +48,27 @@ class _WidgetNeuroButtonState extends State<WidgetNeuroButton> {
       final c = widget.currentChat!;
       showDialog(
         context: context,
-        builder: (_) => WidgetNeuroChatSetting(
-          chatId: c.id,
-          temperature: c.temperature,
-          contextChat: c.context,
-          useMemory: c.useMemory,
-          updateMemory: c.updateMemory,
-          dateCreate: c.dateCreate.toString(),
-          starredChat: c.starredChat,
-          onSave: (data) {
-            // TODO: здесь пока просто логируем/обновляем локально
-            print("Новые настройки чата: \$data");
-          },
+        builder: (_) => BlocProvider.value(
+          value: context.read<ChatCubit>(),
+          child: WidgetChatSettings(
+            chatId: c.id,
+            temperature: c.temperature,
+            contextChat: c.context,
+            useMemory: c.useMemory,
+            updateMemory: c.updateMemory,
+            dateCreate: c.dateCreate.toIso8601String(),
+            starredChat: c.starredChat,
+            canEditContext: c.canEditContext, // NEW
+            canUseMemory: c.canUseMemory, // NEW
+            canUpdateMemory: c.canUpdateMemory, // NEW
+            onSave: (data) async {
+              await context
+                  .read<ChatCubit>()
+                  .saveSettings(data); // теперь это Future
+            },
+            usedNeuroId: _selectedNeuro?.id,
+            canEditModelUri: c.canUpdateMemory,
+          ),
         ),
       );
     } else {

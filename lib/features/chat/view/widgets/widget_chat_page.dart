@@ -114,11 +114,7 @@ void main() {
 
 Для создания ссылок используйте следующий синтаксис:
 
-[Официальный сайт Dart](https://dart.dev)
-
 А чтобы добавить изображение, используйте такой формат:
-
-![Пример изображения](https://images.pexels.com/photos/56866/garden-rose-red-pink-56866.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1)
 
 ### Таблицы
 

@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
+// ignore: depend_on_referenced_packages
+import 'package:collection/collection.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:promts_application_1/core/config/config.dart';
 import 'package:promts_application_1/core/cubits/data_cubit.dart';
 import 'package:promts_application_1/di/locator.dart';
+import 'package:promts_application_1/features/chat/cubits/chat_cubit.dart';
 import 'package:promts_application_1/features/chat/domain/entities/chat_entity.dart';
 import 'package:promts_application_1/features/user/cubit/user_cubit.dart';
 import 'package:promts_application_1/features/user/domain/entities/user_entity.dart';
@@ -59,51 +62,62 @@ class _WidgetMainScreenState extends State<WidgetMainScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      key: _scaffoldKey,
-      drawer: SizedBox(
-        width: 350,
-        child: Drawer(
-          child: WidgetChats(
-            onChatSelected: (chat) => _openChat(chat),
-          ),
-        ),
-      ),
-      appBar: WidgetAppBar(
-        onMenuPressed: () {
-          _scaffoldKey.currentState?.openDrawer();
-        },
-        onPromtsPressed: () {
-          _closeChat();
-        },
-      ),
-      body: Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: BlocBuilder<UserCubit, DataState<UserEntity>>(
-              builder: (context, userState) {
-                UserEntity? user;
-                if (userState is DataLoaded<UserEntity>) {
-                  user = userState.data;
-                  //_currentUser = user;
-                }
-                return Column(
-                  children: [
-                    WidgetNeuroButton(
-                      currentChat: _currentChat,
-                      currentUser:
-                          user,
-                    ),
-                  ],
-                );
-              },
+    return BlocListener<ChatCubit, DataState<List<ChatEntity>>>(
+      listener: (context, state) {
+        if (state is DataLoaded<List<ChatEntity>> && _currentChat != null) {
+          final updated =
+              state.data.firstWhereOrNull((c) => c.id == _currentChat!.id);
+          if (updated != null) {
+            setState(() => _currentChat = updated); // UI сразу меняется
+          }
+        }
+      },
+      child: Scaffold(
+        key: _scaffoldKey,
+        drawer: SizedBox(
+          width: 350,
+          child: Drawer(
+            child: WidgetChats(
+              onChatSelected: (chat) => _openChat(chat),
             ),
           ),
-          Expanded(
-            child: _showChatPage ? const WidgetChatPage() : _buildMainContent(),
-          ),
-        ],
+        ),
+        appBar: WidgetAppBar(
+          onMenuPressed: () {
+            _scaffoldKey.currentState?.openDrawer();
+          },
+          onPromtsPressed: () {
+            _closeChat();
+          },
+        ),
+        body: Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: BlocBuilder<UserCubit, DataState<UserEntity>>(
+                builder: (context, userState) {
+                  UserEntity? user;
+                  if (userState is DataLoaded<UserEntity>) {
+                    user = userState.data;
+                    //_currentUser = user;
+                  }
+                  return Column(
+                    children: [
+                      WidgetNeuroButton(
+                        currentChat: _currentChat,
+                        currentUser: user,
+                      ),
+                    ],
+                  );
+                },
+              ),
+            ),
+            Expanded(
+              child:
+                  _showChatPage ? const WidgetChatPage() : _buildMainContent(),
+            ),
+          ],
+        ),
       ),
     );
   }
