@@ -99,7 +99,9 @@ class _WidgetChatSettingsState extends State<WidgetChatSettings> {
   Widget build(BuildContext context) {
     return AlertDialog(
         title: const Text("Настройки чата"),
-        content: SingleChildScrollView(
+        content: SizedBox(
+          width: 400,
+          height: 450,
           child: Column(mainAxisSize: MainAxisSize.min, children: [
             // ID
             Row(children: [
