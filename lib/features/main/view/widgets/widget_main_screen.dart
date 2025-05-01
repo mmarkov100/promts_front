@@ -34,13 +34,17 @@ class _WidgetMainScreenState extends State<WidgetMainScreen> {
   @override
   void initState() {
     super.initState();
-    _syncWithRoute();
+    final chats = context.read<ChatCubit>().state;
+    _syncWithRoute(chats is DataLoaded<List<ChatEntity>> ? chats.data : null);
   }
 
   @override
   void didUpdateWidget(covariant WidgetMainScreen old) {
     super.didUpdateWidget(old);
-    if (old.openChatId != widget.openChatId) _syncWithRoute();
+    if (old.openChatId != widget.openChatId) {
+      final chats = context.read<ChatCubit>().state;
+      _syncWithRoute(chats is DataLoaded<List<ChatEntity>> ? chats.data : null);
+    }
   }
 
   @override
@@ -49,17 +53,28 @@ class _WidgetMainScreenState extends State<WidgetMainScreen> {
     super.dispose();
   }
 
-  void _syncWithRoute() {
-    _showChatPage = widget.openChatId != null;
-    if (widget.openChatId == null) {
+  void _syncWithRoute(List<ChatEntity>? chats) {
+    final id = widget.openChatId;
+    if (id == null) {
+      _showChatPage = false;
       _currentChat = null;
       return;
     }
-    final state = context.read<ChatCubit>().state;
-    if (state is DataLoaded<List<ChatEntity>>) {
-      _currentChat = state.data.firstWhereOrNull(
-        (c) => c.id == widget.openChatId,
-      );
+
+    // если список уже загружен – пробуем найти чат
+    if (chats != null) {
+      _currentChat = chats.firstWhereOrNull((c) => c.id == id);
+
+      if (_currentChat == null) {
+        // ⚠️ Чат недоступен пользователю – возвращаемся к списку
+        Future.microtask(() => context.go('/chat'));
+        return;
+      }
+      _showChatPage = true;
+    } else {
+      // список ещё не пришёл – ждём Listener'a
+      _currentChat = null;
+      _showChatPage = true; // можно показать прелоадер чата, если хотите
     }
   }
 
@@ -72,14 +87,6 @@ class _WidgetMainScreenState extends State<WidgetMainScreen> {
     });
   }
 
-  void _openChat(ChatEntity chat) {
-    _messageController.clear();
-    setState(() {
-      _currentChat = chat;
-      _showChatPage = true;
-    });
-  }
-
   void _closeChat() {
     context.go('/chat');
   }
@@ -88,12 +95,25 @@ class _WidgetMainScreenState extends State<WidgetMainScreen> {
   Widget build(BuildContext context) {
     return BlocListener<ChatCubit, DataState<List<ChatEntity>>>(
       listener: (context, state) {
+        if (widget.openChatId == null) return;
         if (widget.openChatId != null &&
             _currentChat == null &&
             state is DataLoaded<List<ChatEntity>>) {
           _currentChat =
               state.data.firstWhereOrNull((c) => c.id == widget.openChatId);
           if (_currentChat != null) setState(() {});
+        }
+        if (state is DataLoaded<List<ChatEntity>>) {
+          _syncWithRoute(state.data); // проверяем доступность
+
+          // если чат всё-таки есть – обновляем его данные
+          if (_currentChat != null) {
+            final updated =
+                state.data.firstWhereOrNull((c) => c.id == _currentChat!.id);
+            if (updated != null && updated != _currentChat) {
+              setState(() => _currentChat = updated);
+            }
+          }
         }
         if (state is DataLoaded<List<ChatEntity>> && _currentChat != null) {
           final updated =
