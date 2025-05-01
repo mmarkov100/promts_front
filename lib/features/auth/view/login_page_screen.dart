@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
 import 'package:promts_application_1/di/locator.dart';
+import 'package:promts_application_1/features/auth/cubits/auth_cubit.dart';
 import 'package:promts_application_1/features/auth/cubits/login_cubit.dart';
 import 'package:promts_application_1/features/auth/cubits/register_cubit.dart';
 import 'package:promts_application_1/features/auth/domain/entities/login_entity.dart';
 import 'package:promts_application_1/features/auth/domain/entities/register_entity.dart';
-import 'package:promts_application_1/features/main/view/widgets/widget_main_screen.dart';
 import 'package:promts_application_1/core/config/config.dart';
 import 'package:promts_application_1/core/cubits/data_cubit.dart';
 import 'package:promts_application_1/features/main/view/widgets/widget_snack_bar.dart';
@@ -20,7 +21,8 @@ class LoginPageScreen extends StatefulWidget {
 class _LoginPageScreenState extends State<LoginPageScreen> {
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
-  final TextEditingController _confirmPasswordController = TextEditingController();
+  final TextEditingController _confirmPasswordController =
+      TextEditingController();
 
   bool _isLogin = true; // true — экран входа, false — экран регистрации
   bool _isLoading = false;
@@ -78,9 +80,8 @@ class _LoginPageScreenState extends State<LoginPageScreen> {
               final token = state.data.token;
               getIt<AppConfig>().setJwtToken(token);
 
-              Navigator.of(context).pushReplacement(
-                MaterialPageRoute(builder: (_) => const WidgetMainScreen()),
-              );
+              context.read<AuthCubit>().fetch(); // 🔄 быстрый повторный check
+              context.go('/chat');
             } else if (state is DataError<LoginEntity>) {
               WidgetSnackBar.showError(context, state.message);
               setState(() {
@@ -96,7 +97,7 @@ class _LoginPageScreenState extends State<LoginPageScreen> {
                 _isLoading = true;
               });
             } else if (state is DataLoaded<RegisterEntity>) {
-              WidgetSnackBar.showError(context, state.data.message);
+              WidgetSnackBar.showSuccess(context, state.data.message);
               setState(() {
                 _isLogin = true; // Переходим на экран входа
                 _isLoading = false;
@@ -122,7 +123,8 @@ class _LoginPageScreenState extends State<LoginPageScreen> {
                   children: [
                     Text(
                       _isLogin ? "Вход в систему" : "Регистрация",
-                      style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                      style: const TextStyle(
+                          fontSize: 24, fontWeight: FontWeight.bold),
                     ),
                     const SizedBox(height: 24),
                     TextField(
@@ -142,7 +144,9 @@ class _LoginPageScreenState extends State<LoginPageScreen> {
                         border: const OutlineInputBorder(),
                         suffixIcon: IconButton(
                           icon: Icon(
-                            _passwordVisible ? Icons.visibility : Icons.visibility_off,
+                            _passwordVisible
+                                ? Icons.visibility
+                                : Icons.visibility_off,
                           ),
                           onPressed: () {
                             setState(() {
@@ -162,7 +166,9 @@ class _LoginPageScreenState extends State<LoginPageScreen> {
                           border: const OutlineInputBorder(),
                           suffixIcon: IconButton(
                             icon: Icon(
-                              _passwordVisible ? Icons.visibility : Icons.visibility_off,
+                              _passwordVisible
+                                  ? Icons.visibility
+                                  : Icons.visibility_off,
                             ),
                             onPressed: () {
                               setState(() {
@@ -183,7 +189,8 @@ class _LoginPageScreenState extends State<LoginPageScreen> {
                                 ? _onLoginPressed
                                 : _onRegisterPressed,
                         child: _isLoading
-                            ? const CircularProgressIndicator(color: Colors.white)
+                            ? const CircularProgressIndicator(
+                                color: Colors.white)
                             : Text(_isLogin ? "Войти" : "Зарегистрироваться"),
                       ),
                     ),

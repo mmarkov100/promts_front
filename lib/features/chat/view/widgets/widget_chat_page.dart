@@ -3,7 +3,8 @@ import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:promts_application_1/features/message/domain/entities/message_entity.dart';
 
 class WidgetChatPage extends StatefulWidget {
-  const WidgetChatPage({super.key});
+  final int? chatId;
+  const WidgetChatPage({super.key, this.chatId});
 
   @override
   // ignore: library_private_types_in_public_api

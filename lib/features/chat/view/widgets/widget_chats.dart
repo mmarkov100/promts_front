@@ -1,13 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
 import 'package:promts_application_1/features/chat/domain/entities/chat_entity.dart';
 import 'package:promts_application_1/features/chat/cubits/chat_cubit.dart';
 import 'package:promts_application_1/core/cubits/data_cubit.dart';
 
 class WidgetChats extends StatefulWidget {
-  final ValueChanged<ChatEntity> onChatSelected;
-  const WidgetChats({super.key, required this.onChatSelected});
 
+  const WidgetChats({super.key});
+  
   @override
   State<WidgetChats> createState() => _WidgetChatsState();
 }
@@ -32,9 +33,9 @@ class _WidgetChatsState extends State<WidgetChats> {
     super.dispose();
   }
 
-  void selectChat(ChatEntity chat) {
-    widget.onChatSelected(chat);
+  void _selectChat(ChatEntity chat) {
     Navigator.of(context).pop();
+    context.go('/chat/${chat.id}');
   }
 
   void _refreshChats() {
@@ -46,7 +47,6 @@ class _WidgetChatsState extends State<WidgetChats> {
     return SafeArea(
       child: Column(
         children: [
-          // Заголовок и поле поиска всегда отображаются
           ListTile(
             title: const Text(
               "Мои чаты",
@@ -69,7 +69,6 @@ class _WidgetChatsState extends State<WidgetChats> {
               ),
             ),
           ),
-          // Контентная область
           Expanded(
             child: BlocBuilder<ChatCubit, DataState<List<ChatEntity>>>(
               builder: (context, state) {
@@ -108,12 +107,11 @@ class _WidgetChatsState extends State<WidgetChats> {
                         subtitle: Text(
                           'Изменён: ${chat.dateEdit.toLocal().toIso8601String().split('T').first}',
                         ),
-                        onTap: () => selectChat(chat),
+                        onTap: () => _selectChat(chat),
                       );
                     },
                   );
                 }
-                // default
                 return const SizedBox.shrink();
               },
             ),

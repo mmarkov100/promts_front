@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 // ignore: depend_on_referenced_packages
 import 'package:collection/collection.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
 import 'package:promts_application_1/core/config/config.dart';
 import 'package:promts_application_1/core/cubits/data_cubit.dart';
 import 'package:promts_application_1/di/locator.dart';
@@ -15,7 +16,8 @@ import 'package:promts_application_1/features/neuro/view/widget_neuro_button.dar
 import 'package:promts_application_1/features/chat/view/widgets/widget_chat_page.dart';
 
 class WidgetMainScreen extends StatefulWidget {
-  const WidgetMainScreen({super.key});
+  final int? openChatId;
+  const WidgetMainScreen({super.key, this.openChatId});
 
   @override
   State<WidgetMainScreen> createState() => _WidgetMainScreenState();
@@ -26,14 +28,54 @@ class _WidgetMainScreenState extends State<WidgetMainScreen> {
 
   bool _showChatPage = false;
   ChatEntity? _currentChat;
-  //UserEntity? _currentUser;
   final appConfig = getIt<AppConfig>();
   final TextEditingController _messageController = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    final chats = context.read<ChatCubit>().state;
+    _syncWithRoute(chats is DataLoaded<List<ChatEntity>> ? chats.data : null);
+  }
+
+  @override
+  void didUpdateWidget(covariant WidgetMainScreen old) {
+    super.didUpdateWidget(old);
+    if (old.openChatId != widget.openChatId) {
+      final chats = context.read<ChatCubit>().state;
+      _syncWithRoute(chats is DataLoaded<List<ChatEntity>> ? chats.data : null);
+    }
+  }
 
   @override
   void dispose() {
     _messageController.dispose();
     super.dispose();
+  }
+
+  void _syncWithRoute(List<ChatEntity>? chats) {
+    final id = widget.openChatId;
+    if (id == null) {
+      _showChatPage = false;
+      _currentChat = null;
+      return;
+    }
+
+    // если список уже загружен – пробуем найти чат
+    if (chats != null) {
+      _currentChat = chats.firstWhereOrNull((c) => c.id == id);
+
+      if (_currentChat == null) {
+        // ⚠️ Чат недоступен пользователю – возвращаемся к списку
+        Future.microtask(() => context.go('/chat'));
+        return;
+      }
+      _showChatPage = true;
+    } else {
+      // список ещё не пришёл – ждём Listener'a
+      _currentChat = null;
+      _showChatPage = true; // можно показать прелоадер чата, если хотите
+    }
   }
 
   void _openChatWithMessage() {
@@ -45,41 +87,48 @@ class _WidgetMainScreenState extends State<WidgetMainScreen> {
     });
   }
 
-  void _openChat(ChatEntity chat) {
-    _messageController.clear();
-    setState(() {
-      _currentChat = chat;
-      _showChatPage = true;
-    });
-  }
-
   void _closeChat() {
-    setState(() {
-      _showChatPage = false;
-      _currentChat = null;
-    });
+    context.go('/chat');
   }
 
   @override
   Widget build(BuildContext context) {
     return BlocListener<ChatCubit, DataState<List<ChatEntity>>>(
       listener: (context, state) {
+        if (widget.openChatId == null) return;
+        if (widget.openChatId != null &&
+            _currentChat == null &&
+            state is DataLoaded<List<ChatEntity>>) {
+          _currentChat =
+              state.data.firstWhereOrNull((c) => c.id == widget.openChatId);
+          if (_currentChat != null) setState(() {});
+        }
+        if (state is DataLoaded<List<ChatEntity>>) {
+          _syncWithRoute(state.data); // проверяем доступность
+
+          // если чат всё-таки есть – обновляем его данные
+          if (_currentChat != null) {
+            final updated =
+                state.data.firstWhereOrNull((c) => c.id == _currentChat!.id);
+            if (updated != null && updated != _currentChat) {
+              setState(() => _currentChat = updated);
+            }
+          }
+        }
         if (state is DataLoaded<List<ChatEntity>> && _currentChat != null) {
           final updated =
               state.data.firstWhereOrNull((c) => c.id == _currentChat!.id);
           if (updated != null) {
-            setState(() => _currentChat = updated); // UI сразу меняется
+            setState(() => _currentChat = updated);
           }
         }
       },
       child: Scaffold(
         key: _scaffoldKey,
-        drawer: SizedBox(
+        drawer: const SizedBox(
           width: 350,
           child: Drawer(
-            child: WidgetChats(
-              onChatSelected: (chat) => _openChat(chat),
-            ),
+            child: Drawer(child: WidgetChats()),
           ),
         ),
         appBar: WidgetAppBar(
@@ -99,7 +148,6 @@ class _WidgetMainScreenState extends State<WidgetMainScreen> {
                   UserEntity? user;
                   if (userState is DataLoaded<UserEntity>) {
                     user = userState.data;
-                    //_currentUser = user;
                   }
                   return Column(
                     children: [
