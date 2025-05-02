@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_markdown/flutter_markdown.dart';
+import 'package:promts_application_1/features/chat/view/widgets/chat_input_field.dart';
 import 'package:promts_application_1/features/message/domain/entities/message_entity.dart';
+import 'package:promts_application_1/features/message/view/widgets/widget_message_bubble.dart';
 
 class WidgetChatPage extends StatefulWidget {
   final int? chatId;
@@ -166,119 +167,23 @@ Markdown — это простой и удобный способ создани
         child: Column(
           children: [
             Expanded(
-              child: ListView.builder(
+              child: ListView.separated(
                 padding:
                     const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                separatorBuilder: (_, __) => const SizedBox(height: 8),
                 itemCount: _messages.length,
                 itemBuilder: (context, index) {
-                  final msg = _messages[index];
-                  return _buildMessageBubble(msg);
+                  final message = _messages[index];
+                  return WidgetMessageBubble(message: message);
                 },
               ),
             ),
-            Container(
-              color: Colors.grey[200],
-              padding: const EdgeInsets.all(8),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: TextField(
-                      controller: _messageController,
-                      decoration: const InputDecoration(
-                        hintText: "Введите сообщение",
-                        border: OutlineInputBorder(),
-                      ),
-                      minLines: 1,
-                      maxLines: 8,
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  IconButton(
-                    icon: const Icon(Icons.send),
-                    onPressed: _sendMessage,
-                  ),
-                ],
-              ),
+            ChatInputField(
+              messageController: _messageController,
+              sendMessage: _sendMessage,
             ),
           ],
         ),
-      ),
-    );
-  }
-
-  Widget _buildMessageBubble(MessageEntity msg) {
-    final alignment =
-        msg.role == "USER" ? Alignment.centerRight : Alignment.centerLeft;
-    final bgColor = msg.role == "USER" ? Colors.blue[100] : Colors.grey[300];
-
-    return Container(
-      alignment: alignment,
-      margin: const EdgeInsets.symmetric(vertical: 4),
-      child: Column(
-        crossAxisAlignment: msg.role == "USER"
-            ? CrossAxisAlignment.end
-            : CrossAxisAlignment.start,
-        children: [
-          Container(
-            padding: const EdgeInsets.all(10),
-            constraints: const BoxConstraints(maxWidth: 550),
-            decoration: BoxDecoration(
-              color: bgColor,
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                MarkdownBody(
-                  data: msg.text,
-                  selectable: true,
-                  styleSheet: MarkdownStyleSheet.fromTheme(Theme.of(context)),
-                  imageBuilder: (uri, title, alt) {
-                    return Image.network(uri.toString());
-                  },
-                ),
-              ],
-            ),
-          ),
-          // Время
-          const SizedBox(height: 2),
-          const Text(
-            "14:04, 2.3.2025",
-            style: TextStyle(fontSize: 10, color: Colors.grey),
-          ),
-          // Кнопки под сообщением
-          Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // Кнопка копирования (всегда)
-              IconButton(
-                icon: const Icon(Icons.copy),
-                iconSize: 16,
-                onPressed: () {
-                  // Пока без реализации
-                },
-              ),
-              // Кнопка перегенерации (только для сообщений чат-бота)
-              if (!(msg.role == "USER"))
-                IconButton(
-                  icon: const Icon(Icons.autorenew), // "зацикленная стрелка"
-                  iconSize: 16,
-                  onPressed: () {
-                    // Пока без реализации
-                  },
-                ),
-              // Кнопка удаления (только для сообщений пользователя)
-              if (msg.role == "USER")
-                IconButton(
-                  icon: const Icon(Icons.delete),
-                  iconSize: 16,
-                  onPressed: () {
-                    // Пока без реализации
-                  },
-                ),
-            ],
-          ),
-        ],
       ),
     );
   }

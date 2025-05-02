@@ -3,18 +3,16 @@ import 'package:flutter/material.dart';
 import 'package:collection/collection.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
-import 'package:promts_application_1/core/config/config.dart';
 import 'package:promts_application_1/core/cubits/data_cubit.dart';
-import 'package:promts_application_1/di/locator.dart';
 import 'package:promts_application_1/features/chat/cubits/chat_cubit.dart';
 import 'package:promts_application_1/features/chat/domain/entities/chat_entity.dart';
-import 'package:promts_application_1/features/main/view/widgets/widget_home_page.dart';
+import 'package:promts_application_1/features/main/view/widgets/widget_body_home_page.dart';
 import 'package:promts_application_1/features/user/cubit/user_cubit.dart';
 import 'package:promts_application_1/features/user/domain/entities/user_entity.dart';
 import 'widget_app_bar.dart';
 import 'package:promts_application_1/features/chat/view/widgets/widget_chats.dart';
 import 'package:promts_application_1/features/neuro/view/widget_neuro_button.dart';
-import 'package:promts_application_1/features/chat/view/widgets/widget_chat_page.dart';
+import 'package:promts_application_1/features/chat/view/widgets/widget_body_chat_page.dart';
 
 class WidgetMainScreen extends StatefulWidget {
   final int? openChatId;
@@ -27,9 +25,7 @@ class WidgetMainScreen extends StatefulWidget {
 class _WidgetMainScreenState extends State<WidgetMainScreen> {
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
 
-  bool _showChatPage = false;
   ChatEntity? _currentChat;
-  final appConfig = getIt<AppConfig>();
 
   @override
   void initState() {
@@ -50,7 +46,6 @@ class _WidgetMainScreenState extends State<WidgetMainScreen> {
   void _syncWithRoute(List<ChatEntity>? chats) {
     final id = widget.openChatId;
     if (id == null) {
-      _showChatPage = false;
       _currentChat = null;
       return;
     }
@@ -63,28 +58,25 @@ class _WidgetMainScreenState extends State<WidgetMainScreen> {
         Future.microtask(() => context.go('/chat'));
         return;
       }
-      _showChatPage = true;
     } else {
       _currentChat = null;
-      _showChatPage = true;
     }
   }
 
   void _openChatWithMessageWithText(String message) {
-    setState(() {
-      _showChatPage = true;
-      // TODO: тут можно сохранить `message` в нужном поле,
-      // чтобы далее показать его в новой чат-странице
-    });
+    context.go('/chat/3');
   }
 
   void _closeChat() {
-    _showChatPage = false;
+    setState(() {
+      _currentChat = null;
+    });
     context.go('/chat');
   }
 
   @override
   Widget build(BuildContext context) {
+    final showChat = widget.openChatId != null;
     return BlocListener<ChatCubit, DataState<List<ChatEntity>>>(
       listener: (context, state) {
         if (widget.openChatId == null) return;
@@ -152,7 +144,7 @@ class _WidgetMainScreenState extends State<WidgetMainScreen> {
               ),
             ),
             Expanded(
-              child: _showChatPage
+              child: showChat
                   ? const WidgetChatPage()
                   : WidgetHomePage(
                       openChatWithMessage: _openChatWithMessageWithText,

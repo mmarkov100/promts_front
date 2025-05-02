@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:promts_application_1/features/main/view/widgets/home_input_field.dart';
 
 class WidgetHomePage extends StatefulWidget {
   final ValueChanged<String> openChatWithMessage;
@@ -18,11 +19,11 @@ class _WidgetHomePageState extends State<WidgetHomePage> {
   }
 
   void _handleSend() {
-  final text = _messageController.text.trim();
-  if (text.isEmpty) return;
-  widget.openChatWithMessage(text);
-  _messageController.clear();
-}
+    final text = _messageController.text.trim();
+    if (text.isEmpty) return;
+    widget.openChatWithMessage(text);
+    _messageController.clear();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -43,30 +44,9 @@ class _WidgetHomePageState extends State<WidgetHomePage> {
                           TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                     ),
                     const SizedBox(height: 16),
-                    ConstrainedBox(
-                      constraints: const BoxConstraints(maxWidth: 900),
-                      child: Row(
-                        children: [
-                          Expanded(
-                            child: TextField(
-                              controller: _messageController,
-                              decoration: const InputDecoration(
-                                labelText: "Введите сообщение",
-                                border: OutlineInputBorder(),
-                              ),
-                              keyboardType: TextInputType.multiline,
-                              minLines: 1,
-                              maxLines: 8,
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          IconButton(
-                            icon: const Icon(Icons.send),
-                            onPressed: _handleSend,
-                            tooltip: "Отправить",
-                          ),
-                        ],
-                      ),
+                    HomeInputField(
+                      messageController: _messageController,
+                      handleSend: _handleSend,
                     ),
                   ],
                 ),
