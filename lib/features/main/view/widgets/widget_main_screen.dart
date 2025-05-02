@@ -8,6 +8,7 @@ import 'package:promts_application_1/core/cubits/data_cubit.dart';
 import 'package:promts_application_1/di/locator.dart';
 import 'package:promts_application_1/features/chat/cubits/chat_cubit.dart';
 import 'package:promts_application_1/features/chat/domain/entities/chat_entity.dart';
+import 'package:promts_application_1/features/main/view/widgets/widget_home_page.dart';
 import 'package:promts_application_1/features/user/cubit/user_cubit.dart';
 import 'package:promts_application_1/features/user/domain/entities/user_entity.dart';
 import 'widget_app_bar.dart';
@@ -29,7 +30,6 @@ class _WidgetMainScreenState extends State<WidgetMainScreen> {
   bool _showChatPage = false;
   ChatEntity? _currentChat;
   final appConfig = getIt<AppConfig>();
-  final TextEditingController _messageController = TextEditingController();
 
   @override
   void initState() {
@@ -47,12 +47,6 @@ class _WidgetMainScreenState extends State<WidgetMainScreen> {
     }
   }
 
-  @override
-  void dispose() {
-    _messageController.dispose();
-    super.dispose();
-  }
-
   void _syncWithRoute(List<ChatEntity>? chats) {
     final id = widget.openChatId;
     if (id == null) {
@@ -61,33 +55,31 @@ class _WidgetMainScreenState extends State<WidgetMainScreen> {
       return;
     }
 
-    // если список уже загружен – пробуем найти чат
     if (chats != null) {
       _currentChat = chats.firstWhereOrNull((c) => c.id == id);
 
       if (_currentChat == null) {
-        // ⚠️ Чат недоступен пользователю – возвращаемся к списку
+        // ignore: use_build_context_synchronously
         Future.microtask(() => context.go('/chat'));
         return;
       }
       _showChatPage = true;
     } else {
-      // список ещё не пришёл – ждём Listener'a
       _currentChat = null;
-      _showChatPage = true; // можно показать прелоадер чата, если хотите
+      _showChatPage = true;
     }
   }
 
-  void _openChatWithMessage() {
-    final text = _messageController.text.trim();
-    if (text.isEmpty) return;
-    _messageController.clear();
+  void _openChatWithMessageWithText(String message) {
     setState(() {
       _showChatPage = true;
+      // TODO: тут можно сохранить `message` в нужном поле,
+      // чтобы далее показать его в новой чат-странице
     });
   }
 
   void _closeChat() {
+    _showChatPage = false;
     context.go('/chat');
   }
 
@@ -104,9 +96,8 @@ class _WidgetMainScreenState extends State<WidgetMainScreen> {
           if (_currentChat != null) setState(() {});
         }
         if (state is DataLoaded<List<ChatEntity>>) {
-          _syncWithRoute(state.data); // проверяем доступность
+          _syncWithRoute(state.data);
 
-          // если чат всё-таки есть – обновляем его данные
           if (_currentChat != null) {
             final updated =
                 state.data.firstWhereOrNull((c) => c.id == _currentChat!.id);
@@ -161,64 +152,14 @@ class _WidgetMainScreenState extends State<WidgetMainScreen> {
               ),
             ),
             Expanded(
-              child:
-                  _showChatPage ? const WidgetChatPage() : _buildMainContent(),
+              child: _showChatPage
+                  ? const WidgetChatPage()
+                  : WidgetHomePage(
+                      openChatWithMessage: _openChatWithMessageWithText,
+                    ),
             ),
           ],
         ),
-      ),
-    );
-  }
-
-  Widget _buildMainContent() {
-    return SafeArea(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Expanded(
-            child: Center(
-              child: Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const Text(
-                      "Приветствую",
-                      style:
-                          TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                    ),
-                    const SizedBox(height: 16),
-                    ConstrainedBox(
-                      constraints: const BoxConstraints(maxWidth: 900),
-                      child: Row(
-                        children: [
-                          Expanded(
-                            child: TextField(
-                              controller: _messageController,
-                              decoration: const InputDecoration(
-                                labelText: "Введите сообщение",
-                                border: OutlineInputBorder(),
-                              ),
-                              keyboardType: TextInputType.multiline,
-                              minLines: 1,
-                              maxLines: 8,
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          IconButton(
-                            icon: const Icon(Icons.send),
-                            onPressed: _openChatWithMessage,
-                            tooltip: "Отправить",
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        ],
       ),
     );
   }
