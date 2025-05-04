@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:promts_application_1/core/cubits/data_cubit.dart';
+import 'package:promts_application_1/features/chat/domain/entities/chat_entity.dart';
 import 'package:promts_application_1/features/message/cubits/message_cubit.dart';
 import 'package:promts_application_1/features/message/domain/entities/message_entity.dart';
 import 'package:promts_application_1/features/message/view/widgets/widget_message_bubble.dart';
@@ -8,20 +9,29 @@ import 'package:promts_application_1/features/shared/widgets/message_input_field
 
 class ChatView extends StatelessWidget {
   final int chatId;
-  const ChatView({super.key, required this.chatId});
+  final ChatEntity chat;
+  final int? overrideModelId;
+  const ChatView(
+      {super.key,
+      required this.chatId,
+      required this.chat,
+      this.overrideModelId});
 
   @override
   Widget build(BuildContext context) {
-    return BlocProvider<MessageCubit>(
-      create: (_) => context.read<MessageCubit>(),
-      child: const _ChatViewBody(),
+    // MessageCubit уже есть выше в дереве, повторно не провайдим
+    return _ChatViewBody(
+      chat: chat,
+      overrideModelId: overrideModelId,
     );
   }
 }
 
 /// Вынесено в отдельный виджет‑телефон, чтобы не плодить логику BlocProvider
 class _ChatViewBody extends StatefulWidget {
-  const _ChatViewBody();
+  final ChatEntity chat; // новый
+  final int? overrideModelId;
+  const _ChatViewBody({required this.chat, required this.overrideModelId});
 
   @override
   State<_ChatViewBody> createState() => _ChatViewBodyState();
@@ -38,14 +48,31 @@ class _ChatViewBodyState extends State<_ChatViewBody> {
     super.dispose();
   }
 
+  void _handleSend() async {
+    final txt = _input.text.trim();
+    if (txt.isEmpty) return;
+
+    final modelId = widget.overrideModelId ?? widget.chat.modelUriId;
+
+    await context.read<MessageCubit>().send(
+          chatId: widget.chat.id,
+          modelUriId: modelId,
+          text: txt,
+          context: context,
+        );
+    _input.clear();
+  }
+
   @override
   Widget build(BuildContext context) {
+    final bottomInset = MediaQuery.of(context).viewPadding.bottom;
     return Column(
       children: [
         Expanded(
           child: BlocBuilder<MessageCubit, DataState<List<MessageEntity>>>(
             builder: (context, state) {
-              if (state is DataLoading) {
+              print(state.toString());
+              if (state is DataLoading || state is DataInitial) {
                 return const Center(child: CircularProgressIndicator());
               }
               if (state is DataError) {
@@ -59,20 +86,37 @@ class _ChatViewBodyState extends State<_ChatViewBody> {
                 WidgetsBinding.instance.addPostFrameCallback((_) {
                   _scroll.jumpTo(_scroll.position.maxScrollExtent);
                 });
-                return ListView.builder(
-                  controller: _scroll,
-                  itemCount: msgs.length,
-                  itemBuilder: (_, i) => WidgetMessageBubble(message: msgs[i]),
-                );
+                if (msgs.isNotEmpty) {
+                  return SizedBox(
+                    width: 1000,
+                    child: ListView.builder(
+                      controller: _scroll,
+                      itemCount: msgs.length,
+                      itemBuilder: (_, i) =>
+                          WidgetMessageBubble(message: msgs[i]),
+                    ),
+                  );
+                } else {
+                  return const Center(
+                      child: Text("Напишите первое сообщение!"));
+                }
               }
               return const SizedBox.shrink();
             },
           ),
         ),
-        MessageInputField(
-          controller: _input,
-          hintText: "Введите сообщение",
-          onSend: () {},
+        Padding(
+          padding: EdgeInsets.fromLTRB(
+            0,
+            0,
+            0,
+            bottomInset + 56 + 8,
+          ),
+          child: MessageInputField(
+            controller: _input,
+            hintText: "Введите сообщение",
+            onSend: _handleSend,
+          ),
         ),
       ],
     );

@@ -14,6 +14,7 @@ import 'package:promts_application_1/features/auth/cubits/auth_cubit.dart';
 import 'package:promts_application_1/features/auth/cubits/login_cubit.dart';
 import 'package:promts_application_1/features/auth/cubits/register_cubit.dart';
 import 'package:promts_application_1/features/chat/cubits/chat_cubit.dart';
+import 'package:promts_application_1/features/message/cubits/message_cubit.dart';
 import 'package:promts_application_1/features/neuro/cubits/neuro_cubit.dart';
 import 'package:promts_application_1/features/user/cubit/user_cubit.dart';
 // ignore: depend_on_referenced_packages
@@ -32,6 +33,7 @@ void main() {
       providers: [
         BlocProvider.value(value: authCubit),
         BlocProvider.value(value: loginCubit),
+        BlocProvider(create: (_) => getIt<MessageCubit>()),
         BlocProvider(create: (_) => getIt<RegisterCubit>()),
         BlocProvider(create: (_) => getIt<UserCubit>()),
         BlocProvider(create: (_) => getIt<ChatCubit>()),
@@ -347,6 +349,10 @@ import 'package:promts_application_1/features/chat/cubits/chat_cubit.dart';
 import 'package:promts_application_1/features/chat/data/datasources/chat_datasource.dart';
 import 'package:promts_application_1/features/chat/data/implimentations/chat_repository_impl.dart';
 import 'package:promts_application_1/features/chat/domain/repositories/chat_repository.dart';
+import 'package:promts_application_1/features/message/cubits/message_cubit.dart';
+import 'package:promts_application_1/features/message/data/datasources/message_datasource.dart';
+import 'package:promts_application_1/features/message/data/implementations/message_repository_impl.dart';
+import 'package:promts_application_1/features/message/domain/repositories/message_repository.dart';
 import 'package:promts_application_1/features/neuro/cubits/neuro_cubit.dart';
 import 'package:promts_application_1/features/neuro/data/datasources/neuro_datasource.dart';
 import 'package:promts_application_1/features/neuro/data/implimintations/neuro_repository_impl.dart';
@@ -408,6 +414,15 @@ void setup(int appMode, String baseUrl, String jwtToken) {
     () => RegisterRepositoryImpl(remoteDataSource: getIt()),
   );
   getIt.registerFactory(() => RegisterCubit(repository: getIt()));
+
+  // Message
+  getIt.registerLazySingleton<MessageRemoteDataSource>(
+    () => MessageRemoteDataSourceImpl(),
+  );
+  getIt.registerLazySingleton<MessageRepository>(
+    () => MessageRepositoryImpl(remote: getIt()),
+  );
+  getIt.registerFactory(() => MessageCubit(repo: getIt()));
 }
 // ignore: depend_on_referenced_packages
 import 'package:promts_application_1/core/cubits/data_cubit.dart';
@@ -911,13 +926,62 @@ class ChatCubit extends DataCubit<List<ChatEntity>> {
 
         emit(DataLoaded<List<ChatEntity>>(newChats));
       } else {
-        // если список не был загружен, загрузим его заново
         fetchChats();
       }
     } catch (e, st) {
       print("Ошибка при обновлении чата: $e\n$st");
       emit(DataError<List<ChatEntity>>(e.toString()));
     }
+  }
+
+  Future<ChatEntity> createChat(Map<String, dynamic> body) async {
+    final newChat = await repository.createChat(body);
+
+    if (state is DataLoaded<List<ChatEntity>>) {
+      final current =
+          List<ChatEntity>.from((state as DataLoaded<List<ChatEntity>>).data)
+            ..add(newChat);
+      emit(DataLoaded<List<ChatEntity>>(current));
+    }
+    return newChat;
+  }
+
+  void addLocalChat(ChatEntity chat) {
+    if (state is DataLoaded<List<ChatEntity>>) {
+      final current = (state as DataLoaded<List<ChatEntity>>).data;
+      if (current.any((c) => c.id == chat.id)) return;
+      emit(DataLoaded([...current, chat]));
+    }
+  }
+
+  void patchModel(int chatId, int modelUriId) {
+    if (state is! DataLoaded<List<ChatEntity>>) return;
+
+    final updated = (state as DataLoaded<List<ChatEntity>>)
+        .data
+        .map((c) => c.id == chatId
+            ? ChatEntity(
+                id: c.id,
+                userId: c.userId,
+                chatBotId: c.chatBotId,
+                chatName: c.chatName,
+                temperature: c.temperature,
+                context: c.context,
+                starredChat: c.starredChat,
+                useMemory: c.useMemory,
+                updateMemory: c.updateMemory,
+                canUseMemory: c.canUseMemory,
+                canUpdateMemory: c.canUpdateMemory,
+                canEditModelUri: c.canEditModelUri,
+                canEditContext: c.canEditContext,
+                dateEdit: c.dateEdit,
+                dateCreate: c.dateCreate,
+                modelUriId: modelUriId,
+              )
+            : c)
+        .toList();
+
+    emit(DataLoaded(updated));
   }
 }
 import 'package:promts_application_1/core/service/network_service.dart';
@@ -927,6 +991,7 @@ import 'package:promts_application_1/features/chat/data/models/chat_model.dart';
 abstract class ChatRemoteDataSource {
   Future<List<ChatModel>> fetchChats();
   Future<ChatModel> updateChatSettings(Map<String, dynamic> body);
+  Future<ChatModel> createChat(Map<String, dynamic> body);
 }
 
 class ChatRemoteDataSourceImpl implements ChatRemoteDataSource {
@@ -944,6 +1009,15 @@ class ChatRemoteDataSourceImpl implements ChatRemoteDataSource {
   Future<ChatModel> updateChatSettings(Map<String, dynamic> body) {
     return _api.put<ChatModel>(
       '/chats/new',
+      body: body,
+      fromJson: ChatModel.fromJson,
+    );
+  }
+
+  @override
+  Future<ChatModel> createChat(Map<String, dynamic> body) {
+    return _api.post<ChatModel>(
+      '/chats',
       body: body,
       fromJson: ChatModel.fromJson,
     );
@@ -966,6 +1040,10 @@ class ChatRepositoryImpl implements ChatRepository {
   @override
   Future<ChatEntity> updateChat(Map<String, dynamic> body) =>
       remoteDataSource.updateChatSettings(body);
+
+  @override
+  Future<ChatEntity> createChat(Map<String, dynamic> body) =>
+      remoteDataSource.createChat(body);
 }
 import 'package:promts_application_1/features/chat/domain/entities/chat_entity.dart';
 
@@ -1052,6 +1130,7 @@ import 'package:promts_application_1/features/chat/domain/entities/chat_entity.d
 abstract class ChatRepository {
   Future<List<ChatEntity>> fetchChats();
   Future<ChatEntity> updateChat(Map<String, dynamic> body);
+  Future<ChatEntity> createChat(Map<String, dynamic> body);
 }
 import 'package:flutter/material.dart';
 import 'package:promts_application_1/features/shared/widgets/widget_snack_bar.dart';
@@ -1296,195 +1375,133 @@ class ChatSettings extends AbstractChatSettingsDialog {
         );
 }
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:promts_application_1/core/cubits/data_cubit.dart';
+import 'package:promts_application_1/features/chat/domain/entities/chat_entity.dart';
+import 'package:promts_application_1/features/message/cubits/message_cubit.dart';
 import 'package:promts_application_1/features/message/domain/entities/message_entity.dart';
 import 'package:promts_application_1/features/message/view/widgets/widget_message_bubble.dart';
 import 'package:promts_application_1/features/shared/widgets/message_input_field.dart';
 
-class ChatView extends StatefulWidget {
-  final int? chatId;
-  const ChatView({super.key, this.chatId});
+class ChatView extends StatelessWidget {
+  final int chatId;
+  final ChatEntity chat;
+  final int? overrideModelId;
+  const ChatView(
+      {super.key,
+      required this.chatId,
+      required this.chat,
+      this.overrideModelId});
 
   @override
-  // ignore: library_private_types_in_public_api
-  _ChatViewState createState() => _ChatViewState();
+  Widget build(BuildContext context) {
+    // MessageCubit уже есть выше в дереве, повторно не провайдим
+    return _ChatViewBody(
+      chat: chat,
+      overrideModelId: overrideModelId,
+    );
+  }
 }
 
-class _ChatViewState extends State<ChatView> {
-  final List<MessageEntity> _messages = [
-    MessageEntity(
-      id: 1,
-      chatId: 1,
-      modelUriId: 1,
-      oldMessage: false,
-      role: 'USER',
-      text: 'Здравствуйте!',
-      type: 'MESSAGE',
-      dateCreate: DateTime.now(),
-    ),
-    MessageEntity(
-      id: 2,
-      chatId: 1,
-      modelUriId: 1,
-      oldMessage: false,
-      role: 'bot',
-      text: 'Привет, я бот!',
-      type: 'ASSISTANT',
-      dateCreate: DateTime.now(),
-    ),
-  ];
-  final TextEditingController _messageController = TextEditingController();
-  final ScrollController _scrollController = ScrollController();
+/// Вынесено в отдельный виджет‑телефон, чтобы не плодить логику BlocProvider
+class _ChatViewBody extends StatefulWidget {
+  final ChatEntity chat; // новый
+  final int? overrideModelId;
+  const _ChatViewBody({required this.chat, required this.overrideModelId});
+
+  @override
+  State<_ChatViewBody> createState() => _ChatViewBodyState();
+}
+
+class _ChatViewBodyState extends State<_ChatViewBody> {
+  final _scroll = ScrollController();
+  final _input = TextEditingController();
 
   @override
   void dispose() {
-    _messageController.dispose();
-    _scrollController.dispose();
+    _scroll.dispose();
+    _input.dispose();
     super.dispose();
   }
 
-  void _sendMessage() {
-    final text = _messageController.text.trim();
-    if (text.isEmpty) return;
-    setState(() {
-      _messages.add(MessageEntity(
-        id: _messages.length + 1,
-        chatId: 1,
-        modelUriId: 1,
-        oldMessage: false,
-        role: 'USER',
-        text: text,
-        type: 'MESSAGE',
-        dateCreate: DateTime.now(),
-      ));
-      _messages.add(MessageEntity(
-        id: _messages.length + 1,
-        chatId: 1,
-        modelUriId: 1,
-        oldMessage: false,
-        role: 'ASSISTANT',
-        text: """
-Вот пример кода на Dart, в котором содержится длинный текст с Markdown-разметкой:
+  void _handleSend() async {
+    final txt = _input.text.trim();
+    if (txt.isEmpty) return;
 
-```dart
-final String markdownText = '''
-# Заголовок первого уровня
+    final modelId = widget.overrideModelId ?? widget.chat.modelUriId;
 
-Добро пожаловать в пример Markdown-разметки, который можно использовать прямо в коде. Markdown позволяет легко форматировать текст, добавлять ссылки, изображения, таблицы, код и многое другое.
-
-## Заголовок второго уровня
-
-### Основные возможности Markdown
-
-Markdown поддерживает следующие элементы:
-
-- **Выделенный текст**: можно использовать **жирный** или *курсив* для выделения текста.
-- **Списки**:
-  - Ненумерованные списки с использованием дефисов или звездочек.
-  - Вложенные списки, как показано ниже:
-    - Подэлемент 1
-    - Подэлемент 2
-- **Нумерованные списки**:
-  1. Первый пункт
-  2. Второй пункт
-  3. Третий пункт
-
-### Цитаты и разделители
-
-> Это пример блока цитаты. Он используется для выделения цитируемых отрывков или важных сообщений.
->
-> Можно добавить несколько строк в цитату.
-
----
-
-### Код и программирование
-
-Вы можете вставлять фрагменты кода как в строчку, используя обратные кавычки, например: `print("Hello, World!");`
-
-А для форматирования целых блоков кода используйте тройные обратные кавычки:
-
-```dart
-// Пример кода на Dart
-void main() {
-  print("Привет, мир!");
-}
-```
-
-### Ссылки и изображения
-
-Для создания ссылок используйте следующий синтаксис:
-
-А чтобы добавить изображение, используйте такой формат:
-
-### Таблицы
-
-Markdown позволяет создавать таблицы:
-
-| Название    | Описание                | Пример       |
-| ----------- | ----------------------- | ------------ |
-| Элемент 1   | Первое значение         | Пример 1     |
-| Элемент 2   | Второе значение         | Пример 2     |
-| Элемент 3   | Третье значение         | Пример 3     |
-
-### Дополнительный текст
-
-Markdown — это простой и удобный способ создания форматированного текста. Он широко используется для:
-- Документации к проектам
-- README файлов на GitHub
-- Веб-блогов и статей
-- Форумов и систем комментариев
-
-Надеюсь, этот пример поможет вам понять, как использовать Markdown-разметку прямо в коде!
-''';
-```
-
-Теперь вы можете вставить этот код в ваше приложение и использовать переменную `markdownText` для дальнейшей обработки или отображения.
-""",
-        type: 'MESSAGE',
-        dateCreate: DateTime.now(),
-      ));
-    });
-
-    _messageController.clear();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (_scrollController.hasClients) {
-        _scrollController.animateTo(
-          _scrollController.position.maxScrollExtent,
-          duration: const Duration(milliseconds: 300),
-          curve: Curves.easeOut,
+    await context.read<MessageCubit>().send(
+          chatId: widget.chat.id,
+          modelUriId: modelId,
+          text: txt,
+          context: context,
         );
-      }
-    });
+    _input.clear();
   }
 
   @override
   Widget build(BuildContext context) {
-    return Center(
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 700),
-        child: Column(
-          children: [
-            Expanded(
-              child: ListView.separated(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                separatorBuilder: (_, __) => const SizedBox(height: 8),
-                itemCount: _messages.length,
-                itemBuilder: (context, index) {
-                  final message = _messages[index];
-                  return WidgetMessageBubble(message: message);
-                },
-              ),
-            ),
-            MessageInputField(
-              controller: _messageController,
-              hintText: "Введите сообщение",
-              onSend: _sendMessage,
-              constraints:
-                  const BoxConstraints(maxWidth: 700),
-            ),
-          ],
+    return Column(
+      children: [
+        Expanded(
+          child: BlocBuilder<MessageCubit, DataState<List<MessageEntity>>>(
+            builder: (context, state) {
+              print(state.toString());
+              if (state is DataLoading || state is DataInitial) {
+                return const Center(child: CircularProgressIndicator());
+              }
+              if (state is DataError) {
+                return const Center(
+                    child: Text(
+                        "Ошибка в загрузке сообщений, перезагрузите страницу"));
+              }
+              if (state is DataLoaded<List<MessageEntity>>) {
+                final msgs = state.data;
+                // автоскролл вниз
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  _scroll.jumpTo(_scroll.position.maxScrollExtent);
+                });
+                if (msgs.isNotEmpty) {
+                  return SizedBox(
+                    width: 1000,
+                    child: ListView.builder(
+                      controller: _scroll,
+                      itemCount: msgs.length,
+                      itemBuilder: (_, i) =>
+                          WidgetMessageBubble(message: msgs[i]),
+                    ),
+                  );
+                } else {
+                  return const Center(
+                      child: Text("Напишите первое сообщение!"));
+                }
+              }
+              return const SizedBox.shrink();
+            },
+          ),
         ),
-      ),
+        MessageInputField(
+          controller: _input,
+          hintText: "Введите сообщение",
+          onSend: () async {
+            // final txt = _input.text.trim();
+            // if (txt.isEmpty) return;
+
+            // _input.clear();
+            // final chat = widget.chat;
+
+            // Если пользователь только что создал чат через «Написать первое сообщение» –
+            // chat.id уже есть. modelUriId берём из чата.
+            // await context.read<MessageCubit>().send(
+            //       chatId: chat.id,
+            //       modelUriId: chat.modelUriId,
+            //       text: txt,
+            //       context: context,
+            //     );
+            _handleSend();
+          },
+        ),
+      ],
     );
   }
 }
@@ -1552,6 +1569,7 @@ import 'package:go_router/go_router.dart';
 import 'package:promts_application_1/core/cubits/data_cubit.dart';
 import 'package:promts_application_1/features/chat/cubits/chat_cubit.dart';
 import 'package:promts_application_1/features/chat/domain/entities/chat_entity.dart';
+import 'package:promts_application_1/features/message/cubits/message_cubit.dart';
 
 class WidgetChatTiles extends StatefulWidget {
   final String query;
@@ -1566,6 +1584,7 @@ class _WidgetChatTilesState extends State<WidgetChatTiles> {
   
   void _selectChat(ChatEntity chat) {
     Navigator.of(context).pop();
+    context.read<MessageCubit>().fetch(chat.id);
     context.go('/chat/${chat.id}');
   }
 
@@ -2295,7 +2314,11 @@ import 'package:promts_application_1/features/shared/widgets/message_input_field
 
 class HomeView extends StatefulWidget {
   final ValueChanged<String> openChatWithMessage;
-  const HomeView({super.key, required this.openChatWithMessage});
+  final bool isCreatingChat;
+  const HomeView(
+      {super.key,
+      required this.openChatWithMessage,
+      required this.isCreatingChat});
 
   @override
   State<HomeView> createState() => _HomeViewState();
@@ -2329,12 +2352,17 @@ class _HomeViewState extends State<HomeView> {
                 padding: const EdgeInsets.all(16.0),
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const Text(
-                      "Приветствую",
-                      style:
-                          TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                    ),
+                  children: [  
+                    if (widget.isCreatingChat)
+                      const SizedBox(
+                        width: 24,
+                        height: 24,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      ) else const Text(
+                        "Приветствую",
+                        style: TextStyle(
+                            fontSize: 18, fontWeight: FontWeight.bold),
+                      ),
                     const SizedBox(height: 16),
                     MessageInputField(
                       controller: _messageController,
@@ -2517,21 +2545,47 @@ import 'package:promts_application_1/features/user/domain/entities/user_entity.d
 
 class MainBody extends StatefulWidget {
   final ChatEntity? chatEntity;
+  final int? chatId;
   final ValueChanged<String> openChatWithMessageWithText;
+  final ValueChanged<Map<String, dynamic>> onChatCreateSettings;
   final bool showChat;
+  final bool isCreatingChat;
   const MainBody(
       {super.key,
       this.chatEntity,
       required this.openChatWithMessageWithText,
-      required this.showChat});
+      required this.showChat,
+      required this.isCreatingChat,
+      this.chatId,
+      required this.onChatCreateSettings});
 
   @override
   State<MainBody> createState() => _MainBodyState();
 }
 
 class _MainBodyState extends State<MainBody> {
+  int? _overrideModelId;
+
+  @override
+  void didUpdateWidget(covariant MainBody old) {
+    super.didUpdateWidget(old);
+    // При переходе в другой чат сбрасываем переопределение
+    if (widget.chatId != old.chatId) _overrideModelId = null;
+  }
+
+  // Сюда попадают данные из NeuroButton и/или настроек создаваемого чата
+  void _handleDraft(Map<String, dynamic> data) {
+    if (data.containsKey('modelUriId')) {
+      setState(() => _overrideModelId = data['modelUriId'] as int?);
+    }
+    // Чтобы сохранить прежнее поведение, прокидываем наружу
+    widget.onChatCreateSettings(data);
+  }
+
   @override
   Widget build(BuildContext context) {
+    final hasChat = widget.chatEntity != null;
+
     return Column(
       children: [
         Padding(
@@ -2539,22 +2593,29 @@ class _MainBodyState extends State<MainBody> {
           child: BlocBuilder<UserCubit, DataState<UserEntity>>(
             builder: (context, userState) {
               UserEntity? user;
-              if (userState is DataLoaded<UserEntity>) {
-                user = userState.data;
-              }
+              if (userState is DataLoaded<UserEntity>) user = userState.data;
+
               return NeuroButton(
                 currentChat: widget.chatEntity,
                 currentUser: user,
+                onChatCreateSettings: _handleDraft,
               );
             },
           ),
         ),
         Expanded(
-          child: widget.showChat
-              ? const ChatView()
-              : HomeView(
-                  openChatWithMessage: widget.openChatWithMessageWithText,
-                ),
+          child: hasChat
+              ? ChatView(
+                  chat: widget.chatEntity!,
+                  chatId: widget.chatId!,
+                  overrideModelId: _overrideModelId, // ← передаём
+                )
+              : widget.showChat
+                  ? const Center(child: CircularProgressIndicator())
+                  : HomeView(
+                      isCreatingChat: widget.isCreatingChat,
+                      openChatWithMessage: widget.openChatWithMessageWithText,
+                    ),
         ),
       ],
     );
@@ -2569,6 +2630,9 @@ import 'package:promts_application_1/core/cubits/data_cubit.dart';
 import 'package:promts_application_1/features/chat/cubits/chat_cubit.dart';
 import 'package:promts_application_1/features/chat/domain/entities/chat_entity.dart';
 import 'package:promts_application_1/features/main/view/widgets/main_body.dart';
+import 'package:promts_application_1/features/message/cubits/message_cubit.dart';
+import 'package:promts_application_1/features/shared/widgets/widget_snack_bar.dart';
+import 'package:promts_application_1/features/user/cubit/user_cubit.dart';
 import 'main_app_bar.dart';
 import 'package:promts_application_1/features/chat/view/widgets/widget_chats.dart';
 
@@ -2583,12 +2647,17 @@ class MainScreen extends StatefulWidget {
 class _MainScreenState extends State<MainScreen> {
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
 
+  final Map<String, dynamic> _draft = {};
   ChatEntity? _currentChat;
+  bool _isCreatingChat = false;
 
   @override
   void initState() {
     super.initState();
     final chats = context.read<ChatCubit>().state;
+    if (widget.openChatId != null) {
+      context.read<MessageCubit>().fetch(widget.openChatId!);
+    }
     _syncWithRoute(chats is DataLoaded<List<ChatEntity>> ? chats.data : null);
   }
 
@@ -2601,6 +2670,9 @@ class _MainScreenState extends State<MainScreen> {
     }
   }
 
+  void _updateDraft(Map<String, dynamic> data) =>
+      setState(() => _draft.addAll(data));
+
   void _syncWithRoute(List<ChatEntity>? chats) {
     final id = widget.openChatId;
     if (id == null) {
@@ -2611,18 +2683,48 @@ class _MainScreenState extends State<MainScreen> {
     if (chats != null) {
       _currentChat = chats.firstWhereOrNull((c) => c.id == id);
 
-      if (_currentChat == null) {
-        // ignore: use_build_context_synchronously
-        Future.microtask(() => context.go('/chat'));
-        return;
-      }
+      // if (_currentChat == null) {
+      //   // ignore: use_build_context_synchronously
+      //   Future.microtask(() => context.go('/chat'));
+      //   return;
+      // }
     } else {
       _currentChat = null;
     }
   }
 
-  void _openChatWithMessageWithText(String message) {
-    context.go('/chat/3');
+  void _createAndOpenChatWithMessageWithText(String text) async {
+    setState(() => _isCreatingChat = true);
+    try {
+      final user = (context.read<UserCubit>().state as DataLoaded).data;
+
+      final body = {
+        'modelUriId': _draft['modelUriId'] ?? user.standartModelUriId,
+        'temperature': _draft['temperature'] ?? 1.0,
+        'context': _draft['context'] ?? '',
+        'useMemory': _draft['useMemory'] ?? user.memoryEnabled,
+        'updateMemory': _draft['updateMemory'] ?? user.aiCanUpdateMemory,
+      };
+
+      final newChat = await context.read<ChatCubit>().createChat(body);
+
+      context.read<ChatCubit>().addLocalChat(newChat);
+
+      if (mounted) context.go('/chat/${newChat.id}');
+
+      await context.read<MessageCubit>().send(
+            chatId: newChat.id,
+            modelUriId: newChat.modelUriId,
+            text: text,
+            context: context,
+          );
+
+      _draft.clear();
+    } catch (e) {
+      WidgetSnackBar.showError(context, e.toString());
+    } finally {
+      if (mounted) setState(() => _isCreatingChat = false);
+    }
   }
 
   void _closeChat() {
@@ -2686,17 +2788,245 @@ class _MainScreenState extends State<MainScreen> {
             },
           ),
           body: MainBody(
+            isCreatingChat: _isCreatingChat,
             chatEntity: _currentChat,
-            openChatWithMessageWithText: _openChatWithMessageWithText,
+            openChatWithMessageWithText: _createAndOpenChatWithMessageWithText,
             showChat: showChat,
+            chatId: widget.openChatId,
+            onChatCreateSettings: _updateDraft,
           ),
         ));
+  }
+}
+import 'package:flutter/widgets.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:promts_application_1/core/cubits/data_cubit.dart';
+import 'package:promts_application_1/features/chat/cubits/chat_cubit.dart';
+import 'package:promts_application_1/features/message/data/models/message_model.dart';
+import 'package:promts_application_1/features/shared/widgets/widget_snack_bar.dart';
+import 'package:promts_application_1/features/user/cubit/user_cubit.dart';
+import '../domain/entities/message_entity.dart';
+import '../domain/repositories/message_repository.dart';
+
+class MessageCubit extends DataCubit<List<MessageEntity>> {
+  final MessageRepository repo;
+  MessageCubit({required this.repo}) : super();
+  int? _lastChatId;
+
+  // void fetch(int chatId) => load(() => repo.fetchMessages(chatId));
+
+  void fetch(int chatId) {
+    // Если уже загружали этот чат и данные есть – повторный запрос не нужен
+    if (_lastChatId == chatId && state is DataLoaded<List<MessageEntity>>) {
+      return;
+    }
+    _lastChatId = chatId;
+    load(() => repo.fetchMessages(chatId));
+  }
+
+  /// Отправка нового сообщения
+  Future<void> send({
+    required int chatId,
+    required int modelUriId,
+    required String text,
+    required BuildContext context,
+  }) async {
+    // добавляем сообщение‑черновик пользователя сразу
+    final draft = MessageEntity(
+      id: -DateTime.now().millisecondsSinceEpoch, // временный id
+      chatId: chatId,
+      modelUriId: modelUriId,
+      oldMessage: false,
+      role: 'USER',
+      type: 'User',
+      text: text,
+      dateCreate: DateTime.now(),
+    );
+    if (state is DataLoaded<List<MessageEntity>>) {
+      emit(DataLoaded([...(state as DataLoaded).data, draft]));
+    }
+
+    try {
+      final res = await repo.sendMessage(chatId, modelUriId, text);
+
+      // 1. Ответ нейросети
+      final msg = res['messageRequest'] as Map<String, dynamic>;
+      final assistant = MessageModel.fromJson({
+        'id': msg['id'],
+        'chatId': chatId,
+        'modelUriId': modelUriId,
+        'oldMessage': false,
+        'role': 'ASSISTANT',
+        'type': 'Assistant',
+        'text': msg['text'],
+        'dateCreate': msg['dateCreate'],
+      });
+
+      // 2. Память / баланс
+      final user = res['user'] as Map<String, dynamic>;
+
+      context.read<UserCubit>().applyMessageUserData(user);
+
+      if (user['memoryUpdated'] == true) {
+        WidgetSnackBar.showMemorryChange(
+          context,
+          'Память обновлена: ${user['newMemory']}',
+          '',
+        );
+      }
+
+      // 3. Обновляем список
+      if (state is DataLoaded<List<MessageEntity>>) {
+        final current = (state as DataLoaded<List<MessageEntity>>)
+            .data
+            .where((m) => m.id != draft.id)
+            .toList()
+          ..addAll([
+            MessageModel.fromEntity(draft), // сам пользователь
+            assistant // ассистент
+          ]);
+        final modelId = modelUriId; // тот, с которым мы отправляли
+        // ignore: use_build_context_synchronously
+        context.read<ChatCubit>().patchModel(chatId, modelId);
+        emit(DataLoaded(current));
+      }
+    } catch (e) {
+      WidgetSnackBar.showError(context, e.toString());
+      fetch(chatId); // откатим список
+    }
+  }
+}
+import 'package:promts_application_1/core/service/network_service.dart';
+import 'package:promts_application_1/di/locator.dart';
+import '../models/message_model.dart';
+
+abstract class MessageRemoteDataSource {
+  Future<List<MessageModel>> fetchMessages(int chatId);
+
+  // NEW ↓
+  Future<Map<String, dynamic>> sendMessage({
+    required int chatId,
+    required int modelUriId,
+    required String text,
+  });
+
+  Future<Map<String, dynamic>> regenerateMessage({
+    required int messageId,
+    required int modelUriId,
+  });
+}
+
+class MessageRemoteDataSourceImpl implements MessageRemoteDataSource {
+  final ApiService _api = getIt<ApiService>();
+
+  @override
+  Future<List<MessageModel>> fetchMessages(int chatId) {
+    // TODO Обратно поменять на гет запрос, а то нгрок хуета какая-то
+    return _api.postList<MessageModel>(
+      '/messages/$chatId',
+      fromJsonItem: MessageModel.fromJson,
+    );
+  }
+
+  // NEW ↓
+  @override
+  Future<Map<String, dynamic>> sendMessage({
+    required int chatId,
+    required int modelUriId,
+    required String text,
+  }) =>
+      _api.post<Map<String, dynamic>>(
+        '/messages',
+        body: {
+          'chatId': chatId,
+          'modelUriId': modelUriId,
+          'text': text,
+        },
+        fromJson: (json) => json,
+      );
+
+  @override
+  Future<Map<String, dynamic>> regenerateMessage({
+    required int messageId,
+    required int modelUriId,
+  }) =>
+      _api.post<Map<String, dynamic>>(
+        '/messages/regenerate',
+        body: {
+          'messageId': messageId,
+          'modelUriId': modelUriId,
+        },
+        fromJson: (json) => json,
+      );
+}
+import '../../domain/entities/message_entity.dart';
+import '../../domain/repositories/message_repository.dart';
+import '../datasources/message_datasource.dart';
+
+class MessageRepositoryImpl implements MessageRepository {
+  final MessageRemoteDataSource remote;
+
+  MessageRepositoryImpl({required this.remote});
+
+  @override
+  Future<List<MessageEntity>> fetchMessages(int chatId) =>
+      remote.fetchMessages(chatId);
+
+  @override
+  Future<Map<String, dynamic>> sendMessage(
+          int chatId, int modelUriId, String text) =>
+      remote.sendMessage(chatId: chatId, modelUriId: modelUriId, text: text);
+
+  @override
+  Future<Map<String, dynamic>> regenerateMessage(
+          int messageId, int modelUriId) =>
+      remote.regenerateMessage(messageId: messageId, modelUriId: modelUriId);
+}
+import 'package:promts_application_1/features/message/domain/entities/message_entity.dart';
+
+class MessageModel extends MessageEntity {
+  MessageModel({
+    required super.id,
+    required super.chatId,
+    required super.modelUriId,
+    required super.oldMessage,
+    required super.role,
+    required super.text,
+    required super.type,
+    required super.dateCreate,
+  });
+
+  factory MessageModel.fromJson(Map<String, dynamic> json) {
+    return MessageModel(
+      id: json['id'] as int,
+      chatId: json['chatId'] as int,
+      modelUriId: json['modelUriId'] as int?,
+      oldMessage: json['oldMessage'] as bool,
+      role: json['role'] as String,
+      text: json['text'] as String,
+      type: json['type'] as String,
+      dateCreate: DateTime.parse(json['dateCreate'] as String),
+    );
+  }
+
+  /// Создаём модель из существующей сущности (например, нашего черновика)
+  static MessageModel fromEntity(MessageEntity e) {
+    return MessageModel(
+      id: e.id,
+      chatId: e.chatId,
+      modelUriId: e.modelUriId,
+      oldMessage: e.oldMessage,
+      role: e.role,
+      text: e.text,
+      type: e.type,
+      dateCreate: e.dateCreate,
+    );
   }
 }
 class MessageEntity {
   final int id;
   final int chatId;
-  final int modelUriId;
+  final int? modelUriId;
   final bool oldMessage;
   final String role;
   final String text;
@@ -2713,6 +3043,16 @@ class MessageEntity {
     required this.type,
     required this.dateCreate,
   });
+}
+import '../entities/message_entity.dart';
+
+abstract class MessageRepository {
+  Future<List<MessageEntity>> fetchMessages(int chatId);
+  // NEW ↓
+  Future<Map<String, dynamic>> sendMessage(
+      int chatId, int modelUriId, String text);
+
+  Future<Map<String, dynamic>> regenerateMessage(int messageId, int modelUriId);
 }
 import 'package:flutter/material.dart';
 import 'package:promts_application_1/features/message/domain/entities/message_entity.dart';
@@ -2954,7 +3294,12 @@ import 'package:promts_application_1/features/user/domain/entities/user_entity.d
 class NeuroButton extends StatefulWidget {
   final ChatEntity? currentChat;
   final UserEntity? currentUser;
-  const NeuroButton({super.key, this.currentChat, this.currentUser});
+  final ValueChanged<Map<String, dynamic>> onChatCreateSettings;
+  const NeuroButton(
+      {super.key,
+      this.currentChat,
+      this.currentUser,
+      required this.onChatCreateSettings});
 
   @override
   State<NeuroButton> createState() => _NeuroButtonState();
@@ -2998,14 +3343,22 @@ class _NeuroButtonState extends State<NeuroButton> {
                 initialContext: c.context,
                 initialUseMemory: c.useMemory,
                 initialUpdateMemory: c.updateMemory,
-                initialModelId: c.modelUriId,
+                initialModelId: _selectedNeuro?.id,
                 onSave: (data) async {
-                  await context
-                      .read<ChatCubit>()
-                      .saveSettings(data); // теперь это Future
+                  await context.read<ChatCubit>().saveSettings(data);
+
+                  if (data['modelUriId'] != null) {
+                    widget.onChatCreateSettings(
+                        {'modelUriId': data['modelUriId']});
+                    setState(() {
+                      _changedNeuro = true;
+                      _selectedNeuro = neuroList
+                          .firstWhere((e) => e.id == data['modelUriId']);
+                    });
+                  }
                 },
               ));
-    } else { 
+    } else {
       // Показываем чат, который будет создан. Он создается, когда отправляется первое сообщение, поэтому не надо сохранять настройки на этом этапе
       showDialog(
           context: context,
@@ -3021,6 +3374,7 @@ class _NeuroButtonState extends State<NeuroButton> {
                     _chatCreateContext = data["context"];
                     _chatCreateTemperature = data["temperature"];
                   });
+                  widget.onChatCreateSettings(data);
                 },
               ));
     }
@@ -3135,6 +3489,8 @@ class _NeuroButtonState extends State<NeuroButton> {
                                 _changedNeuro = true;
                                 _selectedNeuro = neuro;
                               });
+                              widget.onChatCreateSettings(
+                                  {'modelUriId': neuro.id});
                             }
                           },
                         ),
@@ -3300,7 +3656,7 @@ class WidgetSnackBar {
       SnackBar(
         content: Text(memoryMessage),
         backgroundColor: Colors.green,
-        duration: const Duration(seconds: 3),
+        duration: const Duration(seconds: 5),
       ),
     );
   }
@@ -3317,6 +3673,31 @@ class UserCubit extends DataCubit<UserEntity> {
   }
 
   void fetch() => load(() => repository.getUser());
+
+  /// PATCH‑метод: подливаем баланс / память из ответа /messages
+  void applyMessageUserData(Map<String, dynamic> json) {
+    if (state is! DataLoaded<UserEntity>) return;
+    final cur = (state as DataLoaded<UserEntity>).data;
+
+    final updatedMoney = (json['money'] as num?)?.toDouble() ?? cur.money;
+    final updatedMemory = (json['memoryUpdated'] == true)
+        ? (json['newMemory'] as String? ?? cur.memory)
+        : cur.memory;
+
+    // Ничего не изменилось — просто выходим
+    if (updatedMoney == cur.money && updatedMemory == cur.memory) return;
+
+    emit(DataLoaded(UserEntity(
+      id: cur.id,
+      email: cur.email,
+      role: cur.role,
+      money: updatedMoney,
+      memory: updatedMemory,
+      memoryEnabled: cur.memoryEnabled,
+      aiCanUpdateMemory: cur.aiCanUpdateMemory,
+      standartModelUriId: cur.standartModelUriId,
+    )));
+  }
 
   /// Обновить настройки на сервере
   Future<void> updateSettings(Map<String, dynamic> body) {
@@ -3447,6 +3828,7 @@ abstract class UserRepository {
 }
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:promts_application_1/core/cubits/data_cubit.dart';
 import 'package:promts_application_1/features/neuro/data/models/neuro_model.dart';
 import 'package:promts_application_1/features/user/cubit/user_cubit.dart';
 import 'package:promts_application_1/features/user/domain/entities/user_entity.dart';
@@ -3474,7 +3856,6 @@ class _UserSettingsState extends State<UserSettings> {
   late bool _memoryEnabled;
   late bool _aiCanUpdateMemory;
   late int _selectedModelId;
-  late double _balance;
 
   @override
   void initState() {
@@ -3487,7 +3868,6 @@ class _UserSettingsState extends State<UserSettings> {
     _memoryEnabled = user.memoryEnabled;
     _aiCanUpdateMemory = user.aiCanUpdateMemory;
     _selectedModelId = widget.selectedModelId;
-    _balance = user.money;
   }
 
   @override
@@ -3513,6 +3893,12 @@ class _UserSettingsState extends State<UserSettings> {
 
   @override
   Widget build(BuildContext context) {
+    final userState = context.watch<UserCubit>().state;
+    final user = userState is DataLoaded<UserEntity>
+        ? userState.data
+        : widget.userEntity; // fallback на первоначальные данные
+    _memoryController.text = user.memory;
+
     return AlertDialog(
       title: Row(
         children: [
@@ -3558,13 +3944,12 @@ class _UserSettingsState extends State<UserSettings> {
                 const Text("Баланс:"),
                 Row(
                   children: [
-                    Text("${_balance.toStringAsFixed(2)} руб."),
+                    Text("${user.money.toStringAsFixed(2)} руб."),
                     IconButton(
                       icon: const Icon(Icons.add),
                       onPressed: () {
-                        setState(() {
-                          _balance += 10.0;
-                        });
+                        // если хотите локально прибавлять к показу,
+                        // заведите отдельную переменную и обновляйте её
                       },
                     ),
                   ],
@@ -3576,7 +3961,8 @@ class _UserSettingsState extends State<UserSettings> {
             // 4) Использовать ли память?
             Row(
               children: [
-                const Expanded(child: Text("Использовать ли память в новых чатах?")),
+                const Expanded(
+                    child: Text("Использовать ли память в новых чатах?")),
                 Switch(
                   value: _memoryEnabled,
                   onChanged: (val) {
@@ -3593,7 +3979,8 @@ class _UserSettingsState extends State<UserSettings> {
             Row(
               children: [
                 const Expanded(
-                    child: Text("Могут ли новые чаты изменять память пользователя?")),
+                    child: Text(
+                        "Могут ли новые чаты изменять память пользователя?")),
                 Switch(
                   value: _aiCanUpdateMemory,
                   onChanged: (val) {

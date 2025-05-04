@@ -27,7 +27,7 @@ class WidgetSnackBar {
       SnackBar(
         content: Text(memoryMessage),
         backgroundColor: Colors.green,
-        duration: const Duration(seconds: 3),
+        duration: const Duration(seconds: 5),
       ),
     );
   }

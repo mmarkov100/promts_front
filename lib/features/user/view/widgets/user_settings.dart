@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:promts_application_1/core/cubits/data_cubit.dart';
 import 'package:promts_application_1/features/neuro/data/models/neuro_model.dart';
 import 'package:promts_application_1/features/user/cubit/user_cubit.dart';
 import 'package:promts_application_1/features/user/domain/entities/user_entity.dart';
@@ -27,7 +28,6 @@ class _UserSettingsState extends State<UserSettings> {
   late bool _memoryEnabled;
   late bool _aiCanUpdateMemory;
   late int _selectedModelId;
-  late double _balance;
 
   @override
   void initState() {
@@ -40,7 +40,6 @@ class _UserSettingsState extends State<UserSettings> {
     _memoryEnabled = user.memoryEnabled;
     _aiCanUpdateMemory = user.aiCanUpdateMemory;
     _selectedModelId = widget.selectedModelId;
-    _balance = user.money;
   }
 
   @override
@@ -66,6 +65,12 @@ class _UserSettingsState extends State<UserSettings> {
 
   @override
   Widget build(BuildContext context) {
+    final userState = context.watch<UserCubit>().state;
+    final user = userState is DataLoaded<UserEntity>
+        ? userState.data
+        : widget.userEntity; // fallback на первоначальные данные
+    _memoryController.text = user.memory;
+
     return AlertDialog(
       title: Row(
         children: [
@@ -111,13 +116,12 @@ class _UserSettingsState extends State<UserSettings> {
                 const Text("Баланс:"),
                 Row(
                   children: [
-                    Text("${_balance.toStringAsFixed(2)} руб."),
+                    Text("${user.money.toStringAsFixed(2)} руб."),
                     IconButton(
                       icon: const Icon(Icons.add),
                       onPressed: () {
-                        setState(() {
-                          _balance += 10.0;
-                        });
+                        // если хотите локально прибавлять к показу,
+                        // заведите отдельную переменную и обновляйте её
                       },
                     ),
                   ],
@@ -129,7 +133,8 @@ class _UserSettingsState extends State<UserSettings> {
             // 4) Использовать ли память?
             Row(
               children: [
-                const Expanded(child: Text("Использовать ли память в новых чатах?")),
+                const Expanded(
+                    child: Text("Использовать ли память в новых чатах?")),
                 Switch(
                   value: _memoryEnabled,
                   onChanged: (val) {
@@ -146,7 +151,8 @@ class _UserSettingsState extends State<UserSettings> {
             Row(
               children: [
                 const Expanded(
-                    child: Text("Могут ли новые чаты изменять память пользователя?")),
+                    child: Text(
+                        "Могут ли новые чаты изменять память пользователя?")),
                 Switch(
                   value: _aiCanUpdateMemory,
                   onChanged: (val) {

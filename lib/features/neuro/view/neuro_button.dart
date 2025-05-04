@@ -16,7 +16,12 @@ import 'package:promts_application_1/features/user/domain/entities/user_entity.d
 class NeuroButton extends StatefulWidget {
   final ChatEntity? currentChat;
   final UserEntity? currentUser;
-  const NeuroButton({super.key, this.currentChat, this.currentUser});
+  final ValueChanged<Map<String, dynamic>> onChatCreateSettings;
+  const NeuroButton(
+      {super.key,
+      this.currentChat,
+      this.currentUser,
+      required this.onChatCreateSettings});
 
   @override
   State<NeuroButton> createState() => _NeuroButtonState();
@@ -60,14 +65,22 @@ class _NeuroButtonState extends State<NeuroButton> {
                 initialContext: c.context,
                 initialUseMemory: c.useMemory,
                 initialUpdateMemory: c.updateMemory,
-                initialModelId: c.modelUriId,
+                initialModelId: _selectedNeuro?.id,
                 onSave: (data) async {
-                  await context
-                      .read<ChatCubit>()
-                      .saveSettings(data); // теперь это Future
+                  await context.read<ChatCubit>().saveSettings(data);
+
+                  if (data['modelUriId'] != null) {
+                    widget.onChatCreateSettings(
+                        {'modelUriId': data['modelUriId']});
+                    setState(() {
+                      _changedNeuro = true;
+                      _selectedNeuro = neuroList
+                          .firstWhere((e) => e.id == data['modelUriId']);
+                    });
+                  }
                 },
               ));
-    } else { 
+    } else {
       // Показываем чат, который будет создан. Он создается, когда отправляется первое сообщение, поэтому не надо сохранять настройки на этом этапе
       showDialog(
           context: context,
@@ -83,6 +96,7 @@ class _NeuroButtonState extends State<NeuroButton> {
                     _chatCreateContext = data["context"];
                     _chatCreateTemperature = data["temperature"];
                   });
+                  widget.onChatCreateSettings(data);
                 },
               ));
     }
@@ -197,6 +211,8 @@ class _NeuroButtonState extends State<NeuroButton> {
                                 _changedNeuro = true;
                                 _selectedNeuro = neuro;
                               });
+                              widget.onChatCreateSettings(
+                                  {'modelUriId': neuro.id});
                             }
                           },
                         ),
