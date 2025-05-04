@@ -15,4 +15,8 @@ class ChatRepositoryImpl implements ChatRepository {
   @override
   Future<ChatEntity> updateChat(Map<String, dynamic> body) =>
       remoteDataSource.updateChatSettings(body);
+
+  @override
+  Future<ChatEntity> createChat(Map<String, dynamic> body) =>
+      remoteDataSource.createChat(body);
 }

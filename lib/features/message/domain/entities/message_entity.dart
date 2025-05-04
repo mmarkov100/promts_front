@@ -1,7 +1,7 @@
 class MessageEntity {
   final int id;
   final int chatId;
-  final int modelUriId;
+  final int? modelUriId;
   final bool oldMessage;
   final String role;
   final String text;

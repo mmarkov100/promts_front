@@ -9,7 +9,7 @@ import 'package:promts_application_1/features/auth/domain/entities/login_entity.
 import 'package:promts_application_1/features/auth/domain/entities/register_entity.dart';
 import 'package:promts_application_1/core/config/config.dart';
 import 'package:promts_application_1/core/cubits/data_cubit.dart';
-import 'package:promts_application_1/features/main/view/widgets/widget_snack_bar.dart';
+import 'package:promts_application_1/features/shared/widgets/widget_snack_bar.dart';
 
 class LoginPageScreen extends StatefulWidget {
   const LoginPageScreen({super.key});
@@ -24,9 +24,9 @@ class _LoginPageScreenState extends State<LoginPageScreen> {
   final TextEditingController _confirmPasswordController =
       TextEditingController();
 
-  bool _isLogin = true; // true — экран входа, false — экран регистрации
+  bool _isLogin = true;
   bool _isLoading = false;
-  bool _passwordVisible = false; // для скрытия/показа пароля
+  bool _passwordVisible = false;
 
   Future<void> _onLoginPressed() async {
     final email = _emailController.text.trim();
@@ -80,7 +80,7 @@ class _LoginPageScreenState extends State<LoginPageScreen> {
               final token = state.data.token;
               getIt<AppConfig>().setJwtToken(token);
 
-              context.read<AuthCubit>().fetch(); // 🔄 быстрый повторный check
+              context.read<AuthCubit>().fetch();
               context.go('/chat');
             } else if (state is DataError<LoginEntity>) {
               WidgetSnackBar.showError(context, state.message);
@@ -99,7 +99,7 @@ class _LoginPageScreenState extends State<LoginPageScreen> {
             } else if (state is DataLoaded<RegisterEntity>) {
               WidgetSnackBar.showSuccess(context, state.data.message);
               setState(() {
-                _isLogin = true; // Переходим на экран входа
+                _isLogin = true;
                 _isLoading = false;
               });
             } else if (state is DataError<RegisterEntity>) {
