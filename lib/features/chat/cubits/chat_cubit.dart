@@ -22,12 +22,23 @@ class ChatCubit extends DataCubit<List<ChatEntity>> {
 
         emit(DataLoaded<List<ChatEntity>>(newChats));
       } else {
-        // если список не был загружен, загрузим его заново
         fetchChats();
       }
     } catch (e, st) {
       print("Ошибка при обновлении чата: $e\n$st");
       emit(DataError<List<ChatEntity>>(e.toString()));
     }
+  }
+
+  Future<ChatEntity> createChat(Map<String, dynamic> body) async {
+    final newChat = await repository.createChat(body);
+
+    if (state is DataLoaded<List<ChatEntity>>) {
+      final current = List<ChatEntity>.from(
+          (state as DataLoaded<List<ChatEntity>>).data)
+        ..add(newChat);
+      emit(DataLoaded<List<ChatEntity>>(current));
+    }
+    return newChat;
   }
 }

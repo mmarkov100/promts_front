@@ -5,31 +5,36 @@ import 'package:collection/collection.dart';
 import 'package:promts_application_1/core/cubits/data_cubit.dart';
 import 'package:promts_application_1/features/chat/cubits/chat_cubit.dart';
 import 'package:promts_application_1/features/chat/domain/entities/chat_entity.dart';
+import 'package:promts_application_1/features/chat/view/widgets/chat_create_settings.dart';
+import 'package:promts_application_1/features/chat/view/widgets/chat_settings.dart';
 import 'package:promts_application_1/features/neuro/cubits/neuro_cubit.dart';
-import 'package:promts_application_1/features/chat/view/widgets/widget_chat_create_settings.dart';
 import 'package:promts_application_1/features/neuro/domain/entities/neuro_entity.dart';
-import 'package:promts_application_1/features/chat/view/widgets/widget_chat_setting.dart';
+import 'package:promts_application_1/features/neuro/view/neuro_empty_message.dart';
 import 'package:promts_application_1/features/user/cubit/user_cubit.dart';
 import 'package:promts_application_1/features/user/domain/entities/user_entity.dart';
 
-class WidgetNeuroButton extends StatefulWidget {
+class NeuroButton extends StatefulWidget {
   final ChatEntity? currentChat;
   final UserEntity? currentUser;
-  const WidgetNeuroButton({super.key, this.currentChat, this.currentUser});
+  const NeuroButton({super.key, this.currentChat, this.currentUser});
 
   @override
-  State<WidgetNeuroButton> createState() => _WidgetNeuroButtonState();
+  State<NeuroButton> createState() => _NeuroButtonState();
 }
 
-class _WidgetNeuroButtonState extends State<WidgetNeuroButton> {
+class _NeuroButtonState extends State<NeuroButton> {
   NeuroEntity? _selectedNeuro;
   NeuroEntity? _standardNeuro;
+  String _chatCreateContext = "";
+  late bool _chatCreateUseMemory = widget.currentUser!.memoryEnabled;
+  late bool _chatUpdateMemory = widget.currentUser!.aiCanUpdateMemory;
+  double _chatCreateTemperature = 1;
   bool _changedNeuro = false;
   bool _userLoaded = false;
   List<NeuroEntity> neuroList = [];
 
   @override
-  void didUpdateWidget(covariant WidgetNeuroButton old) {
+  void didUpdateWidget(covariant NeuroButton old) {
     super.didUpdateWidget(old);
     if (widget.currentChat?.id != old.currentChat?.id) {
       setState(() {
@@ -42,80 +47,88 @@ class _WidgetNeuroButtonState extends State<WidgetNeuroButton> {
     }
   }
 
-  // Открытие диалога настроек чата
   void _openSettingsDialog() {
     if (widget.currentChat != null) {
       final c = widget.currentChat!;
       showDialog(
-        context: context,
-        builder: (_) => BlocProvider.value(
-          value: context.read<ChatCubit>(),
-          child: WidgetChatSettings(
-            chatId: c.id,
-            temperature: c.temperature,
-            contextChat: c.context,
-            useMemory: c.useMemory,
-            updateMemory: c.updateMemory,
-            dateCreate: c.dateCreate.toIso8601String(),
-            starredChat: c.starredChat,
-            canEditContext: c.canEditContext, // NEW
-            canUseMemory: c.canUseMemory, // NEW
-            canUpdateMemory: c.canUpdateMemory, // NEW
-            onSave: (data) async {
-              await context
-                  .read<ChatCubit>()
-                  .saveSettings(data); // теперь это Future
-            },
-            usedNeuroId: _selectedNeuro?.id,
-            canEditModelUri: c.canUpdateMemory,
-          ),
-        ),
-      );
-    } else {
+          context: context,
+          builder: (_) => ChatSettings(
+                chatId: c.id,
+                dateCreate: c.dateCreate.toString(),
+                initialStarred: c.starredChat,
+                initialTemperature: c.temperature,
+                initialContext: c.context,
+                initialUseMemory: c.useMemory,
+                initialUpdateMemory: c.updateMemory,
+                initialModelId: c.modelUriId,
+                onSave: (data) async {
+                  await context
+                      .read<ChatCubit>()
+                      .saveSettings(data); // теперь это Future
+                },
+              ));
+    } else { 
+      // Показываем чат, который будет создан. Он создается, когда отправляется первое сообщение, поэтому не надо сохранять настройки на этом этапе
       showDialog(
-        context: context,
-        builder: (_) => WidgetChatCreateSettings(
-          chatId: 0,
-          temperature: 1.0,
-          contextChat: '',
-          useMemory: false,
-          updateMemory: false,
-          onSave: (data) {
-            // TODO: тут запрос на создание нового чата
-            print("Создать чат с настройками: \$data");
-          },
-        ),
-      );
+          context: context,
+          builder: (_) => ChatCreateSettings(
+                initialUseMemory: _chatCreateUseMemory,
+                initialUpdateMemory: _chatUpdateMemory,
+                initialContext: _chatCreateContext,
+                initialTemperature: _chatCreateTemperature,
+                onSave: (data) async {
+                  setState(() {
+                    _chatCreateUseMemory = data["useMemory"];
+                    _chatUpdateMemory = data["updateMemory"];
+                    _chatCreateContext = data["context"];
+                    _chatCreateTemperature = data["temperature"];
+                  });
+                },
+              ));
     }
   }
 
   @override
   Widget build(BuildContext context) {
     final isSmallWidth = MediaQuery.of(context).size.width < 350;
+    _standardNeuro = neuroList.firstWhereOrNull(
+            (e) => e.id == widget.currentUser?.standartModelUriId) ??
+        _standardNeuro;
 
     return BlocBuilder<NeuroCubit, DataState<List<NeuroEntity>>>(
       builder: (context, neuroState) {
         if (neuroState is DataLoading<List<NeuroEntity>>) {
-          return buildShowingMessage(
-              isSmallWidth, "Идет загрузка..", "Пожалуйста подождите", true);
+          return NeuroEmptyMessage(
+              isSmallWidth: isSmallWidth,
+              titleText: "Идет загрузка..",
+              desc: "Пожалуйста подождите",
+              isLoading: true);
         } else if (neuroState is DataLoaded<List<NeuroEntity>>) {
           neuroList = neuroState.data;
           if (neuroList.isEmpty) {
-            return buildShowingMessage(
-                isSmallWidth, "Список нейросетей пуст", "Делать нечего)", true);
+            return NeuroEmptyMessage(
+                isSmallWidth: isSmallWidth,
+                titleText: "Список нейросетей пуст",
+                desc: "Делать нечего)",
+                isLoading: true);
           }
           return BlocBuilder<UserCubit, DataState<UserEntity>>(
               builder: (context, userState) {
             if (userState is DataLoading<UserEntity> && !_userLoaded) {
-              return buildShowingMessage(isSmallWidth, "Идет загрузка..",
-                  "Пожалуйста подождите", true);
+              return NeuroEmptyMessage(
+                  isSmallWidth: isSmallWidth,
+                  titleText: "Идет загрузка..",
+                  desc: "Пожалуйста подождите",
+                  isLoading: true);
             }
             if (userState is DataError<UserEntity>) {
-              return buildShowingMessage(isSmallWidth, "Ошибка в загрузке",
-                  "Пожалуйста обновите страницу", false);
+              return NeuroEmptyMessage(
+                  isSmallWidth: isSmallWidth,
+                  titleText: "Ошибка в загрузке",
+                  desc: "Пожалуйста обновите страницу",
+                  isLoading: false);
             }
             if (userState is DataLoaded<UserEntity> && !_userLoaded) {
-              // инициализация из профиля
               _standardNeuro = neuroList.firstWhereOrNull(
                   (e) => e.id == userState.data.standartModelUriId);
               _selectedNeuro = _standardNeuro;
@@ -157,16 +170,16 @@ class _WidgetNeuroButtonState extends State<WidgetNeuroButton> {
                                 children: [
                                   // Название нейросети
                                   Text(
-                                    neuro.name,
+                                    neuro.name!,
                                     style: const TextStyle(
                                         fontWeight: FontWeight.bold),
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
                                   ),
                                   // Описание (если есть)
-                                  if (neuro.desc.isNotEmpty)
+                                  if (neuro.desc!.isNotEmpty)
                                     Text(
-                                      neuro.desc,
+                                      neuro.desc!,
                                       style: TextStyle(
                                         fontSize: isSmallWidth ? 10 : 12,
                                         color: Colors.grey,
@@ -202,46 +215,14 @@ class _WidgetNeuroButtonState extends State<WidgetNeuroButton> {
             return Container();
           });
         } else if (neuroState is DataError<List<NeuroEntity>>) {
-          return buildShowingMessage(isSmallWidth, "Ошибка в загрузке",
-              "Пожалуйста обновите страницу", false);
+          return NeuroEmptyMessage(
+              isSmallWidth: isSmallWidth,
+              titleText: "Ошибка в загрузке",
+              desc: "Пожалуйста обновите страницу",
+              isLoading: false);
         }
         return Container();
       },
-    );
-  }
-
-  Widget buildShowingMessage(
-      bool isSmallWidth, String titleText, String desc, bool isLoading) {
-    return Row(
-      children: [
-        Flexible(
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 375, minHeight: 50),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Название нейросети
-                Text(
-                  titleText,
-                  style: const TextStyle(fontWeight: FontWeight.bold),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                Text(
-                  desc,
-                  style: TextStyle(
-                    fontSize: isSmallWidth ? 10 : 12,
-                    color: Colors.grey,
-                  ),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ],
-            ),
-          ),
-        ),
-        const SizedBox(width: 7),
-      ],
     );
   }
 }

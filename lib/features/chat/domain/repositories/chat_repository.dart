@@ -3,4 +3,5 @@ import 'package:promts_application_1/features/chat/domain/entities/chat_entity.d
 abstract class ChatRepository {
   Future<List<ChatEntity>> fetchChats();
   Future<ChatEntity> updateChat(Map<String, dynamic> body);
+  Future<ChatEntity> createChat(Map<String, dynamic> body);
 }

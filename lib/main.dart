@@ -6,6 +6,7 @@ import 'package:promts_application_1/features/auth/cubits/auth_cubit.dart';
 import 'package:promts_application_1/features/auth/cubits/login_cubit.dart';
 import 'package:promts_application_1/features/auth/cubits/register_cubit.dart';
 import 'package:promts_application_1/features/chat/cubits/chat_cubit.dart';
+import 'package:promts_application_1/features/message/cubits/message_cubit.dart';
 import 'package:promts_application_1/features/neuro/cubits/neuro_cubit.dart';
 import 'package:promts_application_1/features/user/cubit/user_cubit.dart';
 // ignore: depend_on_referenced_packages
@@ -24,6 +25,7 @@ void main() {
       providers: [
         BlocProvider.value(value: authCubit),
         BlocProvider.value(value: loginCubit),
+        BlocProvider(create: (_) => getIt<MessageCubit>()),
         BlocProvider(create: (_) => getIt<RegisterCubit>()),
         BlocProvider(create: (_) => getIt<UserCubit>()),
         BlocProvider(create: (_) => getIt<ChatCubit>()),

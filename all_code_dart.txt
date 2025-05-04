@@ -65,27 +65,17 @@ class AppConfig {
   late String _jwtToken;
   AppConfig(this._baseUrl, this._jwtToken);
 
-  final int _userId = 2;
-
-  String getBaseUrl(){
-
+  String getBaseUrl() {
     return _baseUrl;
   }
 
-  String getJwtToken(){
-
+  String getJwtToken() {
     return _jwtToken;
   }
 
-  int getUserId(){
-
-    return _userId;
-  }
-
   void setJwtToken(String token) {
-  _jwtToken = token;
-}
-
+    _jwtToken = token;
+  }
 }
 // lib/core/cubits/data_cubit.dart
 
@@ -122,14 +112,12 @@ abstract class DataCubit<T> extends Cubit<DataState<T>> {
 import 'dart:async';
 import 'package:flutter/foundation.dart' show ChangeNotifier, kDebugMode;
 import 'package:go_router/go_router.dart';
-import 'package:promts_application_1/core/config/config.dart';
-import 'package:promts_application_1/di/locator.dart';
 import 'package:promts_application_1/features/auth/cubits/auth_cubit.dart';
 import 'package:promts_application_1/features/auth/cubits/auth_status.dart';
 import 'package:promts_application_1/features/auth/cubits/login_cubit.dart';
 import 'package:promts_application_1/features/auth/view/login_page_screen.dart';
 import 'package:promts_application_1/features/auth/view/splash_screen_auth.dart';
-import 'package:promts_application_1/features/main/view/widgets/widget_main_screen.dart';
+import 'package:promts_application_1/features/main/view/widgets/main_screen.dart';
 
 class MultiStreamNotifier extends ChangeNotifier {
   MultiStreamNotifier(List<Stream<dynamic>> streams) {
@@ -140,7 +128,9 @@ class MultiStreamNotifier extends ChangeNotifier {
   final _subs = <StreamSubscription<dynamic>>[];
   @override
   void dispose() {
-    for (final s in _subs) s.cancel();
+    for (final s in _subs) {
+      s.cancel();
+    }
     super.dispose();
   }
 }
@@ -157,13 +147,13 @@ GoRouter buildRouter(AuthCubit authCubit, LoginCubit loginCubit) {
       GoRoute(path: '/login', builder: (_, __) => const LoginPageScreen()),
       GoRoute(
         path: '/chat',
-        builder: (_, __) => const WidgetMainScreen(),
+        builder: (_, __) => const MainScreen(),
         routes: [
           GoRoute(
             path: ':id',
             builder: (_, state) {
               final id = int.tryParse(state.pathParameters['id']!);
-              return WidgetMainScreen(openChatId: id);
+              return MainScreen(openChatId: id);
             },
           ),
         ],
@@ -172,10 +162,6 @@ GoRouter buildRouter(AuthCubit authCubit, LoginCubit loginCubit) {
     redirect: (ctx, state) {
       print("REDIRECT-------------------------------------------------");
       final status = authStatus(authCubit.state);
-      print(state.fullPath);
-      print(status);
-      final appConfig = getIt<AppConfig>();
-      print(appConfig.getJwtToken());
 
       final atSplash = state.matchedLocation == '/';
       final atLogin = state.matchedLocation == '/login';
@@ -687,7 +673,7 @@ import 'package:promts_application_1/features/auth/domain/entities/login_entity.
 import 'package:promts_application_1/features/auth/domain/entities/register_entity.dart';
 import 'package:promts_application_1/core/config/config.dart';
 import 'package:promts_application_1/core/cubits/data_cubit.dart';
-import 'package:promts_application_1/features/main/view/widgets/widget_snack_bar.dart';
+import 'package:promts_application_1/features/shared/widgets/widget_snack_bar.dart';
 
 class LoginPageScreen extends StatefulWidget {
   const LoginPageScreen({super.key});
@@ -702,9 +688,9 @@ class _LoginPageScreenState extends State<LoginPageScreen> {
   final TextEditingController _confirmPasswordController =
       TextEditingController();
 
-  bool _isLogin = true; // true — экран входа, false — экран регистрации
+  bool _isLogin = true;
   bool _isLoading = false;
-  bool _passwordVisible = false; // для скрытия/показа пароля
+  bool _passwordVisible = false;
 
   Future<void> _onLoginPressed() async {
     final email = _emailController.text.trim();
@@ -758,7 +744,7 @@ class _LoginPageScreenState extends State<LoginPageScreen> {
               final token = state.data.token;
               getIt<AppConfig>().setJwtToken(token);
 
-              context.read<AuthCubit>().fetch(); // 🔄 быстрый повторный check
+              context.read<AuthCubit>().fetch();
               context.go('/chat');
             } else if (state is DataError<LoginEntity>) {
               WidgetSnackBar.showError(context, state.message);
@@ -777,7 +763,7 @@ class _LoginPageScreenState extends State<LoginPageScreen> {
             } else if (state is DataLoaded<RegisterEntity>) {
               WidgetSnackBar.showSuccess(context, state.data.message);
               setState(() {
-                _isLogin = true; // Переходим на экран входа
+                _isLogin = true;
                 _isLoading = false;
               });
             } else if (state is DataError<RegisterEntity>) {
@@ -893,14 +879,10 @@ class _LoginPageScreenState extends State<LoginPageScreen> {
 }
 import 'package:flutter/material.dart';
 
-class SplashScreen extends StatefulWidget {
+class SplashScreen extends StatelessWidget {
   const SplashScreen({super.key});
-  @override
-  State<SplashScreen> createState() => _SplashScreenState();
-}
 
-class _SplashScreenState extends State<SplashScreen> {
-  @override
+@override
   Widget build(BuildContext context) => const Scaffold(
         body: Center(child: CircularProgressIndicator()),
       );
@@ -1072,309 +1054,262 @@ abstract class ChatRepository {
   Future<ChatEntity> updateChat(Map<String, dynamic> body);
 }
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:go_router/go_router.dart';
-import 'package:promts_application_1/features/chat/domain/entities/chat_entity.dart';
-import 'package:promts_application_1/features/chat/cubits/chat_cubit.dart';
-import 'package:promts_application_1/core/cubits/data_cubit.dart';
+import 'package:promts_application_1/features/shared/widgets/widget_snack_bar.dart';
 
-class WidgetChats extends StatefulWidget {
+/// Абстрактный диалог настроек чата:
+/// – собирает одинаковые поля (температура, контекст, переключатели),
+/// – рендерит title и действия.
+/// – дочерний класс задает, что показывать (звездочку, дату, id нейросети).
+abstract class AbstractChatSettingsDialog extends StatefulWidget {
+  final String title;
+  final int? chatId;
+  final String? dateCreate; // null для Create-dialog
+  final bool initialStarred;
+  final int? initialModelId;
+  final double initialTemperature;
+  final String initialContext;
+  final bool initialUseMemory;
+  final bool initialUpdateMemory;
+  final bool showStar;
+  final bool showDate;
+  final Future<void> Function(Map<String, dynamic>) onSave;
 
-  const WidgetChats({super.key});
-  
-  @override
-  State<WidgetChats> createState() => _WidgetChatsState();
-}
-
-class _WidgetChatsState extends State<WidgetChats> {
-  final TextEditingController _searchController = TextEditingController();
-  String _query = '';
-
-  @override
-  void initState() {
-    super.initState();
-    _searchController.addListener(() {
-      setState(() {
-        _query = _searchController.text.trim().toLowerCase();
-      });
-    });
-  }
-
-  @override
-  void dispose() {
-    _searchController.dispose();
-    super.dispose();
-  }
-
-  void _selectChat(ChatEntity chat) {
-    Navigator.of(context).pop();
-    context.go('/chat/${chat.id}');
-  }
-
-  void _refreshChats() {
-    context.read<ChatCubit>().fetchChats();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return SafeArea(
-      child: Column(
-        children: [
-          ListTile(
-            title: const Text(
-              "Мои чаты",
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-            ),
-            trailing: IconButton(
-              icon: const Icon(Icons.refresh),
-              tooltip: 'Обновить чаты',
-              onPressed: _refreshChats,
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: TextField(
-              controller: _searchController,
-              decoration: const InputDecoration(
-                labelText: 'Поиск чатов',
-                border: OutlineInputBorder(),
-                prefixIcon: Icon(Icons.search),
-              ),
-            ),
-          ),
-          Expanded(
-            child: BlocBuilder<ChatCubit, DataState<List<ChatEntity>>>(
-              builder: (context, state) {
-                if (state is DataLoading) {
-                  return const Center(child: CircularProgressIndicator());
-                } else if (state is DataError) {
-                  return Center(child: Text('Ошибка: ${state.toString()}'));
-                } else if (state is DataLoaded<List<ChatEntity>>) {
-                  final sorted = [...state.data]
-                    ..sort((a, b) {
-                      if (a.starredChat && !b.starredChat) return -1;
-                      if (!a.starredChat && b.starredChat) return 1;
-                      return b.dateEdit.compareTo(a.dateEdit);
-                    });
-
-                  final filtered = _query.isEmpty
-                      ? sorted
-                      : sorted
-                          .where((chat) =>
-                              chat.chatName.toLowerCase().contains(_query))
-                          .toList();
-
-                  if (filtered.isEmpty) {
-                    return const Center(child: Text('Чатов не найдено'));
-                  }
-
-                  return ListView.builder(
-                    itemCount: filtered.length,
-                    itemBuilder: (ctx, idx) {
-                      final chat = filtered[idx];
-                      return ListTile(
-                        leading: chat.starredChat
-                            ? const Icon(Icons.star, color: Colors.amber)
-                            : const Icon(Icons.chat_bubble_outline),
-                        title: Text(chat.chatName),
-                        subtitle: Text(
-                          'Изменён: ${chat.dateEdit.toLocal().toIso8601String().split('T').first}',
-                        ),
-                        onTap: () => _selectChat(chat),
-                      );
-                    },
-                  );
-                }
-                return const SizedBox.shrink();
-              },
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-import 'package:flutter/material.dart';
-
-class WidgetChatCreateSettings extends StatefulWidget {
-  final int chatId;              // ID чата
-  final double temperature;      // Температура чата
-  final String contextChat;      // Контекст (правила) чата
-  final bool useMemory;          // Использовать ли память в чате?
-  final bool updateMemory;       // Может ли чат изменять память пользователя?
-
-  /// Колбэк, который вызывается при нажатии "Сохранить".
-  /// Возвращает все обновлённые данные (в виде Map) в onSave().
-  final ValueChanged<Map<String, dynamic>> onSave;
-
-  const WidgetChatCreateSettings({
+  const AbstractChatSettingsDialog({
     super.key,
-    required this.chatId,
-    required this.temperature,
-    required this.contextChat,
-    required this.useMemory,
-    required this.updateMemory,
+    required this.title,
+    this.chatId,
+    this.dateCreate,
+    this.initialStarred = false,
+    this.initialModelId,
+    required this.initialTemperature,
+    required this.initialContext,
+    required this.initialUseMemory,
+    required this.initialUpdateMemory,
+    required this.showStar,
+    required this.showDate,
     required this.onSave,
   });
 
   @override
-  State<WidgetChatCreateSettings> createState() => _WidgetChatCreateSettingsState();
+  State<AbstractChatSettingsDialog> createState() =>
+      _AbstractChatSettingsDialogState();
 }
 
-class _WidgetChatCreateSettingsState extends State<WidgetChatCreateSettings> {
+class _AbstractChatSettingsDialogState
+    extends State<AbstractChatSettingsDialog> {
   late double _temperature;
-  late TextEditingController _contextController;
+  late int? _modelId;
+  late List<double> _tempOptions;
+  late TextEditingController _contextCtrl;
   late bool _useMemory;
   late bool _updateMemory;
+  late bool _starred;
+  bool _isSaving = false;
 
   @override
   void initState() {
     super.initState();
-    _temperature = widget.temperature;
-    _contextController = TextEditingController(text: widget.contextChat);
-    _useMemory = widget.useMemory;
-    _updateMemory = widget.updateMemory;
+    _temperature = widget.initialTemperature;
+    _modelId = widget.initialModelId;
+    _contextCtrl = TextEditingController(text: widget.initialContext);
+    _useMemory = widget.initialUseMemory;
+    _updateMemory = widget.initialUpdateMemory;
+    _starred = widget.initialStarred;
+
+    // предопределённые опции температуры + текущее значение
+    _tempOptions = [0.0, 0.5, 1.0, 1.5, 2.0];
+    if (!_tempOptions.contains(_temperature)) {
+      _tempOptions.add(_temperature);
+      _tempOptions.sort();
+    }
   }
 
   @override
   void dispose() {
-    _contextController.dispose();
+    _contextCtrl.dispose();
     super.dispose();
   }
 
-  void _handleSave() {
-    // Собираем данные, которые надо сохранить
-    final updatedData = {
+  Future<void> _handleSave() async {
+    setState(() => _isSaving = true);
+    final data = <String, dynamic>{
       'chatId': widget.chatId,
+      'modelUriId': _modelId,
       'temperature': _temperature,
-      'contextChat': _contextController.text,
+      'context': _contextCtrl.text,
       'useMemory': _useMemory,
       'updateMemory': _updateMemory,
+      'starredChat': _starred,
     };
-    // Вызываем колбэк, передавая обновлённые данные
-    widget.onSave(updatedData);
-    // Закрываем диалог
-    Navigator.of(context).pop();
+    if (widget.showStar) data['starredChat'] = _starred;
+    try {
+      await widget.onSave(data);
+      if (mounted) {
+        Navigator.of(context).pop();
+      }
+      if (widget.chatId != null) {
+        // ignore: use_build_context_synchronously
+        WidgetSnackBar.showSuccess(context, 'Настройки сохранены');
+      }
+    } catch (e) {
+      setState(() => _isSaving = false);
+      // ignore: use_build_context_synchronously
+      WidgetSnackBar.showError(context, 'Ошибка: $e');
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: const Text("Создание чата"),
+      title: Text(widget.title),
       content: SizedBox(
-        width: 400,   // Зафиксированная ширина окна
-        height: 350,  // Зафиксированная высота окна
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // (1) ID чата
-            Row(
-              children: [
-                const Text("ID чата: "),
-                Text(widget.chatId.toString()),
-              ],
-            ),
-            const SizedBox(height: 8),
-
-            // (2) Температура чата (пример с DropdownButton)
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                const Text("Температура чата:"),
-                DropdownButton<double>(
-                  value: _temperature,
-                  items: [0.0, 0.5, 1.0, 1.5, 2.0].map((temp) {
-                    return DropdownMenuItem<double>(
-                      value: temp,
-                      child: Text(temp.toString()),
-                    );
-                  }).toList(),
-                  onChanged: (val) {
-                    if (val != null) {
-                      setState(() {
-                        _temperature = val;
-                      });
-                    }
-                  },
+        width: 400,
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // [ID чата и (опционально) дата создания]
+              if (widget.chatId != null)
+                Row(
+                  children: [
+                    const Text('ID чата: '),
+                    Text(widget.chatId.toString(),
+                        style:
+                            TextStyle(color: Theme.of(context).primaryColor)),
+                    if (widget.showDate) ...[
+                      const SizedBox(width: 16),
+                      const Text('Создан: '),
+                      Text(widget.dateCreate ?? '-',
+                          style: const TextStyle(fontSize: 12)),
+                    ],
+                  ],
                 ),
-              ],
-            ),
-            const SizedBox(height: 8),
+              const SizedBox(height: 12),
 
-            // (3) Контекст чата (многострочное поле)
-            
-            TextField(
-              controller: _contextController,
-              decoration: const InputDecoration(
-                labelText: "Контекст чата",
-                border: OutlineInputBorder(),
+              // Температура
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text('Температура:'),
+                  DropdownButton<double>(
+                    value: _temperature,
+                    items: _tempOptions
+                        .map((t) => DropdownMenuItem(
+                            value: t, child: Text(t.toString())))
+                        .toList(),
+                    onChanged: (v) => setState(() => _temperature = v!),
+                  ),
+                ],
               ),
-              keyboardType: TextInputType.multiline,
-              minLines: 3,
-              maxLines: 5,
-            ),
-            const SizedBox(height: 8),
+              const SizedBox(height: 12),
 
-            // (4) Использовать ли память в данном чате?
-            Row(
-              children: [
-                const Expanded(child: Text("Использовать ли память в чате?")),
-                Switch(
-                  value: _useMemory,
-                  onChanged: (val) {
-                    setState(() {
-                      _useMemory = val;
-                    });
-                  },
-                ),
-              ],
-            ),
-            const SizedBox(height: 8),
+              // Контекст
+              const Align(
+                  alignment: Alignment.centerLeft, child: Text('Контекст:')),
+              TextField(
+                controller: _contextCtrl,
+                decoration: const InputDecoration(border: OutlineInputBorder()),
+                minLines: 3,
+                maxLines: 6,
+              ),
+              const SizedBox(height: 12),
 
-            // (5) Может ли чат изменять память?
-            Row(
-              children: [
-                const Expanded(child: Text("Может ли чат изменять память пользователя?")),
-                Switch(
-                  value: _updateMemory,
-                  onChanged: (val) {
-                    setState(() {
-                      _updateMemory = val;
-                    });
-                  },
+              // Switch-поля
+              SwitchListTile(
+                title: const Text('Использовать память'),
+                value: _useMemory,
+                onChanged: (v) => setState(() => _useMemory = v),
+              ),
+              SwitchListTile(
+                title: const Text('Обновлять память'),
+                value: _updateMemory,
+                onChanged: (v) => setState(() => _updateMemory = v),
+              ),
+
+              // Звездочка
+              if (widget.showStar)
+                SwitchListTile(
+                  title: const Text('Закрепить чат'),
+                  value: _starred,
+                  onChanged: (v) => setState(() => _starred = v),
                 ),
-              ],
-            ),
-          ],
+
+              // здесь можно DropdownButton<NeuroEntity> c cubit-ом, пример пропускаем
+              const SizedBox(height: 8),
+            ],
+          ),
         ),
       ),
       actions: [
         TextButton(
-          onPressed: () => Navigator.of(context).pop(),
-          child: const Text("Отмена"),
+          onPressed: _isSaving ? null : () => Navigator.of(context).pop(),
+          child: const Text('Отмена'),
         ),
-        ElevatedButton(
-          onPressed: _handleSave,
-          child: const Text("Сохранить"),
-        ),
+        _isSaving
+            ? const SizedBox(
+                width: 24,
+                height: 24,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              )
+            : ElevatedButton(
+                onPressed: _handleSave,
+                child: const Text('Сохранить'),
+              ),
       ],
     );
   }
 }
-import 'package:flutter/material.dart';
-import 'package:flutter_markdown/flutter_markdown.dart';
-import 'package:promts_application_1/features/message/domain/entities/message_entity.dart';
+import 'package:promts_application_1/features/chat/view/widgets/abstract_chat_settings.dart';
 
-class WidgetChatPage extends StatefulWidget {
+class ChatCreateSettings extends AbstractChatSettingsDialog {
+  const ChatCreateSettings({
+    super.key,
+    super.initialTemperature = 1.0,
+    super.initialContext = '',
+    super.initialUseMemory = false,
+    super.initialUpdateMemory = false,
+    required super.onSave,
+  }) : super(
+         title: 'Создание чата',
+         showStar: false,
+         showDate: false,
+       );
+}
+import 'package:promts_application_1/features/chat/view/widgets/abstract_chat_settings.dart';
+
+class ChatSettings extends AbstractChatSettingsDialog {
+  const ChatSettings({
+    super.key,
+    super.initialModelId,
+    required super.chatId,
+    required String super.dateCreate,
+    required super.initialStarred,
+    required super.initialTemperature,
+    required super.initialContext,
+    required super.initialUseMemory,
+    required super.initialUpdateMemory,
+    required super.onSave,
+  }) : super(
+          title: 'Настройки чата',
+          showStar: true,
+          showDate: true,
+        );
+}
+import 'package:flutter/material.dart';
+import 'package:promts_application_1/features/message/domain/entities/message_entity.dart';
+import 'package:promts_application_1/features/message/view/widgets/widget_message_bubble.dart';
+import 'package:promts_application_1/features/shared/widgets/message_input_field.dart';
+
+class ChatView extends StatefulWidget {
   final int? chatId;
-  const WidgetChatPage({super.key, this.chatId});
+  const ChatView({super.key, this.chatId});
 
   @override
   // ignore: library_private_types_in_public_api
-  _WidgetChatPageState createState() => _WidgetChatPageState();
+  _ChatViewState createState() => _ChatViewState();
 }
 
-class _WidgetChatPageState extends State<WidgetChatPage> {
+class _ChatViewState extends State<ChatView> {
   final List<MessageEntity> _messages = [
     MessageEntity(
       id: 1,
@@ -1529,314 +1464,162 @@ Markdown — это простой и удобный способ создани
         child: Column(
           children: [
             Expanded(
-              child: ListView.builder(
+              child: ListView.separated(
                 padding:
                     const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                separatorBuilder: (_, __) => const SizedBox(height: 8),
                 itemCount: _messages.length,
                 itemBuilder: (context, index) {
-                  final msg = _messages[index];
-                  return _buildMessageBubble(msg);
+                  final message = _messages[index];
+                  return WidgetMessageBubble(message: message);
                 },
               ),
             ),
-            Container(
-              color: Colors.grey[200],
-              padding: const EdgeInsets.all(8),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: TextField(
-                      controller: _messageController,
-                      decoration: const InputDecoration(
-                        hintText: "Введите сообщение",
-                        border: OutlineInputBorder(),
-                      ),
-                      minLines: 1,
-                      maxLines: 8,
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  IconButton(
-                    icon: const Icon(Icons.send),
-                    onPressed: _sendMessage,
-                  ),
-                ],
-              ),
+            MessageInputField(
+              controller: _messageController,
+              hintText: "Введите сообщение",
+              onSend: _sendMessage,
+              constraints:
+                  const BoxConstraints(maxWidth: 700),
             ),
           ],
         ),
       ),
     );
   }
+}
+import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:promts_application_1/features/chat/cubits/chat_cubit.dart';
+import 'package:promts_application_1/features/chat/view/widgets/widget_chat_tiles.dart';
 
-  Widget _buildMessageBubble(MessageEntity msg) {
-    final alignment =
-        msg.role == "USER" ? Alignment.centerRight : Alignment.centerLeft;
-    final bgColor = msg.role == "USER" ? Colors.blue[100] : Colors.grey[300];
+class WidgetChats extends StatefulWidget {
+  const WidgetChats({super.key});
 
-    return Container(
-      alignment: alignment,
-      margin: const EdgeInsets.symmetric(vertical: 4),
-      child: Column(
-        crossAxisAlignment: msg.role == "USER"
-            ? CrossAxisAlignment.end
-            : CrossAxisAlignment.start,
-        children: [
-          Container(
-            padding: const EdgeInsets.all(10),
-            constraints: const BoxConstraints(maxWidth: 550),
-            decoration: BoxDecoration(
-              color: bgColor,
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                MarkdownBody(
-                  data: msg.text,
-                  selectable: true,
-                  styleSheet: MarkdownStyleSheet.fromTheme(Theme.of(context)),
-                  imageBuilder: (uri, title, alt) {
-                    return Image.network(uri.toString());
-                  },
-                ),
-              ],
-            ),
-          ),
-          // Время
-          const SizedBox(height: 2),
-          const Text(
-            "14:04, 2.3.2025",
-            style: TextStyle(fontSize: 10, color: Colors.grey),
-          ),
-          // Кнопки под сообщением
-          Row(
-            mainAxisSize: MainAxisSize.min,
+  @override
+  State<WidgetChats> createState() => _WidgetChatsState();
+}
+
+class _WidgetChatsState extends State<WidgetChats> {
+  String _query = '';
+
+  void _refreshChats() {
+    context.read<ChatCubit>().fetchChats();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: 350,
+      child: Drawer(
+        child: SafeArea(
+          child: Column(
             children: [
-              // Кнопка копирования (всегда)
-              IconButton(
-                icon: const Icon(Icons.copy),
-                iconSize: 16,
-                onPressed: () {
-                  // Пока без реализации
-                },
+              ListTile(
+                title: const Text(
+                  "Мои чаты",
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                ),
+                trailing: IconButton(
+                  icon: const Icon(Icons.refresh),  
+                  tooltip: 'Обновить чаты',
+                  onPressed: _refreshChats,
+                ),
               ),
-              // Кнопка перегенерации (только для сообщений чат-бота)
-              if (!(msg.role == "USER"))
-                IconButton(
-                  icon: const Icon(Icons.autorenew), // "зацикленная стрелка"
-                  iconSize: 16,
-                  onPressed: () {
-                    // Пока без реализации
-                  },
+              Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: TextField(
+                  onChanged: (value) =>
+                      setState(() => _query = value.trim().toLowerCase()),
+                  decoration: const InputDecoration(
+                    labelText: 'Поиск чатов',
+                    prefixIcon: Icon(Icons.search),
+                    border: OutlineInputBorder(),
+                  ),
                 ),
-              // Кнопка удаления (только для сообщений пользователя)
-              if (msg.role == "USER")
-                IconButton(
-                  icon: const Icon(Icons.delete),
-                  iconSize: 16,
-                  onPressed: () {
-                    // Пока без реализации
-                  },
-                ),
+              ),
+              WidgetChatTiles(query: _query),
             ],
           ),
-        ],
+        ),
       ),
     );
   }
 }
 import 'package:flutter/material.dart';
-import 'package:promts_application_1/features/main/view/widgets/widget_snack_bar.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
+import 'package:promts_application_1/core/cubits/data_cubit.dart';
+import 'package:promts_application_1/features/chat/cubits/chat_cubit.dart';
+import 'package:promts_application_1/features/chat/domain/entities/chat_entity.dart';
 
-class WidgetChatSettings extends StatefulWidget {
-  final int chatId; // ID чата
-  final double temperature; // Температура чата
-  final String contextChat; // Контекст чата
-  final bool useMemory; // Использовать ли память в чате?
-  final bool updateMemory; // Может ли чат изменять память?
-  final String dateCreate; // Дата создания
-  final bool starredChat; // Закреплён ли чат
-  final Future<void> Function(Map<String, dynamic>) onSave;
-  final int? usedNeuroId;
-  final bool canEditContext;
-  final bool canUseMemory;
-  final bool canUpdateMemory;
-  final bool canEditModelUri;
-
-  const WidgetChatSettings({
-    super.key,
-    required this.chatId,
-    required this.temperature,
-    required this.contextChat,
-    required this.useMemory,
-    required this.updateMemory,
-    required this.dateCreate,
-    required this.starredChat,
-    required this.onSave,
-    required this.canEditContext,
-    required this.canUseMemory,
-    required this.canUpdateMemory,
-    required this.usedNeuroId,
-    required this.canEditModelUri,
-  });
+class WidgetChatTiles extends StatefulWidget {
+  final String query;
+  const WidgetChatTiles(
+      {super.key, required this.query});
 
   @override
-  State<WidgetChatSettings> createState() => _WidgetChatSettingsState();
+  State<WidgetChatTiles> createState() => _WidgetChatTilesState();
 }
 
-class _WidgetChatSettingsState extends State<WidgetChatSettings> {
-  late double _temperature;
-  late List<double> _tempOptions;
-  late TextEditingController _contextController;
-  late bool _useMemory;
-  late bool _updateMemory;
-  late bool _starredChat;
-  bool _isSaving = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _temperature = widget.temperature;
-
-    // Собираем базовый список и добавляем в него текущее значение, если его там нет
-    _tempOptions = [0.0, 0.5, 1.0, 1.5, 2.0];
-    if (!_tempOptions.contains(_temperature)) {
-      _tempOptions.add(_temperature);
-      _tempOptions.sort();
-    }
-
-    _contextController = TextEditingController(text: widget.contextChat);
-    _useMemory = widget.useMemory;
-    _updateMemory = widget.updateMemory;
-    _starredChat = widget.starredChat;
-  }
-
-  @override
-  void dispose() {
-    _contextController.dispose();
-    super.dispose();
-  }
-
-  Future<void> _handleSave() async {
-    final updatedData = {
-      'chatId': widget.chatId,
-      'modelUriId': widget.usedNeuroId,
-      'temperature': _temperature,
-      'context': _contextController.text,
-      'useMemory': _useMemory,
-      'updateMemory': _updateMemory,
-      'starredChat': _starredChat,
-    };
-
-    setState(() => _isSaving = true); // показываем loader
-
-    try {
-      await widget.onSave(updatedData); // ждём запрос
-      if (mounted) Navigator.of(context).pop(); // закрываем окно
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Настройки сохранены')),
-      );
-    } catch (e) {
-      setState(() => _isSaving = false); // вернём кнопку
-      WidgetSnackBar.showError(context, 'Ошибка: $e');
-    }
+class _WidgetChatTilesState extends State<WidgetChatTiles> {
+  
+  void _selectChat(ChatEntity chat) {
+    Navigator.of(context).pop();
+    context.go('/chat/${chat.id}');
   }
 
   @override
   Widget build(BuildContext context) {
-    return AlertDialog(
-        title: const Text("Настройки чата"),
-        content: SizedBox(
-          width: 400,
-          height: 450,
-          child: Column(mainAxisSize: MainAxisSize.min, children: [
-            // ID
-            Row(children: [
-              const Text("ID чата: "),
-              Text(widget.chatId.toString(),
-                  style: const TextStyle(color: Colors.blue)),
-            ]),
-            const SizedBox(height: 8),
+    return Expanded(
+      child: BlocBuilder<ChatCubit, DataState<List<ChatEntity>>>(
+        builder: (context, state) {
+          if (state is DataLoading) {
+            return const Center(child: CircularProgressIndicator());
+          } else if (state is DataError) {
+            return const Center(child: Text('Ошибка в загрузке чатов'));
+          } else if (state is DataLoaded<List<ChatEntity>>) {
+            return chatDataLoaded(state);
+          }
+          return const SizedBox.shrink();
+        },
+      ),
+    );
+  }
 
-            // Температура
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                const Text("Температура чата:"),
-                DropdownButton<double>(
-                  value: _temperature,
-                  items: _tempOptions.map((t) {
-                    return DropdownMenuItem<double>(
-                      value: t,
-                      child: Text(t.toString()),
-                    );
-                  }).toList(),
-                  onChanged: (val) {
-                    if (val != null) setState(() => _temperature = val);
-                  },
-                ),
-              ],
-            ),
-            const SizedBox(height: 8),
+  Widget chatDataLoaded(DataLoaded<List<ChatEntity>> state) {
+    {
+      final sorted = [...state.data]..sort((a, b) {
+          if (a.starredChat && !b.starredChat) return -1;
+          if (!a.starredChat && b.starredChat) return 1;
+          return b.dateEdit.compareTo(a.dateEdit);
+        });
 
-            // Контекст
-            const Align(
-                alignment: Alignment.centerLeft, child: Text("Контекст чата:")),
-            TextField(
-              controller: _contextController,
-              decoration: const InputDecoration(border: OutlineInputBorder()),
-              minLines: 2,
-              maxLines: 4,
-            ),
-            const SizedBox(height: 8),
+      final filtered = widget.query.isEmpty
+          ? sorted
+          : sorted
+              .where(
+                  (chat) => chat.chatName.toLowerCase().contains(widget.query))
+              .toList();
 
-            // Использовать память?
-            Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-              const Text("Использовать память?"),
-              Switch(
-                  value: _useMemory,
-                  onChanged: (v) => setState(() => _useMemory = v)),
-            ]),
-            const SizedBox(height: 8),
+      if (filtered.isEmpty) {
+        return const Center(child: Text('Чатов не найдено'));
+      }
 
-            // Обновлять память?
-            Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-              const Text("Обновлять память?"),
-              Switch(
-                  value: _updateMemory,
-                  onChanged: (v) => setState(() => _updateMemory = v)),
-            ]),
-            const SizedBox(height: 8),
-
-            // Закреплён ли чат?
-            Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-              const Text("Закрепить чат?"),
-              Switch(
-                  value: _starredChat,
-                  onChanged: (v) => setState(() => _starredChat = v)),
-            ]),
-          ]),
-        ),
-        actions: [
-          TextButton(
-            onPressed: _isSaving ? null : () => Navigator.of(context).pop(),
-            child: const Text('Отмена'),
-          ),
-          _isSaving
-              ? const SizedBox(
-                  width: 28,
-                  height: 28,
-                  child: Padding(
-                    padding: EdgeInsets.all(4),
-                    child: CircularProgressIndicator(strokeWidth: 3),
-                  ),
-                )
-              : ElevatedButton(
-                  onPressed: _handleSave,
-                  child: const Text('Сохранить'),
-                ),
-        ]);
+      return ListView.builder(
+        itemCount: filtered.length,
+        itemBuilder: (ctx, idx) {
+          final chat = filtered[idx];
+          return ListTile(
+            leading: chat.starredChat
+                ? const Icon(Icons.star, color: Colors.amber)
+                : const Icon(Icons.chat_bubble_outline),
+            title: Text(chat.chatName),
+            onTap: () => _selectChat(chat),
+          );
+        },
+      );
+    }
   }
 }
 import 'package:flutter/material.dart';
@@ -2508,6 +2291,67 @@ class _WidgetCreateChatBotsState extends State<WidgetCreateChatBots> {
   }
 }
 import 'package:flutter/material.dart';
+import 'package:promts_application_1/features/shared/widgets/message_input_field.dart';
+
+class HomeView extends StatefulWidget {
+  final ValueChanged<String> openChatWithMessage;
+  const HomeView({super.key, required this.openChatWithMessage});
+
+  @override
+  State<HomeView> createState() => _HomeViewState();
+}
+
+class _HomeViewState extends State<HomeView> {
+  final TextEditingController _messageController = TextEditingController();
+
+  @override
+  void dispose() {
+    _messageController.dispose();
+    super.dispose();
+  }
+
+  void _handleSend() {
+    final text = _messageController.text.trim();
+    if (text.isEmpty) return;
+    widget.openChatWithMessage(text);
+    _messageController.clear();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return SafeArea(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(
+            child: Center(
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Text(
+                      "Приветствую",
+                      style:
+                          TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 16),
+                    MessageInputField(
+                      controller: _messageController,
+                      hintText: "Введите сообщение",
+                      onSend: _handleSend,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:promts_application_1/core/cubits/data_cubit.dart';
 import 'package:promts_application_1/features/neuro/cubits/neuro_cubit.dart';
@@ -2515,14 +2359,14 @@ import 'package:promts_application_1/features/neuro/data/models/neuro_model.dart
 import 'package:promts_application_1/features/neuro/domain/entities/neuro_entity.dart';
 import 'package:promts_application_1/features/user/cubit/user_cubit.dart';
 import 'package:promts_application_1/features/user/domain/entities/user_entity.dart';
-import 'package:promts_application_1/features/user/view/widgets/widget_user_settings.dart';
+import 'package:promts_application_1/features/user/view/widgets/user_settings.dart';
 import '../../../chatbot/view/widgets/widget_chat_bots.dart';
 
-class WidgetAppBar extends StatelessWidget implements PreferredSizeWidget {
+class MainAppBar extends StatelessWidget implements PreferredSizeWidget {
   final VoidCallback onMenuPressed;
   final VoidCallback onPromtsPressed;
 
-  const WidgetAppBar({
+  const MainAppBar({
     super.key,
     required this.onMenuPressed,
     required this.onPromtsPressed,
@@ -2620,9 +2464,9 @@ class WidgetAppBar extends StatelessWidget implements PreferredSizeWidget {
                                     (e) => e.id == user.standartModelUriId,
                                     orElse: () => neuroList.first)
                                 .id;
-                            return WidgetUserSettings(
+                            return UserSettings(
                               userEntity: user,
-                              selectedModelId: current,
+                              selectedModelId: current!,
                               availableModels: models,
                               onSave: (updatedData) {
                                 Navigator.of(context).pop();
@@ -2662,37 +2506,84 @@ class WidgetAppBar extends StatelessWidget implements PreferredSizeWidget {
   }
 }
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:promts_application_1/core/cubits/data_cubit.dart';
+import 'package:promts_application_1/features/chat/domain/entities/chat_entity.dart';
+import 'package:promts_application_1/features/chat/view/widgets/chat_view.dart';
+import 'package:promts_application_1/features/main/view/widgets/home_view.dart';
+import 'package:promts_application_1/features/neuro/view/neuro_button.dart';
+import 'package:promts_application_1/features/user/cubit/user_cubit.dart';
+import 'package:promts_application_1/features/user/domain/entities/user_entity.dart';
+
+class MainBody extends StatefulWidget {
+  final ChatEntity? chatEntity;
+  final ValueChanged<String> openChatWithMessageWithText;
+  final bool showChat;
+  const MainBody(
+      {super.key,
+      this.chatEntity,
+      required this.openChatWithMessageWithText,
+      required this.showChat});
+
+  @override
+  State<MainBody> createState() => _MainBodyState();
+}
+
+class _MainBodyState extends State<MainBody> {
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: BlocBuilder<UserCubit, DataState<UserEntity>>(
+            builder: (context, userState) {
+              UserEntity? user;
+              if (userState is DataLoaded<UserEntity>) {
+                user = userState.data;
+              }
+              return NeuroButton(
+                currentChat: widget.chatEntity,
+                currentUser: user,
+              );
+            },
+          ),
+        ),
+        Expanded(
+          child: widget.showChat
+              ? const ChatView()
+              : HomeView(
+                  openChatWithMessage: widget.openChatWithMessageWithText,
+                ),
+        ),
+      ],
+    );
+  }
+}
+import 'package:flutter/material.dart';
 // ignore: depend_on_referenced_packages
 import 'package:collection/collection.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
-import 'package:promts_application_1/core/config/config.dart';
 import 'package:promts_application_1/core/cubits/data_cubit.dart';
-import 'package:promts_application_1/di/locator.dart';
 import 'package:promts_application_1/features/chat/cubits/chat_cubit.dart';
 import 'package:promts_application_1/features/chat/domain/entities/chat_entity.dart';
-import 'package:promts_application_1/features/user/cubit/user_cubit.dart';
-import 'package:promts_application_1/features/user/domain/entities/user_entity.dart';
-import 'widget_app_bar.dart';
+import 'package:promts_application_1/features/main/view/widgets/main_body.dart';
+import 'main_app_bar.dart';
 import 'package:promts_application_1/features/chat/view/widgets/widget_chats.dart';
-import 'package:promts_application_1/features/neuro/view/widget_neuro_button.dart';
-import 'package:promts_application_1/features/chat/view/widgets/widget_chat_page.dart';
 
-class WidgetMainScreen extends StatefulWidget {
+class MainScreen extends StatefulWidget {
   final int? openChatId;
-  const WidgetMainScreen({super.key, this.openChatId});
+  const MainScreen({super.key, this.openChatId});
 
   @override
-  State<WidgetMainScreen> createState() => _WidgetMainScreenState();
+  State<MainScreen> createState() => _MainScreenState();
 }
 
-class _WidgetMainScreenState extends State<WidgetMainScreen> {
+class _MainScreenState extends State<MainScreen> {
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
 
-  bool _showChatPage = false;
   ChatEntity? _currentChat;
-  final appConfig = getIt<AppConfig>();
-  final TextEditingController _messageController = TextEditingController();
 
   @override
   void initState() {
@@ -2702,7 +2593,7 @@ class _WidgetMainScreenState extends State<WidgetMainScreen> {
   }
 
   @override
-  void didUpdateWidget(covariant WidgetMainScreen old) {
+  void didUpdateWidget(covariant MainScreen old) {
     super.didUpdateWidget(old);
     if (old.openChatId != widget.openChatId) {
       final chats = context.read<ChatCubit>().state;
@@ -2710,214 +2601,96 @@ class _WidgetMainScreenState extends State<WidgetMainScreen> {
     }
   }
 
-  @override
-  void dispose() {
-    _messageController.dispose();
-    super.dispose();
-  }
-
   void _syncWithRoute(List<ChatEntity>? chats) {
     final id = widget.openChatId;
     if (id == null) {
-      _showChatPage = false;
       _currentChat = null;
       return;
     }
 
-    // если список уже загружен – пробуем найти чат
     if (chats != null) {
       _currentChat = chats.firstWhereOrNull((c) => c.id == id);
 
       if (_currentChat == null) {
-        // ⚠️ Чат недоступен пользователю – возвращаемся к списку
+        // ignore: use_build_context_synchronously
         Future.microtask(() => context.go('/chat'));
         return;
       }
-      _showChatPage = true;
     } else {
-      // список ещё не пришёл – ждём Listener'a
       _currentChat = null;
-      _showChatPage = true; // можно показать прелоадер чата, если хотите
     }
   }
 
-  void _openChatWithMessage() {
-    final text = _messageController.text.trim();
-    if (text.isEmpty) return;
-    _messageController.clear();
-    setState(() {
-      _showChatPage = true;
-    });
+  void _openChatWithMessageWithText(String message) {
+    context.go('/chat/3');
   }
 
   void _closeChat() {
+    setState(() {
+      _currentChat = null;
+    });
     context.go('/chat');
   }
 
   @override
   Widget build(BuildContext context) {
+    final showChat = widget.openChatId != null;
     return BlocListener<ChatCubit, DataState<List<ChatEntity>>>(
-      listener: (context, state) {
-        if (widget.openChatId == null) return;
-        if (widget.openChatId != null &&
-            _currentChat == null &&
-            state is DataLoaded<List<ChatEntity>>) {
-          _currentChat =
-              state.data.firstWhereOrNull((c) => c.id == widget.openChatId);
-          if (_currentChat != null) setState(() {});
-        }
-        if (state is DataLoaded<List<ChatEntity>>) {
-          _syncWithRoute(state.data); // проверяем доступность
+        listenWhen: (previous, current) {
+          if (previous is! DataLoaded<List<ChatEntity>> &&
+              current is DataLoaded<List<ChatEntity>>) {
+            return true;
+          }
+          if (previous is DataLoaded<List<ChatEntity>> &&
+              current is DataLoaded<List<ChatEntity>>) {
+            final prevList = previous.data;
+            final currList = current.data;
+            return prevList.length != currList.length ||
+                !const ListEquality<ChatEntity>().equals(prevList, currList);
+          }
+          return false;
+        },
+        listener: (context, state) {
+          if (state is! DataLoaded<List<ChatEntity>>) return;
 
-          // если чат всё-таки есть – обновляем его данные
-          if (_currentChat != null) {
-            final updated =
-                state.data.firstWhereOrNull((c) => c.id == _currentChat!.id);
-            if (updated != null && updated != _currentChat) {
-              setState(() => _currentChat = updated);
+          final chats = state.data;
+          final id = widget.openChatId;
+
+          if (id == null) {
+            if (_currentChat != null) {
+              setState(() => _currentChat = null);
             }
+            return;
           }
-        }
-        if (state is DataLoaded<List<ChatEntity>> && _currentChat != null) {
-          final updated =
-              state.data.firstWhereOrNull((c) => c.id == _currentChat!.id);
-          if (updated != null) {
-            setState(() => _currentChat = updated);
+
+          final found = chats.firstWhereOrNull((c) => c.id == id);
+          if (found == null) {
+            // ignore: use_build_context_synchronously
+            Future.microtask(() => context.go('/chat'));
+            return;
           }
-        }
-      },
-      child: Scaffold(
-        key: _scaffoldKey,
-        drawer: const SizedBox(
-          width: 350,
-          child: Drawer(
-            child: Drawer(child: WidgetChats()),
+
+          if (found != _currentChat) {
+            setState(() => _currentChat = found);
+          }
+        },
+        child: Scaffold(
+          key: _scaffoldKey,
+          drawer: const WidgetChats(),
+          appBar: MainAppBar(
+            onMenuPressed: () {
+              _scaffoldKey.currentState?.openDrawer();
+            },
+            onPromtsPressed: () {
+              _closeChat();
+            },
           ),
-        ),
-        appBar: WidgetAppBar(
-          onMenuPressed: () {
-            _scaffoldKey.currentState?.openDrawer();
-          },
-          onPromtsPressed: () {
-            _closeChat();
-          },
-        ),
-        body: Column(
-          children: [
-            Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: BlocBuilder<UserCubit, DataState<UserEntity>>(
-                builder: (context, userState) {
-                  UserEntity? user;
-                  if (userState is DataLoaded<UserEntity>) {
-                    user = userState.data;
-                  }
-                  return Column(
-                    children: [
-                      WidgetNeuroButton(
-                        currentChat: _currentChat,
-                        currentUser: user,
-                      ),
-                    ],
-                  );
-                },
-              ),
-            ),
-            Expanded(
-              child:
-                  _showChatPage ? const WidgetChatPage() : _buildMainContent(),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildMainContent() {
-    return SafeArea(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Expanded(
-            child: Center(
-              child: Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const Text(
-                      "Приветствую",
-                      style:
-                          TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                    ),
-                    const SizedBox(height: 16),
-                    ConstrainedBox(
-                      constraints: const BoxConstraints(maxWidth: 900),
-                      child: Row(
-                        children: [
-                          Expanded(
-                            child: TextField(
-                              controller: _messageController,
-                              decoration: const InputDecoration(
-                                labelText: "Введите сообщение",
-                                border: OutlineInputBorder(),
-                              ),
-                              keyboardType: TextInputType.multiline,
-                              minLines: 1,
-                              maxLines: 8,
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          IconButton(
-                            icon: const Icon(Icons.send),
-                            onPressed: _openChatWithMessage,
-                            tooltip: "Отправить",
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
+          body: MainBody(
+            chatEntity: _currentChat,
+            openChatWithMessageWithText: _openChatWithMessageWithText,
+            showChat: showChat,
           ),
-        ],
-      ),
-    );
-  }
-}
-import 'package:flutter/material.dart';
-
-class WidgetSnackBar {
-  static void showError(BuildContext context, String errorMessage) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(errorMessage),
-        backgroundColor: Colors.red,
-        duration: const Duration(seconds: 3),
-      ),
-    );
-  }
-
-  static void showSuccess(BuildContext context, String successMessage) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(successMessage),
-        backgroundColor: Colors.green,
-        duration: const Duration(seconds: 3),
-      ),
-    );
-  }
-
-  static void showMemorryChange(BuildContext context, String memoryMessage,
-      String previousMemomyMessage) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(memoryMessage),
-        backgroundColor: Colors.green,
-        duration: const Duration(seconds: 3),
-      ),
-    );
+        ));
   }
 }
 class MessageEntity {
@@ -2940,6 +2713,125 @@ class MessageEntity {
     required this.type,
     required this.dateCreate,
   });
+}
+import 'package:flutter/material.dart';
+import 'package:promts_application_1/features/message/domain/entities/message_entity.dart';
+
+class MessageActions extends StatefulWidget {
+  final MessageEntity message;
+  const MessageActions({super.key, required this.message});
+
+  @override
+  State<MessageActions> createState() => _MessageActionsState();
+}
+
+class _MessageActionsState extends State<MessageActions> {
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        // Кнопка копирования (всегда)
+        IconButton(
+          icon: const Icon(Icons.copy),
+          iconSize: 16,
+          onPressed: () {
+            // Пока без реализации
+          },
+        ),
+        // Кнопка перегенерации (только для сообщений чат-бота)
+        if (!(widget.message.role == "USER"))
+          IconButton(
+            icon: const Icon(Icons.autorenew), // "зацикленная стрелка"
+            iconSize: 16,
+            onPressed: () {
+              // Пока без реализации
+            },
+          ),
+        // Кнопка удаления (только для сообщений пользователя)
+        if (widget.message.role == "USER")
+          IconButton(
+            icon: const Icon(Icons.delete),
+            iconSize: 16,
+            onPressed: () {
+              // Пока без реализации
+            },
+          ),
+      ],
+    );
+  }
+}
+import 'package:flutter/material.dart';
+import 'package:flutter_markdown/flutter_markdown.dart';
+import 'package:promts_application_1/features/message/domain/entities/message_entity.dart';
+
+class TextBubble extends StatelessWidget {
+  final MessageEntity message;
+  final bool isUser;
+
+  const TextBubble({super.key, required this.message, required this.isUser});
+
+  @override
+  Widget build(BuildContext context) {
+    final bgColor = isUser ? Colors.blue[100] : Colors.grey[300];
+
+    return Container(
+      padding: const EdgeInsets.all(10),
+      constraints: const BoxConstraints(maxWidth: 550),
+      decoration: BoxDecoration(
+        color: bgColor,
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          MarkdownBody(
+            data: message.text,
+            selectable: true,
+            styleSheet: MarkdownStyleSheet.fromTheme(Theme.of(context)),
+            sizedImageBuilder: (config) {
+              return Image.network(config.uri.toString());
+            },
+          ),
+        ],
+      ),
+    );
+  }
+}
+import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
+import 'package:promts_application_1/features/message/domain/entities/message_entity.dart';
+import 'package:promts_application_1/features/message/view/widgets/message_actions.dart';
+import 'package:promts_application_1/features/message/view/widgets/text_bubble.dart';
+
+class WidgetMessageBubble extends StatelessWidget {
+  final MessageEntity message;
+  const WidgetMessageBubble({super.key, required this.message});
+
+  static final _fmt = DateFormat('HH:mm, d.M.y');
+
+  @override
+  Widget build(BuildContext context) {
+    final isUser = message.role == 'USER';
+    return Container(
+      key: ValueKey(message.id),
+      alignment: isUser ? Alignment.centerRight : Alignment.centerLeft,
+      margin: const EdgeInsets.symmetric(vertical: 4),
+      child: Column(
+        crossAxisAlignment:
+            isUser ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+        children: [
+          TextBubble(message: message, isUser: isUser),
+          const SizedBox(height: 2),
+          Text(
+            _fmt.format(message.dateCreate),
+            style: const TextStyle(fontSize: 10, color: Colors.grey),
+          ),
+          MessageActions(message: message),
+        ],
+      ),
+    );
+  }
 }
 // ignore: depend_on_referenced_packages
 import 'package:promts_application_1/core/cubits/data_cubit.dart';
@@ -3020,16 +2912,23 @@ class NeuroModel extends NeuroEntity {
   }
 }
 class NeuroEntity {
-  final int id;
-  final String name;
-  final String systemName;
-  final String desc;
+  final int? id;
+  final String? name;
+  final String? systemName;
+  final String? desc;
 
   NeuroEntity({
     required this.id,
     required this.name,
     required this.systemName,
     required this.desc,
+  });
+
+  NeuroEntity.empty({
+    this.id,
+    this.name,
+    this.systemName,
+    this.desc,
   });
 }
 import 'package:promts_application_1/features/neuro/domain/entities/neuro_entity.dart';
@@ -3044,31 +2943,36 @@ import 'package:collection/collection.dart';
 import 'package:promts_application_1/core/cubits/data_cubit.dart';
 import 'package:promts_application_1/features/chat/cubits/chat_cubit.dart';
 import 'package:promts_application_1/features/chat/domain/entities/chat_entity.dart';
+import 'package:promts_application_1/features/chat/view/widgets/chat_create_settings.dart';
+import 'package:promts_application_1/features/chat/view/widgets/chat_settings.dart';
 import 'package:promts_application_1/features/neuro/cubits/neuro_cubit.dart';
-import 'package:promts_application_1/features/chat/view/widgets/widget_chat_create_settings.dart';
 import 'package:promts_application_1/features/neuro/domain/entities/neuro_entity.dart';
-import 'package:promts_application_1/features/chat/view/widgets/widget_chat_setting.dart';
+import 'package:promts_application_1/features/neuro/view/neuro_empty_message.dart';
 import 'package:promts_application_1/features/user/cubit/user_cubit.dart';
 import 'package:promts_application_1/features/user/domain/entities/user_entity.dart';
 
-class WidgetNeuroButton extends StatefulWidget {
+class NeuroButton extends StatefulWidget {
   final ChatEntity? currentChat;
   final UserEntity? currentUser;
-  const WidgetNeuroButton({super.key, this.currentChat, this.currentUser});
+  const NeuroButton({super.key, this.currentChat, this.currentUser});
 
   @override
-  State<WidgetNeuroButton> createState() => _WidgetNeuroButtonState();
+  State<NeuroButton> createState() => _NeuroButtonState();
 }
 
-class _WidgetNeuroButtonState extends State<WidgetNeuroButton> {
+class _NeuroButtonState extends State<NeuroButton> {
   NeuroEntity? _selectedNeuro;
   NeuroEntity? _standardNeuro;
+  String _chatCreateContext = "";
+  late bool _chatCreateUseMemory = widget.currentUser!.memoryEnabled;
+  late bool _chatUpdateMemory = widget.currentUser!.aiCanUpdateMemory;
+  double _chatCreateTemperature = 1;
   bool _changedNeuro = false;
   bool _userLoaded = false;
   List<NeuroEntity> neuroList = [];
 
   @override
-  void didUpdateWidget(covariant WidgetNeuroButton old) {
+  void didUpdateWidget(covariant NeuroButton old) {
     super.didUpdateWidget(old);
     if (widget.currentChat?.id != old.currentChat?.id) {
       setState(() {
@@ -3081,80 +2985,88 @@ class _WidgetNeuroButtonState extends State<WidgetNeuroButton> {
     }
   }
 
-  // Открытие диалога настроек чата
   void _openSettingsDialog() {
     if (widget.currentChat != null) {
       final c = widget.currentChat!;
       showDialog(
-        context: context,
-        builder: (_) => BlocProvider.value(
-          value: context.read<ChatCubit>(),
-          child: WidgetChatSettings(
-            chatId: c.id,
-            temperature: c.temperature,
-            contextChat: c.context,
-            useMemory: c.useMemory,
-            updateMemory: c.updateMemory,
-            dateCreate: c.dateCreate.toIso8601String(),
-            starredChat: c.starredChat,
-            canEditContext: c.canEditContext, // NEW
-            canUseMemory: c.canUseMemory, // NEW
-            canUpdateMemory: c.canUpdateMemory, // NEW
-            onSave: (data) async {
-              await context
-                  .read<ChatCubit>()
-                  .saveSettings(data); // теперь это Future
-            },
-            usedNeuroId: _selectedNeuro?.id,
-            canEditModelUri: c.canUpdateMemory,
-          ),
-        ),
-      );
-    } else {
+          context: context,
+          builder: (_) => ChatSettings(
+                chatId: c.id,
+                dateCreate: c.dateCreate.toString(),
+                initialStarred: c.starredChat,
+                initialTemperature: c.temperature,
+                initialContext: c.context,
+                initialUseMemory: c.useMemory,
+                initialUpdateMemory: c.updateMemory,
+                initialModelId: c.modelUriId,
+                onSave: (data) async {
+                  await context
+                      .read<ChatCubit>()
+                      .saveSettings(data); // теперь это Future
+                },
+              ));
+    } else { 
+      // Показываем чат, который будет создан. Он создается, когда отправляется первое сообщение, поэтому не надо сохранять настройки на этом этапе
       showDialog(
-        context: context,
-        builder: (_) => WidgetChatCreateSettings(
-          chatId: 0,
-          temperature: 1.0,
-          contextChat: '',
-          useMemory: false,
-          updateMemory: false,
-          onSave: (data) {
-            // TODO: тут запрос на создание нового чата
-            print("Создать чат с настройками: \$data");
-          },
-        ),
-      );
+          context: context,
+          builder: (_) => ChatCreateSettings(
+                initialUseMemory: _chatCreateUseMemory,
+                initialUpdateMemory: _chatUpdateMemory,
+                initialContext: _chatCreateContext,
+                initialTemperature: _chatCreateTemperature,
+                onSave: (data) async {
+                  setState(() {
+                    _chatCreateUseMemory = data["useMemory"];
+                    _chatUpdateMemory = data["updateMemory"];
+                    _chatCreateContext = data["context"];
+                    _chatCreateTemperature = data["temperature"];
+                  });
+                },
+              ));
     }
   }
 
   @override
   Widget build(BuildContext context) {
     final isSmallWidth = MediaQuery.of(context).size.width < 350;
+    _standardNeuro = neuroList.firstWhereOrNull(
+            (e) => e.id == widget.currentUser?.standartModelUriId) ??
+        _standardNeuro;
 
     return BlocBuilder<NeuroCubit, DataState<List<NeuroEntity>>>(
       builder: (context, neuroState) {
         if (neuroState is DataLoading<List<NeuroEntity>>) {
-          return buildShowingMessage(
-              isSmallWidth, "Идет загрузка..", "Пожалуйста подождите", true);
+          return NeuroEmptyMessage(
+              isSmallWidth: isSmallWidth,
+              titleText: "Идет загрузка..",
+              desc: "Пожалуйста подождите",
+              isLoading: true);
         } else if (neuroState is DataLoaded<List<NeuroEntity>>) {
           neuroList = neuroState.data;
           if (neuroList.isEmpty) {
-            return buildShowingMessage(
-                isSmallWidth, "Список нейросетей пуст", "Делать нечего)", true);
+            return NeuroEmptyMessage(
+                isSmallWidth: isSmallWidth,
+                titleText: "Список нейросетей пуст",
+                desc: "Делать нечего)",
+                isLoading: true);
           }
           return BlocBuilder<UserCubit, DataState<UserEntity>>(
               builder: (context, userState) {
             if (userState is DataLoading<UserEntity> && !_userLoaded) {
-              return buildShowingMessage(isSmallWidth, "Идет загрузка..",
-                  "Пожалуйста подождите", true);
+              return NeuroEmptyMessage(
+                  isSmallWidth: isSmallWidth,
+                  titleText: "Идет загрузка..",
+                  desc: "Пожалуйста подождите",
+                  isLoading: true);
             }
             if (userState is DataError<UserEntity>) {
-              return buildShowingMessage(isSmallWidth, "Ошибка в загрузке",
-                  "Пожалуйста обновите страницу", false);
+              return NeuroEmptyMessage(
+                  isSmallWidth: isSmallWidth,
+                  titleText: "Ошибка в загрузке",
+                  desc: "Пожалуйста обновите страницу",
+                  isLoading: false);
             }
             if (userState is DataLoaded<UserEntity> && !_userLoaded) {
-              // инициализация из профиля
               _standardNeuro = neuroList.firstWhereOrNull(
                   (e) => e.id == userState.data.standartModelUriId);
               _selectedNeuro = _standardNeuro;
@@ -3196,16 +3108,16 @@ class _WidgetNeuroButtonState extends State<WidgetNeuroButton> {
                                 children: [
                                   // Название нейросети
                                   Text(
-                                    neuro.name,
+                                    neuro.name!,
                                     style: const TextStyle(
                                         fontWeight: FontWeight.bold),
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
                                   ),
                                   // Описание (если есть)
-                                  if (neuro.desc.isNotEmpty)
+                                  if (neuro.desc!.isNotEmpty)
                                     Text(
-                                      neuro.desc,
+                                      neuro.desc!,
                                       style: TextStyle(
                                         fontSize: isSmallWidth ? 10 : 12,
                                         color: Colors.grey,
@@ -3241,16 +3153,35 @@ class _WidgetNeuroButtonState extends State<WidgetNeuroButton> {
             return Container();
           });
         } else if (neuroState is DataError<List<NeuroEntity>>) {
-          return buildShowingMessage(isSmallWidth, "Ошибка в загрузке",
-              "Пожалуйста обновите страницу", false);
+          return NeuroEmptyMessage(
+              isSmallWidth: isSmallWidth,
+              titleText: "Ошибка в загрузке",
+              desc: "Пожалуйста обновите страницу",
+              isLoading: false);
         }
         return Container();
       },
     );
   }
+}
+import 'package:flutter/material.dart';
 
-  Widget buildShowingMessage(
-      bool isSmallWidth, String titleText, String desc, bool isLoading) {
+class NeuroEmptyMessage extends StatelessWidget {
+  const NeuroEmptyMessage({
+    super.key,
+    required this.isSmallWidth,
+    required this.titleText,
+    required this.desc,
+    required this.isLoading,
+  });
+
+  final bool isSmallWidth;
+  final String titleText;
+  final String desc;
+  final bool isLoading;
+
+  @override
+  Widget build(BuildContext context) {
     return Row(
       children: [
         Flexible(
@@ -3259,7 +3190,6 @@ class _WidgetNeuroButtonState extends State<WidgetNeuroButton> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Название нейросети
                 Text(
                   titleText,
                   style: const TextStyle(fontWeight: FontWeight.bold),
@@ -3281,6 +3211,97 @@ class _WidgetNeuroButtonState extends State<WidgetNeuroButton> {
         ),
         const SizedBox(width: 7),
       ],
+    );
+  }
+}
+// lib/features/shared/widgets/message_input_field.dart
+import 'package:flutter/material.dart';
+
+class MessageInputField extends StatelessWidget {
+  final TextEditingController controller;
+  final String hintText;
+  final VoidCallback onSend;
+  final int minLines;
+  final int maxLines;
+  final BoxConstraints constraints;
+
+  const MessageInputField({
+    super.key,
+    required this.controller,
+    required this.hintText,
+    required this.onSend,
+    this.minLines = 1,
+    this.maxLines = 8,
+    this.constraints =
+        const BoxConstraints(maxWidth: 900),
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      constraints: constraints,
+      padding: const EdgeInsets.all(8.0),
+      color: Theme.of(context)
+          .colorScheme
+          .surfaceContainerHighest,
+      child: Row(
+        children: [
+          Expanded(
+            child: TextField(
+              controller: controller,
+              decoration: InputDecoration(
+                hintText: hintText,
+                border: const OutlineInputBorder(),
+                filled: true,
+                fillColor: Theme.of(context).colorScheme.surface,
+              ),
+              keyboardType: TextInputType.multiline,
+              minLines: minLines,
+              maxLines: maxLines,
+            ),
+          ),
+          const SizedBox(width: 8),
+          IconButton(
+            icon: const Icon(Icons.send),
+            onPressed: onSend,
+            tooltip: "Отправить",
+          ),
+        ],
+      ),
+    );
+  }
+}
+import 'package:flutter/material.dart';
+
+class WidgetSnackBar {
+  static void showError(BuildContext context, String errorMessage) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(errorMessage),
+        backgroundColor: Colors.red,
+        duration: const Duration(seconds: 3),
+      ),
+    );
+  }
+
+  static void showSuccess(BuildContext context, String successMessage) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(successMessage),
+        backgroundColor: Colors.green,
+        duration: const Duration(seconds: 3),
+      ),
+    );
+  }
+
+  static void showMemorryChange(BuildContext context, String memoryMessage,
+      String previousMemomyMessage) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(memoryMessage),
+        backgroundColor: Colors.green,
+        duration: const Duration(seconds: 3),
+      ),
     );
   }
 }
@@ -3430,13 +3451,13 @@ import 'package:promts_application_1/features/neuro/data/models/neuro_model.dart
 import 'package:promts_application_1/features/user/cubit/user_cubit.dart';
 import 'package:promts_application_1/features/user/domain/entities/user_entity.dart';
 
-class WidgetUserSettings extends StatefulWidget {
+class UserSettings extends StatefulWidget {
   final UserEntity userEntity;
   final int selectedModelId;
   final List<NeuroModel> availableModels;
   final ValueChanged<Map<String, dynamic>> onSave;
 
-  const WidgetUserSettings({
+  const UserSettings({
     super.key,
     required this.userEntity,
     required this.selectedModelId,
@@ -3445,10 +3466,10 @@ class WidgetUserSettings extends StatefulWidget {
   });
 
   @override
-  State<WidgetUserSettings> createState() => _WidgetUserSettingsState();
+  State<UserSettings> createState() => _UserSettingsState();
 }
 
-class _WidgetUserSettingsState extends State<WidgetUserSettings> {
+class _UserSettingsState extends State<UserSettings> {
   late TextEditingController _memoryController;
   late bool _memoryEnabled;
   late bool _aiCanUpdateMemory;
@@ -3596,7 +3617,7 @@ class _WidgetUserSettingsState extends State<WidgetUserSettings> {
                   items: widget.availableModels.map((model) {
                     return DropdownMenuItem<int>(
                       value: model.id, // id модели
-                      child: Text(model.name), // имя, которое показываем
+                      child: Text(model.name!), // имя, которое показываем
                     );
                   }).toList(),
                   onChanged: (val) {

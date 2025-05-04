@@ -5,6 +5,7 @@ import 'package:promts_application_1/features/chat/data/models/chat_model.dart';
 abstract class ChatRemoteDataSource {
   Future<List<ChatModel>> fetchChats();
   Future<ChatModel> updateChatSettings(Map<String, dynamic> body);
+  Future<ChatModel> createChat(Map<String, dynamic> body);
 }
 
 class ChatRemoteDataSourceImpl implements ChatRemoteDataSource {
@@ -22,6 +23,15 @@ class ChatRemoteDataSourceImpl implements ChatRemoteDataSource {
   Future<ChatModel> updateChatSettings(Map<String, dynamic> body) {
     return _api.put<ChatModel>(
       '/chats/new',
+      body: body,
+      fromJson: ChatModel.fromJson,
+    );
+  }
+
+  @override
+  Future<ChatModel> createChat(Map<String, dynamic> body) {
+    return _api.post<ChatModel>(
+      '/chats',
       body: body,
       fromJson: ChatModel.fromJson,
     );

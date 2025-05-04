@@ -3,25 +3,15 @@ class AppConfig {
   late String _jwtToken;
   AppConfig(this._baseUrl, this._jwtToken);
 
-  final int _userId = 2;
-
-  String getBaseUrl(){
-
+  String getBaseUrl() {
     return _baseUrl;
   }
 
-  String getJwtToken(){
-
+  String getJwtToken() {
     return _jwtToken;
   }
 
-  int getUserId(){
-
-    return _userId;
-  }
-
   void setJwtToken(String token) {
-  _jwtToken = token;
-}
-
+    _jwtToken = token;
+  }
 }

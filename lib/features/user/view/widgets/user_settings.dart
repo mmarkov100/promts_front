@@ -4,13 +4,13 @@ import 'package:promts_application_1/features/neuro/data/models/neuro_model.dart
 import 'package:promts_application_1/features/user/cubit/user_cubit.dart';
 import 'package:promts_application_1/features/user/domain/entities/user_entity.dart';
 
-class WidgetUserSettings extends StatefulWidget {
+class UserSettings extends StatefulWidget {
   final UserEntity userEntity;
   final int selectedModelId;
   final List<NeuroModel> availableModels;
   final ValueChanged<Map<String, dynamic>> onSave;
 
-  const WidgetUserSettings({
+  const UserSettings({
     super.key,
     required this.userEntity,
     required this.selectedModelId,
@@ -19,10 +19,10 @@ class WidgetUserSettings extends StatefulWidget {
   });
 
   @override
-  State<WidgetUserSettings> createState() => _WidgetUserSettingsState();
+  State<UserSettings> createState() => _UserSettingsState();
 }
 
-class _WidgetUserSettingsState extends State<WidgetUserSettings> {
+class _UserSettingsState extends State<UserSettings> {
   late TextEditingController _memoryController;
   late bool _memoryEnabled;
   late bool _aiCanUpdateMemory;
@@ -170,7 +170,7 @@ class _WidgetUserSettingsState extends State<WidgetUserSettings> {
                   items: widget.availableModels.map((model) {
                     return DropdownMenuItem<int>(
                       value: model.id, // id модели
-                      child: Text(model.name), // имя, которое показываем
+                      child: Text(model.name!), // имя, которое показываем
                     );
                   }).toList(),
                   onChanged: (val) {

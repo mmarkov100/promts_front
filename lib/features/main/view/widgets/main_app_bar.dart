@@ -6,14 +6,14 @@ import 'package:promts_application_1/features/neuro/data/models/neuro_model.dart
 import 'package:promts_application_1/features/neuro/domain/entities/neuro_entity.dart';
 import 'package:promts_application_1/features/user/cubit/user_cubit.dart';
 import 'package:promts_application_1/features/user/domain/entities/user_entity.dart';
-import 'package:promts_application_1/features/user/view/widgets/widget_user_settings.dart';
+import 'package:promts_application_1/features/user/view/widgets/user_settings.dart';
 import '../../../chatbot/view/widgets/widget_chat_bots.dart';
 
-class WidgetAppBar extends StatelessWidget implements PreferredSizeWidget {
+class MainAppBar extends StatelessWidget implements PreferredSizeWidget {
   final VoidCallback onMenuPressed;
   final VoidCallback onPromtsPressed;
 
-  const WidgetAppBar({
+  const MainAppBar({
     super.key,
     required this.onMenuPressed,
     required this.onPromtsPressed,
@@ -111,9 +111,9 @@ class WidgetAppBar extends StatelessWidget implements PreferredSizeWidget {
                                     (e) => e.id == user.standartModelUriId,
                                     orElse: () => neuroList.first)
                                 .id;
-                            return WidgetUserSettings(
+                            return UserSettings(
                               userEntity: user,
-                              selectedModelId: current,
+                              selectedModelId: current!,
                               availableModels: models,
                               onSave: (updatedData) {
                                 Navigator.of(context).pop();

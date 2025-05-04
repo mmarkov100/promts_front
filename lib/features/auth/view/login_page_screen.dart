@@ -9,7 +9,7 @@ import 'package:promts_application_1/features/auth/domain/entities/login_entity.
 import 'package:promts_application_1/features/auth/domain/entities/register_entity.dart';
 import 'package:promts_application_1/core/config/config.dart';
 import 'package:promts_application_1/core/cubits/data_cubit.dart';
-import 'package:promts_application_1/features/main/view/widgets/widget_snack_bar.dart';
+import 'package:promts_application_1/features/shared/widgets/widget_snack_bar.dart';
 
 class LoginPageScreen extends StatefulWidget {
   const LoginPageScreen({super.key});
