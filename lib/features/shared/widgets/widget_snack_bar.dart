@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:promts_application_1/features/shared/widgets/memory_update_sheet.dart';
 
 class WidgetSnackBar {
   static void showError(BuildContext context, String errorMessage) {
@@ -21,13 +22,30 @@ class WidgetSnackBar {
     );
   }
 
-  static void showMemorryChange(BuildContext context, String memoryMessage,
-      String previousMemomyMessage) {
+  static void showMemoryChange({
+    required BuildContext context,
+    required String oldMemory,
+    required String newMemory,
+  }) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(memoryMessage),
-        backgroundColor: Colors.green,
-        duration: const Duration(seconds: 5),
+        content: const Text('Память пользователя обновлена'),
+        behavior: SnackBarBehavior.floating,
+        action: SnackBarAction(
+          label: 'Подробнее',
+          onPressed: () => _openMemorySheet(context, oldMemory, newMemory),
+        ),
+      ),
+    );
+  }
+
+  static void _openMemorySheet(BuildContext ctx, String oldMem, String newMem) {
+    showModalBottomSheet(
+      context: ctx,
+      isScrollControlled: true,
+      builder: (_) => MemoryUpdateSheet(
+        oldMemory: oldMem,
+        newMemory: newMem,
       ),
     );
   }

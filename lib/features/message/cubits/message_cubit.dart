@@ -5,6 +5,7 @@ import 'package:promts_application_1/features/chat/cubits/chat_cubit.dart';
 import 'package:promts_application_1/features/message/data/models/message_model.dart';
 import 'package:promts_application_1/features/shared/widgets/widget_snack_bar.dart';
 import 'package:promts_application_1/features/user/cubit/user_cubit.dart';
+import 'package:promts_application_1/features/user/domain/entities/user_entity.dart';
 import '../domain/entities/message_entity.dart';
 import '../domain/repositories/message_repository.dart';
 
@@ -47,6 +48,10 @@ class MessageCubit extends DataCubit<List<MessageEntity>> {
     }
 
     try {
+      final userCubit = context.read<UserCubit>();
+      final prevMemory =
+          (userCubit.state as DataLoaded<UserEntity>).data.memory;
+
       final res = await repo.sendMessage(chatId, modelUriId, text);
 
       // 1. Ответ нейросети
@@ -68,10 +73,10 @@ class MessageCubit extends DataCubit<List<MessageEntity>> {
       context.read<UserCubit>().applyMessageUserData(user);
 
       if (user['memoryUpdated'] == true) {
-        WidgetSnackBar.showMemorryChange(
-          context,
-          'Память обновлена: ${user['newMemory']}',
-          '',
+        WidgetSnackBar.showMemoryChange(
+          context: context,
+          oldMemory: prevMemory,
+          newMemory: user['newMemory'] as String? ?? '',
         );
       }
 

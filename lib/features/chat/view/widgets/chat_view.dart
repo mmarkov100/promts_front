@@ -40,6 +40,7 @@ class _ChatViewBody extends StatefulWidget {
 class _ChatViewBodyState extends State<_ChatViewBody> {
   final _scroll = ScrollController();
   final _input = TextEditingController();
+  bool _waiting = false;
 
   @override
   void dispose() {
@@ -54,12 +55,15 @@ class _ChatViewBodyState extends State<_ChatViewBody> {
 
     final modelId = widget.overrideModelId ?? widget.chat.modelUriId;
 
+    setState(() => _waiting = true); // ⬅️ показали индикатор
     await context.read<MessageCubit>().send(
           chatId: widget.chat.id,
           modelUriId: modelId,
           text: txt,
           context: context,
         );
+    setState(() => _waiting = false); // ⬅️ скрыли индикатор
+
     _input.clear();
   }
 
@@ -105,6 +109,23 @@ class _ChatViewBodyState extends State<_ChatViewBody> {
             },
           ),
         ),
+        // Индикатор «Ассистент отвечает»
+        if (_waiting)
+          const Padding(
+            padding: EdgeInsets.only(bottom: 6),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                SizedBox(
+                  width: 16,
+                  height: 16,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                ),
+                SizedBox(width: 8),
+                Text('Ассистент печатает…'),
+              ],
+            ),
+          ),
         Padding(
           padding: EdgeInsets.fromLTRB(
             0,
