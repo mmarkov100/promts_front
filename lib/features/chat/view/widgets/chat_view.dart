@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:promts_application_1/core/cubits/data_cubit.dart';
 import 'package:promts_application_1/features/chat/domain/entities/chat_entity.dart';
 import 'package:promts_application_1/features/message/cubits/message_cubit.dart';
-import 'package:promts_application_1/features/message/domain/entities/message_entity.dart';
+import 'package:promts_application_1/features/message/cubits/message_state.dart';
 import 'package:promts_application_1/features/message/view/widgets/widget_message_bubble.dart';
 import 'package:promts_application_1/features/shared/widgets/message_input_field.dart';
 
@@ -19,7 +18,6 @@ class ChatView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // MessageCubit уже есть выше в дереве, повторно не провайдим
     return _ChatViewBody(
       chat: chat,
       overrideModelId: overrideModelId,
@@ -27,9 +25,8 @@ class ChatView extends StatelessWidget {
   }
 }
 
-/// Вынесено в отдельный виджет‑телефон, чтобы не плодить логику BlocProvider
 class _ChatViewBody extends StatefulWidget {
-  final ChatEntity chat; // новый
+  final ChatEntity chat;
   final int? overrideModelId;
   const _ChatViewBody({required this.chat, required this.overrideModelId});
 
@@ -40,7 +37,6 @@ class _ChatViewBody extends StatefulWidget {
 class _ChatViewBodyState extends State<_ChatViewBody> {
   final _scroll = ScrollController();
   final _input = TextEditingController();
-  bool _waiting = false;
 
   @override
   void initState() {
@@ -54,21 +50,18 @@ class _ChatViewBodyState extends State<_ChatViewBody> {
     super.dispose();
   }
 
-  void _handleSend() async {
+  void _handleSend() {
     final txt = _input.text.trim();
     if (txt.isEmpty) return;
 
     final modelId = widget.overrideModelId ?? widget.chat.modelUriId;
 
-    setState(() => _waiting = true); // ⬅️ показали индикатор
-    await context.read<MessageCubit>().send(
+    context.read<MessageCubit>().send(
           chatId: widget.chat.id,
           modelUriId: modelId,
           text: txt,
           context: context,
         );
-    setState(() => _waiting = false); // ⬅️ скрыли индикатор
-
     _input.clear();
   }
 
@@ -78,24 +71,26 @@ class _ChatViewBodyState extends State<_ChatViewBody> {
     return Column(
       children: [
         Expanded(
-          child: BlocBuilder<MessageCubit, DataState<List<MessageEntity>>>(
+          child: BlocBuilder<MessageCubit, MessageState>(
             builder: (context, state) {
-              print(state.toString());
-              if (state is DataLoading || state is DataInitial) {
+              print("ChatView BlocBuilder state: $state");
+              if (state is MessageLoadingHistory || state is MessageInitial) {
                 return const Center(child: CircularProgressIndicator());
               }
-              if (state is DataError) {
-                return const Center(
+              if (state is MessageError) {
+                return Center(
                     child: Text(
-                        "Ошибка в загрузке сообщений, перезагрузите страницу"));
+                        "Ошибка в загрузке сообщений: ${state.message}, перезагрузите страницу"));
               }
-              if (state is DataLoaded<List<MessageEntity>>) {
-                final msgs = state.data;
+              if (state is MessageLoaded) {
+                final msgs = state.messages;
 
-                // автоскролл вниз
                 WidgetsBinding.instance.addPostFrameCallback((_) {
-                  _scroll.jumpTo(_scroll.position.maxScrollExtent);
+                  if (_scroll.hasClients) {
+                    _scroll.jumpTo(_scroll.position.maxScrollExtent);
+                  }
                 });
+
                 if (msgs.isNotEmpty) {
                   return SizedBox(
                     width: 1000,
@@ -106,7 +101,7 @@ class _ChatViewBodyState extends State<_ChatViewBody> {
                           WidgetMessageBubble(message: msgs[i]),
                     ),
                   );
-                } else {
+                } else if (!state.isGenerating) {
                   return const Center(
                       child: Text("Напишите первое сообщение!"));
                 }
@@ -115,23 +110,32 @@ class _ChatViewBodyState extends State<_ChatViewBody> {
             },
           ),
         ),
-        // Индикатор «Ассистент отвечает»
-        if (_waiting || context.watch<MessageCubit>().state is DataLoading)
-          const Padding(
-            padding: EdgeInsets.only(bottom: 6),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                SizedBox(
-                  width: 16,
-                  height: 16,
-                  child: CircularProgressIndicator(strokeWidth: 2),
+        BlocBuilder<MessageCubit, MessageState>(
+          builder: (context, state) {
+            bool isCurrentlyGenerating = false;
+            if (state is MessageLoaded) {
+              isCurrentlyGenerating = state.isGenerating;
+            }
+            if (isCurrentlyGenerating) {
+              return const Padding(
+                padding: EdgeInsets.only(bottom: 6),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    ),
+                    SizedBox(width: 8),
+                    Text('Ассистент печатает…'),
+                  ],
                 ),
-                SizedBox(width: 8),
-                Text('Ассистент печатает…'),
-              ],
-            ),
-          ),
+              );
+            }
+            return const SizedBox.shrink();
+          },
+        ),
         Padding(
           padding: EdgeInsets.fromLTRB(
             0,
@@ -139,11 +143,23 @@ class _ChatViewBodyState extends State<_ChatViewBody> {
             0,
             bottomInset + 56 + 8,
           ),
-          child: MessageInputField(
-            controller: _input,
-            hintText: "Введите сообщение",
-            onSend: _handleSend,
-            enabled: !_waiting,
+          child: BlocBuilder<MessageCubit, MessageState>(
+            builder: (context, state) {
+              bool inputFieldEnabled = true;
+              if (state is MessageLoaded) {
+                inputFieldEnabled = !state.isGenerating;
+              } else if (state is MessageLoadingHistory ||
+                  state is MessageInitial) {
+                inputFieldEnabled = false;
+              }
+
+              return MessageInputField(
+                controller: _input,
+                hintText: "Введите сообщение",
+                onSend: _handleSend,
+                enabled: inputFieldEnabled,
+              );
+            },
           ),
         ),
       ],

@@ -1,6 +1,7 @@
 import 'package:flutter/widgets.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:promts_application_1/core/cubits/data_cubit.dart';
+import 'package:promts_application_1/features/message/cubits/message_state.dart';
 import 'package:promts_application_1/features/message/data/models/message_model.dart';
 import 'package:promts_application_1/features/shared/widgets/widget_snack_bar.dart';
 import 'package:promts_application_1/features/user/cubit/user_cubit.dart';
@@ -8,122 +9,123 @@ import 'package:promts_application_1/features/user/domain/entities/user_entity.d
 import '../domain/entities/message_entity.dart';
 import '../domain/repositories/message_repository.dart';
 
-class MessageCubit extends DataCubit<List<MessageEntity>> {
+class MessageCubit extends Cubit<MessageState> {
+  // Меняем DataCubit на Cubit<MessageState>
   final MessageRepository repo;
-  MessageCubit({required this.repo}) : super();
+  MessageCubit({required this.repo})
+      : super(const MessageInitial()); // Начальное состояние
   int? _lastChatId;
-  int _reqToken = 0; // 🔸 счётчик запросов
+  int _reqToken = 0;
 
-  /// Загрузка истории чата
   void fetch(int chatId, {bool force = false}) {
-    // повторно не дёргаем, если данные уже есть
     if (!force &&
         _lastChatId == chatId &&
-        state is DataLoaded<List<MessageEntity>>) return;
+        (state is MessageLoaded && !(state as MessageLoaded).isGenerating))
+      return;
 
     _lastChatId = chatId;
-    final myToken = ++_reqToken; // для этого запроса
+    final myToken = ++_reqToken;
 
-    emit(DataLoading()); // очищаем экран / показываем спиннер
+    emit(const MessageLoadingHistory());
 
     repo.fetchMessages(chatId).then((msgs) {
-      if (myToken != _reqToken) return; // ⚠️ устарело — просто игнорируем
-      emit(DataLoaded(msgs));
+      if (myToken != _reqToken) return;
+      emit(MessageLoaded(msgs, isGenerating: false));
     }).catchError((e) {
-      if (myToken != _reqToken) return; // тоже устарело
-      emit(DataError(e.toString()));
+      if (myToken != _reqToken) return;
+      emit(MessageError(e.toString()));
     });
   }
 
-  /// Текущий чат (может пригодиться в UI)
   int? get currentChatId => _lastChatId;
 
   void removeMessages() {
     List<MessageEntity> msgs = [];
-    emit(DataLoaded(msgs));
+    emit(MessageLoaded(msgs, isGenerating: false));
   }
 
+  // Этот метод может быть не нужен, или его логика должна быть пересмотрена.
+  // Если сообщение добавляется локально перед отправкой, то isGenerating должно быть false.
   void addFirstMessage(MessageEntity message) {
-    List<MessageEntity> msgs = [];
-    msgs.add(message);
-    emit(DataLoaded(msgs));
+    List<MessageEntity> msgs = [message];
+    emit(MessageLoaded(msgs, isGenerating: false));
   }
 
-  /// Отправка нового сообщения
   Future<void> send({
     required int chatId,
     required int modelUriId,
     required String text,
     required BuildContext context,
   }) async {
-    // добавляем сообщение‑черновик пользователя сразу
     final draft = MessageEntity(
-      id: -DateTime.now().millisecondsSinceEpoch, // временный id
+      id: -DateTime.now().millisecondsSinceEpoch,
       chatId: chatId,
       modelUriId: modelUriId,
       oldMessage: false,
       role: 'user',
-      type: 'User',
       text: text,
+      type: 'MESSAGE', // В соответствии с GET /messages/{chatId}/new
       dateCreate: DateTime.now(),
     );
 
-    // ⬇️ NEW — формируем актуальный список независимо от текущего стейта
-    final current = state is DataLoaded<List<MessageEntity>>
-        ? List<MessageEntity>.from((state as DataLoaded).data)
-        : <MessageEntity>[];
+    List<MessageEntity> messagesBeforeSending;
+    if (state is MessageLoaded) {
+      messagesBeforeSending =
+          List<MessageEntity>.from((state as MessageLoaded).messages);
+    } else {
+      // Если state не MessageLoaded (e.g., MessageInitial, MessageLoadingHistory, MessageError),
+      // начинаем с пустого списка или списка только с draft.
+      // Для случая первого сообщения в новом чате (после removeMessages), messagesBeforeSending будет пустым.
+      messagesBeforeSending = <MessageEntity>[];
+    }
 
-    emit(DataLoaded([...current, draft]));
-
-    // if (state is DataLoaded<List<MessageEntity>>) {
-    //   emit(DataLoaded([...(state as DataLoaded).data, draft]));
-    // }
+    // Эмитим состояние с сообщением пользователя и индикатором загрузки
+    emit(MessageLoaded([...messagesBeforeSending, draft], isGenerating: true));
 
     try {
       final userCubit = context.read<UserCubit>();
-      final prevMemory =
-          (userCubit.state as DataLoaded<UserEntity>).data.memory;
+      String? prevMemory;
+      final userState = userCubit.state;
+      if (userState is DataLoaded<UserEntity>) {
+        // Используем DataLoaded от UserCubit
+        prevMemory = userState.data.memory;
+      }
 
       final res = await repo.sendMessage(chatId, modelUriId, text);
 
-      // 1. Ответ нейросети
-      final msg = res['messageRequest'] as Map<String, dynamic>;
-      final assistant = MessageModel.fromJson({
-        'id': msg['id'],
+      final msgData = res['messageRequest'] as Map<String, dynamic>;
+      final assistantMessage = MessageModel.fromJson({
+        'id': msgData['id'],
         'chatId': chatId,
         'modelUriId': modelUriId,
         'oldMessage': false,
-        'role': 'ASSISTANT',
-        'type': 'Assistant',
-        'text': msg['text'],
-        'dateCreate': msg['dateCreate'],
+        'role': 'assistant',
+        'type': 'MESSAGE', // В соответствии с GET /messages/{chatId}/new
+        'text': msgData['text'],
+        'dateCreate': msgData['dateCreate'],
       });
 
-      // 2. Память / баланс
-      final user = res['user'] as Map<String, dynamic>;
-
-      context.read<UserCubit>().applyMessageUserData(user);
-
-      if (user['memoryUpdated'] == true) {
-        WidgetSnackBar.showMemoryChange(
-          context: context,
-          oldMemory: prevMemory,
-          newMemory: user['newMemory'] as String? ?? '',
-        );
+      final userData = res['user'] as Map<String, dynamic>;
+      if (userState is DataLoaded<UserEntity>) {
+        // Используем DataLoaded от UserCubit
+        userCubit.applyMessageUserData(userData);
+        if (userData['memoryUpdated'] == true && prevMemory != null) {
+          WidgetSnackBar.showMemoryChange(
+            context: context,
+            oldMemory: prevMemory,
+            newMemory: userData['newMemory'] as String? ?? '',
+          );
+        }
       }
 
-      // 3. Обновляем список
-      final updated = current
-          .where((m) => m.id != draft.id) // убрали черновик‑placeholder
-          .toList()
-        ..addAll([
-          MessageModel.fromEntity(
-              draft), // финальная копия сообщения пользователя
-          assistant, // ответ нейросети
-        ]);
+      final finalMessages = List<MessageEntity>.from(messagesBeforeSending)
+        ..add(draft) // Добавляем сообщение пользователя
+        ..add(assistantMessage); // Добавляем ответ ассистента
 
-      emit(DataLoaded(updated));
+      emit(MessageLoaded(finalMessages, isGenerating: false));
     } catch (e) {
+      emit(MessageLoaded([...messagesBeforeSending, draft],
+          isGenerating: false));
       WidgetSnackBar.showError(context, e.toString());
     }
   }
