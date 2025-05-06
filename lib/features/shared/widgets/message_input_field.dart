@@ -8,6 +8,7 @@ class MessageInputField extends StatelessWidget {
   final int minLines;
   final int maxLines;
   final BoxConstraints constraints;
+  final bool enabled;
 
   const MessageInputField({
     super.key,
@@ -16,8 +17,8 @@ class MessageInputField extends StatelessWidget {
     required this.onSend,
     this.minLines = 1,
     this.maxLines = 8,
-    this.constraints =
-        const BoxConstraints(maxWidth: 900),
+    this.constraints = const BoxConstraints(maxWidth: 900),
+    required this.enabled,
   });
 
   @override
@@ -25,9 +26,7 @@ class MessageInputField extends StatelessWidget {
     return Container(
       constraints: constraints,
       padding: const EdgeInsets.all(8.0),
-      color: Theme.of(context)
-          .colorScheme
-          .surfaceContainerHighest,
+      color: Theme.of(context).colorScheme.surfaceContainerHighest,
       child: Row(
         children: [
           Expanded(
@@ -45,11 +44,17 @@ class MessageInputField extends StatelessWidget {
             ),
           ),
           const SizedBox(width: 8),
-          IconButton(
-            icon: const Icon(Icons.send),
-            onPressed: onSend,
-            tooltip: "Отправить",
-          ),
+          if (enabled)
+            IconButton(
+              icon: const Icon(Icons.send),
+              onPressed: onSend,
+              tooltip: "Отправить",
+            ),
+          if(!enabled) const IconButton(
+              icon: Icon(Icons.send),
+              onPressed: null,
+              tooltip: "Отправить",
+            ),
         ],
       ),
     );

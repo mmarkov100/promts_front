@@ -57,6 +57,7 @@ class _HomeViewState extends State<HomeView> {
                       controller: _messageController,
                       hintText: "Введите сообщение",
                       onSend: _handleSend,
+                      enabled: !widget.isCreatingChat,
                     ),
                   ],
                 ),

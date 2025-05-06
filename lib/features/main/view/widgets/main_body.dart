@@ -15,14 +15,15 @@ class MainBody extends StatefulWidget {
   final ValueChanged<Map<String, dynamic>> onChatCreateSettings;
   final bool showChat;
   final bool isCreatingChat;
-  const MainBody(
-      {super.key,
-      this.chatEntity,
-      required this.openChatWithMessageWithText,
-      required this.showChat,
-      required this.isCreatingChat,
-      this.chatId,
-      required this.onChatCreateSettings});
+  const MainBody({
+    super.key,
+    this.chatEntity,
+    required this.openChatWithMessageWithText,
+    required this.showChat,
+    required this.isCreatingChat,
+    this.chatId,
+    required this.onChatCreateSettings,
+  });
 
   @override
   State<MainBody> createState() => _MainBodyState();
@@ -73,7 +74,7 @@ class _MainBodyState extends State<MainBody> {
               ? ChatView(
                   chat: widget.chatEntity!,
                   chatId: widget.chatId!,
-                  overrideModelId: _overrideModelId, // ← передаём
+                  overrideModelId: _overrideModelId,
                 )
               : widget.showChat
                   ? const Center(child: CircularProgressIndicator())

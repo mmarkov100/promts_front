@@ -37,8 +37,8 @@ class _UserSettingsState extends State<UserSettings> {
 
   void _initFromEntity(UserEntity user) {
     _memoryController = TextEditingController(text: user.memory);
-    _memoryEnabled = user.memoryEnabled;
-    _aiCanUpdateMemory = user.aiCanUpdateMemory;
+    _memoryEnabled = user.memoryEnabled!;
+    _aiCanUpdateMemory = user.aiCanUpdateMemory!;
     _selectedModelId = widget.selectedModelId;
   }
 
