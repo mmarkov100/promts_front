@@ -10,6 +10,7 @@ import 'package:promts_application_1/features/auth/domain/entities/register_enti
 import 'package:promts_application_1/core/config/config.dart';
 import 'package:promts_application_1/core/cubits/data_cubit.dart';
 import 'package:promts_application_1/features/shared/widgets/widget_snack_bar.dart';
+import 'package:animated_gradient_background/animated_gradient_background.dart';
 
 class LoginPageScreen extends StatefulWidget {
   const LoginPageScreen({super.key});
@@ -111,58 +112,39 @@ class _LoginPageScreenState extends State<LoginPageScreen> {
           },
         ),
       ],
-      child: Scaffold(
-        body: Center(
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 400),
-            child: Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: SingleChildScrollView(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      _isLogin ? "Вход в систему" : "Регистрация",
-                      style: const TextStyle(
-                          fontSize: 24, fontWeight: FontWeight.bold),
-                    ),
-                    const SizedBox(height: 24),
-                    TextField(
-                      controller: _emailController,
-                      decoration: const InputDecoration(
-                        labelText: "Почта",
-                        border: OutlineInputBorder(),
+      child: AnimatedGradientBackground(
+        colors: const [Color.fromARGB(255, 255, 255, 255), Color.fromARGB(255, 111, 111, 111), Color.fromARGB(255, 0, 0, 0)],
+        child: Scaffold(
+          backgroundColor: Colors.transparent,
+          body: Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 400),
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: SingleChildScrollView(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        _isLogin ? "Вход в систему" : "Регистрация",
+                        style: const TextStyle(
+                            fontSize: 24, fontWeight: FontWeight.bold),
                       ),
-                      keyboardType: TextInputType.emailAddress,
-                    ),
-                    const SizedBox(height: 16),
-                    TextField(
-                      controller: _passwordController,
-                      obscureText: !_passwordVisible,
-                      decoration: InputDecoration(
-                        labelText: "Пароль",
-                        border: const OutlineInputBorder(),
-                        suffixIcon: IconButton(
-                          icon: Icon(
-                            _passwordVisible
-                                ? Icons.visibility
-                                : Icons.visibility_off,
-                          ),
-                          onPressed: () {
-                            setState(() {
-                              _passwordVisible = !_passwordVisible;
-                            });
-                          },
+                      const SizedBox(height: 24),
+                      TextField(
+                        controller: _emailController,
+                        decoration: const InputDecoration(
+                          labelText: "Почта",
+                          border: OutlineInputBorder(),
                         ),
+                        keyboardType: TextInputType.emailAddress,
                       ),
-                    ),
-                    if (!_isLogin) ...[
                       const SizedBox(height: 16),
                       TextField(
-                        controller: _confirmPasswordController,
+                        controller: _passwordController,
                         obscureText: !_passwordVisible,
                         decoration: InputDecoration(
-                          labelText: "Подтверждение пароля",
+                          labelText: "Пароль",
                           border: const OutlineInputBorder(),
                           suffixIcon: IconButton(
                             icon: Icon(
@@ -178,32 +160,55 @@ class _LoginPageScreenState extends State<LoginPageScreen> {
                           ),
                         ),
                       ),
+                      if (!_isLogin) ...[
+                        const SizedBox(height: 16),
+                        TextField(
+                          controller: _confirmPasswordController,
+                          obscureText: !_passwordVisible,
+                          decoration: InputDecoration(
+                            labelText: "Подтверждение пароля",
+                            border: const OutlineInputBorder(),
+                            suffixIcon: IconButton(
+                              icon: Icon(
+                                _passwordVisible
+                                    ? Icons.visibility
+                                    : Icons.visibility_off,
+                              ),
+                              onPressed: () {
+                                setState(() {
+                                  _passwordVisible = !_passwordVisible;
+                                });
+                              },
+                            ),
+                          ),
+                        ),
+                      ],
+                      const SizedBox(height: 24),
+                      SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton(
+                          onPressed: _isLoading
+                              ? null
+                              : _isLogin
+                                  ? _onLoginPressed
+                                  : _onRegisterPressed,
+                          child: _isLoading
+                              ? const CircularProgressIndicator(
+                                  color: Colors.white)
+                              : Text(_isLogin ? "Войти" : "Зарегистрироваться"),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      TextButton(
+                        onPressed: _isLoading ? null : _toggleMode,
+                        child: Text(
+                          _isLogin
+                              ? "Нет аккаунта? Зарегистрироваться"
+                              : "Уже есть аккаунт? Войти",
+                        ),
+                      ),
                     ],
-                    const SizedBox(height: 24),
-                    SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton(
-                        onPressed: _isLoading
-                            ? null
-                            : _isLogin
-                                ? _onLoginPressed
-                                : _onRegisterPressed,
-                        child: _isLoading
-                            ? const CircularProgressIndicator(
-                                color: Colors.white)
-                            : Text(_isLogin ? "Войти" : "Зарегистрироваться"),
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    TextButton(
-                      onPressed: _isLoading ? null : _toggleMode,
-                      child: Text(
-                        _isLogin
-                            ? "Нет аккаунта? Зарегистрироваться"
-                            : "Уже есть аккаунт? Войти",
-                      ),
-                    ),
-                  ],
+                  ),
                 ),
               ),
             ),
