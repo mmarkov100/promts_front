@@ -21,8 +21,6 @@ class ChatCubit extends DataCubit<List<ChatEntity>> {
         }).toList();
 
         emit(DataLoaded<List<ChatEntity>>(newChats));
-      } else {
-        fetchChats();
       }
     } catch (e, st) {
       print("Ошибка при обновлении чата: $e\n$st");

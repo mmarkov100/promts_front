@@ -31,8 +31,8 @@ class _NeuroButtonState extends State<NeuroButton> {
   NeuroEntity? _selectedNeuro;
   NeuroEntity? _standardNeuro;
   String _chatCreateContext = "";
-  late bool _chatCreateUseMemory = widget.currentUser!.memoryEnabled;
-  late bool _chatUpdateMemory = widget.currentUser!.aiCanUpdateMemory;
+  late bool _chatCreateUseMemory = widget.currentUser!.memoryEnabled!;
+  late bool _chatUpdateMemory = widget.currentUser!.aiCanUpdateMemory!;
   double _chatCreateTemperature = 1;
   bool _changedNeuro = false;
   bool _userLoaded = false;

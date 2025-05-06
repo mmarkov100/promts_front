@@ -16,7 +16,7 @@ void main() {
   // Вот эта хуйня отвечает за решетку, если решетка не будет, значит любой переход по ссылке будто снова на сайт заходишь
   setUrlStrategy(PathUrlStrategy());
   // 0 - продовый, 1 - тестовый (вообще пока не работает)
-  setup(0, "http://localhost:8090", "1234jwt");
+  setup(0, "https://0bd4-104-253-187-142.ngrok-free.app", "1234jwt");
   //setup(0, "https://a610-104-253-187-142.ngrok-free.app", "1234jwt");
   final authCubit = getIt<AuthCubit>();
   final loginCubit = getIt<LoginCubit>();

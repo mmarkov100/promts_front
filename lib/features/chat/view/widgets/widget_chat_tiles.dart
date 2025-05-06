@@ -8,18 +8,21 @@ import 'package:promts_application_1/features/message/cubits/message_cubit.dart'
 
 class WidgetChatTiles extends StatefulWidget {
   final String query;
+  final VoidCallback closeChat;
   const WidgetChatTiles(
-      {super.key, required this.query});
+      {super.key, required this.query, required this.closeChat});
 
   @override
   State<WidgetChatTiles> createState() => _WidgetChatTilesState();
 }
 
 class _WidgetChatTilesState extends State<WidgetChatTiles> {
-  
   void _selectChat(ChatEntity chat) {
+    // Обнуляем сообщения из прошлого чата
+    context.read<MessageCubit>().removeMessages();
     Navigator.of(context).pop();
     context.read<MessageCubit>().fetch(chat.id);
+    // widget.closeChat;
     context.go('/chat/${chat.id}');
   }
 

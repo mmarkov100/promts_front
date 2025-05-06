@@ -1,7 +1,6 @@
 import 'package:flutter/widgets.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:promts_application_1/core/cubits/data_cubit.dart';
-import 'package:promts_application_1/features/chat/cubits/chat_cubit.dart';
 import 'package:promts_application_1/features/message/data/models/message_model.dart';
 import 'package:promts_application_1/features/shared/widgets/widget_snack_bar.dart';
 import 'package:promts_application_1/features/user/cubit/user_cubit.dart';
@@ -13,16 +12,41 @@ class MessageCubit extends DataCubit<List<MessageEntity>> {
   final MessageRepository repo;
   MessageCubit({required this.repo}) : super();
   int? _lastChatId;
+  int _reqToken = 0; // 🔸 счётчик запросов
 
-  // void fetch(int chatId) => load(() => repo.fetchMessages(chatId));
+  /// Загрузка истории чата
+  void fetch(int chatId, {bool force = false}) {
+    // повторно не дёргаем, если данные уже есть
+    if (!force &&
+        _lastChatId == chatId &&
+        state is DataLoaded<List<MessageEntity>>) return;
 
-  void fetch(int chatId) {
-    // Если уже загружали этот чат и данные есть – повторный запрос не нужен
-    if (_lastChatId == chatId && state is DataLoaded<List<MessageEntity>>) {
-      return;
-    }
     _lastChatId = chatId;
-    load(() => repo.fetchMessages(chatId));
+    final myToken = ++_reqToken; // для этого запроса
+
+    emit(DataLoading()); // очищаем экран / показываем спиннер
+
+    repo.fetchMessages(chatId).then((msgs) {
+      if (myToken != _reqToken) return; // ⚠️ устарело — просто игнорируем
+      emit(DataLoaded(msgs));
+    }).catchError((e) {
+      if (myToken != _reqToken) return; // тоже устарело
+      emit(DataError(e.toString()));
+    });
+  }
+
+  /// Текущий чат (может пригодиться в UI)
+  int? get currentChatId => _lastChatId;
+
+  void removeMessages() {
+    List<MessageEntity> msgs = [];
+    emit(DataLoaded(msgs));
+  }
+
+  void addFirstMessage(MessageEntity message) {
+    List<MessageEntity> msgs = [];
+    msgs.add(message);
+    emit(DataLoaded(msgs));
   }
 
   /// Отправка нового сообщения
@@ -38,14 +62,22 @@ class MessageCubit extends DataCubit<List<MessageEntity>> {
       chatId: chatId,
       modelUriId: modelUriId,
       oldMessage: false,
-      role: 'USER',
+      role: 'user',
       type: 'User',
       text: text,
       dateCreate: DateTime.now(),
     );
-    if (state is DataLoaded<List<MessageEntity>>) {
-      emit(DataLoaded([...(state as DataLoaded).data, draft]));
-    }
+
+    // ⬇️ NEW — формируем актуальный список независимо от текущего стейта
+    final current = state is DataLoaded<List<MessageEntity>>
+        ? List<MessageEntity>.from((state as DataLoaded).data)
+        : <MessageEntity>[];
+
+    emit(DataLoaded([...current, draft]));
+
+    // if (state is DataLoaded<List<MessageEntity>>) {
+    //   emit(DataLoaded([...(state as DataLoaded).data, draft]));
+    // }
 
     try {
       final userCubit = context.read<UserCubit>();
@@ -81,23 +113,18 @@ class MessageCubit extends DataCubit<List<MessageEntity>> {
       }
 
       // 3. Обновляем список
-      if (state is DataLoaded<List<MessageEntity>>) {
-        final current = (state as DataLoaded<List<MessageEntity>>)
-            .data
-            .where((m) => m.id != draft.id)
-            .toList()
-          ..addAll([
-            MessageModel.fromEntity(draft), // сам пользователь
-            assistant // ассистент
-          ]);
-        final modelId = modelUriId; // тот, с которым мы отправляли
-        // ignore: use_build_context_synchronously
-        context.read<ChatCubit>().patchModel(chatId, modelId);
-        emit(DataLoaded(current));
-      }
+      final updated = current
+          .where((m) => m.id != draft.id) // убрали черновик‑placeholder
+          .toList()
+        ..addAll([
+          MessageModel.fromEntity(
+              draft), // финальная копия сообщения пользователя
+          assistant, // ответ нейросети
+        ]);
+
+      emit(DataLoaded(updated));
     } catch (e) {
       WidgetSnackBar.showError(context, e.toString());
-      fetch(chatId); // откатим список
     }
   }
 }

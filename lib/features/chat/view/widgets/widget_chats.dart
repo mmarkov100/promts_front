@@ -4,7 +4,8 @@ import 'package:promts_application_1/features/chat/cubits/chat_cubit.dart';
 import 'package:promts_application_1/features/chat/view/widgets/widget_chat_tiles.dart';
 
 class WidgetChats extends StatefulWidget {
-  const WidgetChats({super.key});
+  final VoidCallback closeChat;
+  const WidgetChats({super.key, required this.closeChat});
 
   @override
   State<WidgetChats> createState() => _WidgetChatsState();
@@ -31,7 +32,7 @@ class _WidgetChatsState extends State<WidgetChats> {
                   style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                 ),
                 trailing: IconButton(
-                  icon: const Icon(Icons.refresh),  
+                  icon: const Icon(Icons.refresh),
                   tooltip: 'Обновить чаты',
                   onPressed: _refreshChats,
                 ),
@@ -48,7 +49,10 @@ class _WidgetChatsState extends State<WidgetChats> {
                   ),
                 ),
               ),
-              WidgetChatTiles(query: _query),
+              WidgetChatTiles(
+                query: _query,
+                closeChat: widget.closeChat,
+              ),
             ],
           ),
         ),

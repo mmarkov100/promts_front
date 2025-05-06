@@ -43,6 +43,11 @@ class _ChatViewBodyState extends State<_ChatViewBody> {
   bool _waiting = false;
 
   @override
+  void initState() {
+    super.initState();
+  }
+
+  @override
   void dispose() {
     _scroll.dispose();
     _input.dispose();
@@ -86,6 +91,7 @@ class _ChatViewBodyState extends State<_ChatViewBody> {
               }
               if (state is DataLoaded<List<MessageEntity>>) {
                 final msgs = state.data;
+
                 // автоскролл вниз
                 WidgetsBinding.instance.addPostFrameCallback((_) {
                   _scroll.jumpTo(_scroll.position.maxScrollExtent);
@@ -110,7 +116,7 @@ class _ChatViewBodyState extends State<_ChatViewBody> {
           ),
         ),
         // Индикатор «Ассистент отвечает»
-        if (_waiting)
+        if (_waiting || context.watch<MessageCubit>().state is DataLoading)
           const Padding(
             padding: EdgeInsets.only(bottom: 6),
             child: Row(
@@ -137,6 +143,7 @@ class _ChatViewBodyState extends State<_ChatViewBody> {
             controller: _input,
             hintText: "Введите сообщение",
             onSend: _handleSend,
+            enabled: !_waiting,
           ),
         ),
       ],
