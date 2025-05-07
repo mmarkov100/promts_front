@@ -20,8 +20,9 @@ class MessageCubit extends Cubit<MessageState> {
   void fetch(int chatId, {bool force = false}) {
     if (!force &&
         _lastChatId == chatId &&
-        (state is MessageLoaded && !(state as MessageLoaded).isGenerating))
+        (state is MessageLoaded && !(state as MessageLoaded).isGenerating)) {
       return;
+    }
 
     _lastChatId = chatId;
     final myToken = ++_reqToken;

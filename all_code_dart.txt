@@ -332,6 +332,95 @@ class ApiService {
     throw Exception(err['message'] ?? 'Ошибка ${res.statusCode}');
   }
 }
+import 'package:flutter/material.dart';
+
+class AnimatedGradientBackground extends StatefulWidget {
+  final List<Color> colors;
+  final Widget child;
+  final Duration duration;
+
+  const AnimatedGradientBackground({
+    super.key,
+    required this.colors,
+    required this.child,
+    this.duration = const Duration(seconds: 5),
+  });
+
+  @override
+  State<AnimatedGradientBackground> createState() =>
+      _AnimatedGradientBackgroundState();
+}
+
+class _AnimatedGradientBackgroundState
+    extends State<AnimatedGradientBackground> with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<Alignment> _alignmentBegin;
+  late Animation<Alignment> _alignmentEnd;
+  late List<Color> _colors;
+  int _colorIndex = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _colors = widget.colors;
+    _controller = AnimationController(
+      vsync: this,
+      duration: widget.duration,
+    )..addStatusListener((status) {
+        if (status == AnimationStatus.completed) {
+          _controller.reset();
+          setState(() {
+            _colorIndex = (_colorIndex + 1) % _colors.length;
+          });
+          _controller.forward();
+        }
+      });
+
+    _alignmentBegin = Tween<Alignment>(
+      begin: Alignment.topLeft,
+      end: Alignment.bottomRight,
+    ).animate(_controller);
+
+    _alignmentEnd = Tween<Alignment>(
+      begin: Alignment.bottomRight,
+      end: Alignment.topLeft,
+    ).animate(_controller);
+
+    _controller.forward();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  Color _getColor(int offset) {
+    return _colors[(_colorIndex + offset) % _colors.length];
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _controller,
+      builder: (context, child) {
+        return Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: _alignmentBegin.value,
+              end: _alignmentEnd.value,
+              colors: [
+                Color.lerp(_getColor(0), _getColor(1), _controller.value)!,
+                Color.lerp(_getColor(1), _getColor(2), _controller.value)!,
+              ],
+            ),
+          ),
+          child: widget.child,
+        );
+      },
+    );
+  }
+}
 // lib/di/locator.dart
 import 'package:get_it/get_it.dart';
 import 'package:promts_application_1/core/config/config.dart';
@@ -689,6 +778,7 @@ import 'package:promts_application_1/features/auth/domain/entities/register_enti
 import 'package:promts_application_1/core/config/config.dart';
 import 'package:promts_application_1/core/cubits/data_cubit.dart';
 import 'package:promts_application_1/features/shared/widgets/widget_snack_bar.dart';
+import 'package:animated_gradient_background/animated_gradient_background.dart';
 
 class LoginPageScreen extends StatefulWidget {
   const LoginPageScreen({super.key});
@@ -748,148 +838,216 @@ class _LoginPageScreenState extends State<LoginPageScreen> {
   @override
   Widget build(BuildContext context) {
     return MultiBlocListener(
-      listeners: [
-        BlocListener<LoginCubit, DataState<LoginEntity>>(
-          listener: (context, state) {
-            if (state is DataLoading<LoginEntity>) {
-              setState(() {
-                _isLoading = true;
-              });
-            } else if (state is DataLoaded<LoginEntity>) {
-              final token = state.data.token;
-              getIt<AppConfig>().setJwtToken(token);
-
-              context.read<AuthCubit>().fetch();
-              context.go('/chat');
-            } else if (state is DataError<LoginEntity>) {
-              WidgetSnackBar.showError(context, state.message);
-              setState(() {
-                _isLoading = false;
-              });
-            }
-          },
-        ),
-        BlocListener<RegisterCubit, DataState<RegisterEntity>>(
-          listener: (context, state) {
-            if (state is DataLoading<RegisterEntity>) {
-              setState(() {
-                _isLoading = true;
-              });
-            } else if (state is DataLoaded<RegisterEntity>) {
-              WidgetSnackBar.showSuccess(context, state.data.message);
-              setState(() {
-                _isLogin = true;
-                _isLoading = false;
-              });
-            } else if (state is DataError<RegisterEntity>) {
-              WidgetSnackBar.showError(context, state.message);
-              setState(() {
-                _isLoading = false;
-              });
-            }
-          },
-        ),
-      ],
-      child: Scaffold(
-        body: Center(
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 400),
-            child: Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: SingleChildScrollView(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      _isLogin ? "Вход в систему" : "Регистрация",
-                      style: const TextStyle(
-                          fontSize: 24, fontWeight: FontWeight.bold),
-                    ),
-                    const SizedBox(height: 24),
-                    TextField(
-                      controller: _emailController,
-                      decoration: const InputDecoration(
-                        labelText: "Почта",
-                        border: OutlineInputBorder(),
-                      ),
-                      keyboardType: TextInputType.emailAddress,
-                    ),
-                    const SizedBox(height: 16),
-                    TextField(
-                      controller: _passwordController,
-                      obscureText: !_passwordVisible,
-                      decoration: InputDecoration(
-                        labelText: "Пароль",
-                        border: const OutlineInputBorder(),
-                        suffixIcon: IconButton(
-                          icon: Icon(
-                            _passwordVisible
-                                ? Icons.visibility
-                                : Icons.visibility_off,
-                          ),
-                          onPressed: () {
-                            setState(() {
-                              _passwordVisible = !_passwordVisible;
-                            });
-                          },
+        listeners: [
+          BlocListener<LoginCubit, DataState<LoginEntity>>(
+            listener: (context, state) {
+              if (state is DataLoading<LoginEntity>) {
+                setState(() {
+                  _isLoading = true;
+                });
+              } else if (state is DataLoaded<LoginEntity>) {
+                final token = state.data.token;
+                getIt<AppConfig>().setJwtToken(token);
+                context.read<AuthCubit>().fetch();
+                context.go('/chat');
+              } else if (state is DataError<LoginEntity>) {
+                WidgetSnackBar.showError(context, state.message);
+                setState(() {
+                  _isLoading = false;
+                });
+              }
+            },
+          ),
+          BlocListener<RegisterCubit, DataState<RegisterEntity>>(
+            listener: (context, state) {
+              if (state is DataLoading<RegisterEntity>) {
+                setState(() {
+                  _isLoading = true;
+                });
+              } else if (state is DataLoaded<RegisterEntity>) {
+                WidgetSnackBar.showSuccess(context, state.data.message);
+                setState(() {
+                  _isLogin = true;
+                  _isLoading = false;
+                });
+              } else if (state is DataError<RegisterEntity>) {
+                WidgetSnackBar.showError(context, state.message);
+                setState(() {
+                  _isLoading = false;
+                });
+              }
+            },
+          ),
+        ],
+        child: AnimatedGradientBackground(
+          colors: const [
+            Color.fromARGB(255, 183, 183, 183),
+            Color.fromARGB(255, 48, 66, 93),
+            Color.fromARGB(255, 0, 0, 0),
+          ],
+          duration: const Duration(seconds: 5),
+          child: Scaffold(
+            backgroundColor: Colors.transparent,
+            body: Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 400),
+                child: Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Container(
+                    padding: const EdgeInsets.all(24),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: Colors.white.withOpacity(0.3)),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.3),
+                          blurRadius: 12,
+                          offset: const Offset(0, 6),
                         ),
-                      ),
+                      ],
                     ),
-                    if (!_isLogin) ...[
-                      const SizedBox(height: 16),
-                      TextField(
-                        controller: _confirmPasswordController,
-                        obscureText: !_passwordVisible,
-                        decoration: InputDecoration(
-                          labelText: "Подтверждение пароля",
-                          border: const OutlineInputBorder(),
-                          suffixIcon: IconButton(
-                            icon: Icon(
-                              _passwordVisible
-                                  ? Icons.visibility
-                                  : Icons.visibility_off,
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          _isLogin ? "Вход в систему" : "Регистрация",
+                          style: const TextStyle(
+                            fontSize: 26,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          ),
+                        ),
+                        const SizedBox(height: 24),
+                        TextField(
+                          controller: _emailController,
+                          style: const TextStyle(color: Colors.white),
+                          decoration: InputDecoration(
+                            labelText: "Почта",
+                            labelStyle: const TextStyle(color: Colors.white70),
+                            filled: true,
+                            fillColor: Colors.white.withOpacity(0.1),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
                             ),
-                            onPressed: () {
-                              setState(() {
-                                _passwordVisible = !_passwordVisible;
-                              });
-                            },
+                            enabledBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide:
+                                  const BorderSide(color: Colors.white54),
+                            ),
+                          ),
+                          keyboardType: TextInputType.emailAddress,
+                        ),
+                        const SizedBox(height: 16),
+                        TextField(
+                          controller: _passwordController,
+                          obscureText: !_passwordVisible,
+                          style: const TextStyle(color: Colors.white),
+                          decoration: InputDecoration(
+                            labelText: "Пароль",
+                            labelStyle: const TextStyle(color: Colors.white70),
+                            filled: true,
+                            fillColor: Colors.white.withOpacity(0.1),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            enabledBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide:
+                                  const BorderSide(color: Colors.white54),
+                            ),
+                            suffixIcon: IconButton(
+                              icon: Icon(
+                                _passwordVisible
+                                    ? Icons.visibility
+                                    : Icons.visibility_off,
+                                color: Colors.white70,
+                              ),
+                              onPressed: () {
+                                setState(() {
+                                  _passwordVisible = !_passwordVisible;
+                                });
+                              },
+                            ),
                           ),
                         ),
-                      ),
-                    ],
-                    const SizedBox(height: 24),
-                    SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton(
-                        onPressed: _isLoading
-                            ? null
-                            : _isLogin
-                                ? _onLoginPressed
-                                : _onRegisterPressed,
-                        child: _isLoading
-                            ? const CircularProgressIndicator(
-                                color: Colors.white)
-                            : Text(_isLogin ? "Войти" : "Зарегистрироваться"),
-                      ),
+                        if (!_isLogin) ...[
+                          const SizedBox(height: 16),
+                          TextField(
+                            controller: _confirmPasswordController,
+                            obscureText: !_passwordVisible,
+                            style: const TextStyle(color: Colors.white),
+                            decoration: InputDecoration(
+                              labelText: "Подтверждение пароля",
+                              labelStyle:
+                                  const TextStyle(color: Colors.white70),
+                              filled: true,
+                              fillColor: Colors.white.withOpacity(0.1),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              enabledBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide:
+                                    const BorderSide(color: Colors.white54),
+                              ),
+                              suffixIcon: IconButton(
+                                icon: Icon(
+                                  _passwordVisible
+                                      ? Icons.visibility
+                                      : Icons.visibility_off,
+                                  color: Colors.white70,
+                                ),
+                                onPressed: () {
+                                  setState(() {
+                                    _passwordVisible = !_passwordVisible;
+                                  });
+                                },
+                              ),
+                            ),
+                          ),
+                        ],
+                        const SizedBox(height: 24),
+                        SizedBox(
+                          width: double.infinity,
+                          child: ElevatedButton(
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.white,
+                              foregroundColor: Colors.black,
+                              padding: const EdgeInsets.symmetric(vertical: 16),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(32),
+                              ),
+                            ),
+                            onPressed: _isLoading
+                                ? null
+                                : _isLogin
+                                    ? _onLoginPressed
+                                    : _onRegisterPressed,
+                            child: _isLoading
+                                ? const CircularProgressIndicator()
+                                : Text(
+                                    _isLogin ? "Войти" : "Зарегистрироваться"),
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        TextButton(
+                          onPressed: _isLoading ? null : _toggleMode,
+                          child: Text(
+                            _isLogin
+                                ? "Нет аккаунта? Зарегистрироваться"
+                                : "Уже есть аккаунт? Войти",
+                            style: const TextStyle(color: Colors.white70),
+                          ),
+                        ),
+                      ],
                     ),
-                    const SizedBox(height: 16),
-                    TextButton(
-                      onPressed: _isLoading ? null : _toggleMode,
-                      child: Text(
-                        _isLogin
-                            ? "Нет аккаунта? Зарегистрироваться"
-                            : "Уже есть аккаунт? Войти",
-                      ),
-                    ),
-                  ],
+                  ),
                 ),
               ),
             ),
           ),
-        ),
-      ),
-    );
+        ));
   }
 }
 import 'package:flutter/material.dart';
@@ -1374,10 +1532,9 @@ class ChatSettings extends AbstractChatSettingsDialog {
 }
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:promts_application_1/core/cubits/data_cubit.dart';
 import 'package:promts_application_1/features/chat/domain/entities/chat_entity.dart';
 import 'package:promts_application_1/features/message/cubits/message_cubit.dart';
-import 'package:promts_application_1/features/message/domain/entities/message_entity.dart';
+import 'package:promts_application_1/features/message/cubits/message_state.dart';
 import 'package:promts_application_1/features/message/view/widgets/widget_message_bubble.dart';
 import 'package:promts_application_1/features/shared/widgets/message_input_field.dart';
 
@@ -1393,7 +1550,6 @@ class ChatView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // MessageCubit уже есть выше в дереве, повторно не провайдим
     return _ChatViewBody(
       chat: chat,
       overrideModelId: overrideModelId,
@@ -1401,9 +1557,8 @@ class ChatView extends StatelessWidget {
   }
 }
 
-/// Вынесено в отдельный виджет‑телефон, чтобы не плодить логику BlocProvider
 class _ChatViewBody extends StatefulWidget {
-  final ChatEntity chat; // новый
+  final ChatEntity chat;
   final int? overrideModelId;
   const _ChatViewBody({required this.chat, required this.overrideModelId});
 
@@ -1414,7 +1569,6 @@ class _ChatViewBody extends StatefulWidget {
 class _ChatViewBodyState extends State<_ChatViewBody> {
   final _scroll = ScrollController();
   final _input = TextEditingController();
-  bool _waiting = false;
 
   @override
   void initState() {
@@ -1428,21 +1582,18 @@ class _ChatViewBodyState extends State<_ChatViewBody> {
     super.dispose();
   }
 
-  void _handleSend() async {
+  void _handleSend() {
     final txt = _input.text.trim();
     if (txt.isEmpty) return;
 
     final modelId = widget.overrideModelId ?? widget.chat.modelUriId;
 
-    setState(() => _waiting = true); // ⬅️ показали индикатор
-    await context.read<MessageCubit>().send(
+    context.read<MessageCubit>().send(
           chatId: widget.chat.id,
           modelUriId: modelId,
           text: txt,
           context: context,
         );
-    setState(() => _waiting = false); // ⬅️ скрыли индикатор
-
     _input.clear();
   }
 
@@ -1452,24 +1603,26 @@ class _ChatViewBodyState extends State<_ChatViewBody> {
     return Column(
       children: [
         Expanded(
-          child: BlocBuilder<MessageCubit, DataState<List<MessageEntity>>>(
+          child: BlocBuilder<MessageCubit, MessageState>(
             builder: (context, state) {
-              print(state.toString());
-              if (state is DataLoading || state is DataInitial) {
+              print("ChatView BlocBuilder state: $state");
+              if (state is MessageLoadingHistory || state is MessageInitial) {
                 return const Center(child: CircularProgressIndicator());
               }
-              if (state is DataError) {
-                return const Center(
+              if (state is MessageError) {
+                return Center(
                     child: Text(
-                        "Ошибка в загрузке сообщений, перезагрузите страницу"));
+                        "Ошибка в загрузке сообщений: ${state.message}, перезагрузите страницу"));
               }
-              if (state is DataLoaded<List<MessageEntity>>) {
-                final msgs = state.data;
+              if (state is MessageLoaded) {
+                final msgs = state.messages;
 
-                // автоскролл вниз
                 WidgetsBinding.instance.addPostFrameCallback((_) {
-                  _scroll.jumpTo(_scroll.position.maxScrollExtent);
+                  if (_scroll.hasClients) {
+                    _scroll.jumpTo(_scroll.position.maxScrollExtent);
+                  }
                 });
+
                 if (msgs.isNotEmpty) {
                   return SizedBox(
                     width: 1000,
@@ -1480,7 +1633,7 @@ class _ChatViewBodyState extends State<_ChatViewBody> {
                           WidgetMessageBubble(message: msgs[i]),
                     ),
                   );
-                } else {
+                } else if (!state.isGenerating) {
                   return const Center(
                       child: Text("Напишите первое сообщение!"));
                 }
@@ -1489,23 +1642,32 @@ class _ChatViewBodyState extends State<_ChatViewBody> {
             },
           ),
         ),
-        // Индикатор «Ассистент отвечает»
-        if (_waiting)
-          const Padding(
-            padding: EdgeInsets.only(bottom: 6),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                SizedBox(
-                  width: 16,
-                  height: 16,
-                  child: CircularProgressIndicator(strokeWidth: 2),
+        BlocBuilder<MessageCubit, MessageState>(
+          builder: (context, state) {
+            bool isCurrentlyGenerating = false;
+            if (state is MessageLoaded) {
+              isCurrentlyGenerating = state.isGenerating;
+            }
+            if (isCurrentlyGenerating) {
+              return const Padding(
+                padding: EdgeInsets.only(bottom: 6),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    ),
+                    SizedBox(width: 8),
+                    Text('Ассистент печатает…'),
+                  ],
                 ),
-                SizedBox(width: 8),
-                Text('Ассистент печатает…'),
-              ],
-            ),
-          ),
+              );
+            }
+            return const SizedBox.shrink();
+          },
+        ),
         Padding(
           padding: EdgeInsets.fromLTRB(
             0,
@@ -1513,11 +1675,23 @@ class _ChatViewBodyState extends State<_ChatViewBody> {
             0,
             bottomInset + 56 + 8,
           ),
-          child: MessageInputField(
-            controller: _input,
-            hintText: "Введите сообщение",
-            onSend: _handleSend,
-            enabled: !_waiting,
+          child: BlocBuilder<MessageCubit, MessageState>(
+            builder: (context, state) {
+              bool inputFieldEnabled = true;
+              if (state is MessageLoaded) {
+                inputFieldEnabled = !state.isGenerating;
+              } else if (state is MessageLoadingHistory ||
+                  state is MessageInitial) {
+                inputFieldEnabled = false;
+              }
+
+              return MessageInputField(
+                controller: _input,
+                hintText: "Введите сообщение",
+                onSend: _handleSend,
+                enabled: inputFieldEnabled,
+              );
+            },
           ),
         ),
       ],
@@ -1531,7 +1705,8 @@ import 'package:promts_application_1/features/chat/view/widgets/widget_chat_tile
 
 class WidgetChats extends StatefulWidget {
   final VoidCallback closeChat;
-  const WidgetChats({super.key, required this.closeChat});
+  final int? activeChatId;
+  const WidgetChats({super.key, required this.closeChat, this.activeChatId});
 
   @override
   State<WidgetChats> createState() => _WidgetChatsState();
@@ -1576,9 +1751,9 @@ class _WidgetChatsState extends State<WidgetChats> {
                 ),
               ),
               WidgetChatTiles(
-                query: _query,
-                closeChat: widget.closeChat,
-              ),
+                  query: _query,
+                  closeChat: widget.closeChat,
+                  activeChatId: widget.activeChatId),
             ],
           ),
         ),
@@ -1597,21 +1772,32 @@ import 'package:promts_application_1/features/message/cubits/message_cubit.dart'
 class WidgetChatTiles extends StatefulWidget {
   final String query;
   final VoidCallback closeChat;
+  final int? activeChatId;
   const WidgetChatTiles(
-      {super.key, required this.query, required this.closeChat});
+      {super.key,
+      required this.query,
+      required this.closeChat,
+      this.activeChatId});
 
   @override
   State<WidgetChatTiles> createState() => _WidgetChatTilesState();
 }
 
 class _WidgetChatTilesState extends State<WidgetChatTiles> {
+  bool _isNavigating = false;
+
   void _selectChat(ChatEntity chat) {
-    // Обнуляем сообщения из прошлого чата
+    if (_isNavigating) return;
+    setState(() => _isNavigating = true);
+
     context.read<MessageCubit>().removeMessages();
     Navigator.of(context).pop();
     context.read<MessageCubit>().fetch(chat.id);
-    // widget.closeChat;
     context.go('/chat/${chat.id}');
+
+    Future.delayed(const Duration(milliseconds: 500), () {
+      if (mounted) setState(() => _isNavigating = false);
+    });
   }
 
   @override
@@ -1655,11 +1841,20 @@ class _WidgetChatTilesState extends State<WidgetChatTiles> {
         itemCount: filtered.length,
         itemBuilder: (ctx, idx) {
           final chat = filtered[idx];
+          final bool isActive = chat.id == widget.activeChatId;
           return ListTile(
+            selected: isActive,
+            selectedTileColor: Theme.of(context)
+              .colorScheme.primary.withOpacity(0.15),
             leading: chat.starredChat
                 ? const Icon(Icons.star, color: Colors.amber)
                 : const Icon(Icons.chat_bubble_outline),
-            title: Text(chat.chatName),
+            title: Text(
+            chat.chatName,
+            style: isActive
+                ? const TextStyle(fontWeight: FontWeight.bold)
+                : null,
+          ),
             onTap: () => _selectChat(chat),
           );
         },
@@ -2739,6 +2934,10 @@ class _MainScreenState extends State<MainScreen> {
 
       if (mounted) context.go('/chat/${newChat.id}');
 
+      setState(() {
+        _isCreatingChat = false;
+      });
+
       await context.read<MessageCubit>().send(
             chatId: newChat.id,
             modelUriId: newChat.modelUriId,
@@ -2810,6 +3009,7 @@ class _MainScreenState extends State<MainScreen> {
           key: _scaffoldKey,
           drawer: WidgetChats(
             closeChat: _closeChat,
+            activeChatId: widget.openChatId,
           ),
           appBar: MainAppBar(
             onMenuPressed: () {
@@ -2833,6 +3033,7 @@ class _MainScreenState extends State<MainScreen> {
 import 'package:flutter/widgets.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:promts_application_1/core/cubits/data_cubit.dart';
+import 'package:promts_application_1/features/message/cubits/message_state.dart';
 import 'package:promts_application_1/features/message/data/models/message_model.dart';
 import 'package:promts_application_1/features/shared/widgets/widget_snack_bar.dart';
 import 'package:promts_application_1/features/user/cubit/user_cubit.dart';
@@ -2840,125 +3041,177 @@ import 'package:promts_application_1/features/user/domain/entities/user_entity.d
 import '../domain/entities/message_entity.dart';
 import '../domain/repositories/message_repository.dart';
 
-class MessageCubit extends DataCubit<List<MessageEntity>> {
+class MessageCubit extends Cubit<MessageState> {
+  // Меняем DataCubit на Cubit<MessageState>
   final MessageRepository repo;
-  MessageCubit({required this.repo}) : super();
+  MessageCubit({required this.repo})
+      : super(const MessageInitial()); // Начальное состояние
   int? _lastChatId;
-  int _reqToken = 0; // 🔸 счётчик запросов
+  int _reqToken = 0;
 
-  /// Загрузка истории чата
   void fetch(int chatId, {bool force = false}) {
-    // повторно не дёргаем, если данные уже есть
     if (!force &&
         _lastChatId == chatId &&
-        state is DataLoaded<List<MessageEntity>>) return;
+        (state is MessageLoaded && !(state as MessageLoaded).isGenerating)) {
+      return;
+    }
 
     _lastChatId = chatId;
-    final myToken = ++_reqToken; // для этого запроса
+    final myToken = ++_reqToken;
 
-    emit(DataLoading()); // очищаем экран / показываем спиннер
+    emit(const MessageLoadingHistory());
 
     repo.fetchMessages(chatId).then((msgs) {
-      if (myToken != _reqToken) return; // ⚠️ устарело — просто игнорируем
-      emit(DataLoaded(msgs));
+      if (myToken != _reqToken) return;
+      emit(MessageLoaded(msgs, isGenerating: false));
     }).catchError((e) {
-      if (myToken != _reqToken) return; // тоже устарело
-      emit(DataError(e.toString()));
+      if (myToken != _reqToken) return;
+      emit(MessageError(e.toString()));
     });
   }
 
-  /// Текущий чат (может пригодиться в UI)
   int? get currentChatId => _lastChatId;
 
   void removeMessages() {
     List<MessageEntity> msgs = [];
-    emit(DataLoaded(msgs));
+    emit(MessageLoaded(msgs, isGenerating: false));
   }
 
+  // Этот метод может быть не нужен, или его логика должна быть пересмотрена.
+  // Если сообщение добавляется локально перед отправкой, то isGenerating должно быть false.
   void addFirstMessage(MessageEntity message) {
-    List<MessageEntity> msgs = [];
-    msgs.add(message);
-    emit(DataLoaded(msgs));
+    List<MessageEntity> msgs = [message];
+    emit(MessageLoaded(msgs, isGenerating: false));
   }
 
-  /// Отправка нового сообщения
   Future<void> send({
     required int chatId,
     required int modelUriId,
     required String text,
     required BuildContext context,
   }) async {
-    // добавляем сообщение‑черновик пользователя сразу
     final draft = MessageEntity(
-      id: -DateTime.now().millisecondsSinceEpoch, // временный id
+      id: -DateTime.now().millisecondsSinceEpoch,
       chatId: chatId,
       modelUriId: modelUriId,
       oldMessage: false,
       role: 'user',
-      type: 'User',
       text: text,
+      type: 'MESSAGE', // В соответствии с GET /messages/{chatId}/new
       dateCreate: DateTime.now(),
     );
 
-    // ⬇️ NEW — формируем актуальный список независимо от текущего стейта
-    final current = state is DataLoaded<List<MessageEntity>>
-        ? List<MessageEntity>.from((state as DataLoaded).data)
-        : <MessageEntity>[];
+    List<MessageEntity> messagesBeforeSending;
+    if (state is MessageLoaded) {
+      messagesBeforeSending =
+          List<MessageEntity>.from((state as MessageLoaded).messages);
+    } else {
+      // Если state не MessageLoaded (e.g., MessageInitial, MessageLoadingHistory, MessageError),
+      // начинаем с пустого списка или списка только с draft.
+      // Для случая первого сообщения в новом чате (после removeMessages), messagesBeforeSending будет пустым.
+      messagesBeforeSending = <MessageEntity>[];
+    }
 
-    emit(DataLoaded([...current, draft]));
-
-    // if (state is DataLoaded<List<MessageEntity>>) {
-    //   emit(DataLoaded([...(state as DataLoaded).data, draft]));
-    // }
+    // Эмитим состояние с сообщением пользователя и индикатором загрузки
+    emit(MessageLoaded([...messagesBeforeSending, draft], isGenerating: true));
 
     try {
       final userCubit = context.read<UserCubit>();
-      final prevMemory =
-          (userCubit.state as DataLoaded<UserEntity>).data.memory;
+      String? prevMemory;
+      final userState = userCubit.state;
+      if (userState is DataLoaded<UserEntity>) {
+        // Используем DataLoaded от UserCubit
+        prevMemory = userState.data.memory;
+      }
 
       final res = await repo.sendMessage(chatId, modelUriId, text);
 
-      // 1. Ответ нейросети
-      final msg = res['messageRequest'] as Map<String, dynamic>;
-      final assistant = MessageModel.fromJson({
-        'id': msg['id'],
+      final msgData = res['messageRequest'] as Map<String, dynamic>;
+      final assistantMessage = MessageModel.fromJson({
+        'id': msgData['id'],
         'chatId': chatId,
         'modelUriId': modelUriId,
         'oldMessage': false,
-        'role': 'ASSISTANT',
-        'type': 'Assistant',
-        'text': msg['text'],
-        'dateCreate': msg['dateCreate'],
+        'role': 'assistant',
+        'type': 'MESSAGE', // В соответствии с GET /messages/{chatId}/new
+        'text': msgData['text'],
+        'dateCreate': msgData['dateCreate'],
       });
 
-      // 2. Память / баланс
-      final user = res['user'] as Map<String, dynamic>;
-
-      context.read<UserCubit>().applyMessageUserData(user);
-
-      if (user['memoryUpdated'] == true) {
-        WidgetSnackBar.showMemoryChange(
-          context: context,
-          oldMemory: prevMemory,
-          newMemory: user['newMemory'] as String? ?? '',
-        );
+      final userData = res['user'] as Map<String, dynamic>;
+      if (userState is DataLoaded<UserEntity>) {
+        // Используем DataLoaded от UserCubit
+        userCubit.applyMessageUserData(userData);
+        if (userData['memoryUpdated'] == true && prevMemory != null) {
+          WidgetSnackBar.showMemoryChange(
+            context: context,
+            oldMemory: prevMemory,
+            newMemory: userData['newMemory'] as String? ?? '',
+          );
+        }
       }
 
-      // 3. Обновляем список
-      final updated = current
-          .where((m) => m.id != draft.id) // убрали черновик‑placeholder
-          .toList()
-        ..addAll([
-          MessageModel.fromEntity(
-              draft), // финальная копия сообщения пользователя
-          assistant, // ответ нейросети
-        ]);
+      final finalMessages = List<MessageEntity>.from(messagesBeforeSending)
+        ..add(draft) // Добавляем сообщение пользователя
+        ..add(assistantMessage); // Добавляем ответ ассистента
 
-      emit(DataLoaded(updated));
+      emit(MessageLoaded(finalMessages, isGenerating: false));
     } catch (e) {
+      emit(MessageLoaded([...messagesBeforeSending, draft],
+          isGenerating: false));
       WidgetSnackBar.showError(context, e.toString());
     }
   }
+}
+// lib/features/message/cubits/message_state.dart
+
+import 'package:flutter/foundation.dart';
+import 'package:promts_application_1/features/message/domain/entities/message_entity.dart';
+
+@immutable
+abstract class MessageState {
+  const MessageState();
+}
+
+class MessageInitial extends MessageState {
+  const MessageInitial();
+}
+
+class MessageLoadingHistory extends MessageState {
+  const MessageLoadingHistory();
+}
+
+class MessageLoaded extends MessageState {
+  final List<MessageEntity> messages;
+  final bool isGenerating;
+
+  const MessageLoaded(this.messages, {this.isGenerating = false});
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is MessageLoaded &&
+          runtimeType == other.runtimeType &&
+          listEquals(messages, other.messages) &&
+          isGenerating == other.isGenerating;
+
+  @override
+  int get hashCode => messages.hashCode ^ isGenerating.hashCode;
+}
+
+class MessageError extends MessageState {
+  final String message;
+  const MessageError(this.message);
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is MessageError &&
+          runtimeType == other.runtimeType &&
+          message == other.message;
+
+  @override
+  int get hashCode => message.hashCode;
 }
 import 'package:promts_application_1/core/service/network_service.dart';
 import 'package:promts_application_1/di/locator.dart';
@@ -3118,8 +3371,99 @@ abstract class MessageRepository {
 
   Future<Map<String, dynamic>> regenerateMessage(int messageId, int modelUriId);
 }
+// lib/features/message/view/widgets/code_block.dart
+import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:promts_application_1/features/shared/widgets/widget_snack_bar.dart';
+
+class CopyableCodeBlock extends StatefulWidget {
+  final String code;
+  const CopyableCodeBlock({super.key, required this.code});
+
+  @override
+  State<CopyableCodeBlock> createState() => _CopyableCodeBlockState();
+}
+
+class _CopyableCodeBlockState extends State<CopyableCodeBlock> {
+  bool _copied = false;
+  Timer? _timer;
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
+
+  Future<void> _handleCopy() async {
+    await Clipboard.setData(ClipboardData(text: widget.code));
+    setState(() => _copied = true);
+
+    WidgetSnackBar.showSuccess(context, "Успешно скопировано");
+
+    _timer?.cancel();
+    _timer = Timer(const Duration(seconds: 2), () {
+      if (mounted) setState(() => _copied = false);
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Stack(
+      children: [
+        // Сам код
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: const Color.fromARGB(255, 163, 162, 162),
+            borderRadius: BorderRadius.circular(6),
+          ),
+          child: SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: SelectableText(
+              widget.code,
+              style: const TextStyle(
+                fontFamily: 'monospace',
+                color: Colors.black,
+              ),
+            ),
+          ),
+        ),
+        // Кнопка копирования
+        Positioned(
+          top: 0,
+          right: 0,
+          child: IconButton(
+            iconSize: 16,
+            tooltip: _copied ? 'Скопировано' : 'Скопировать',
+            onPressed: _copied ? null : _handleCopy,
+            icon: Icon(_copied ? Icons.check : Icons.copy, color: Colors.white),
+          ),
+        ),
+      ],
+    );
+  }
+}
+// lib/features/message/view/widgets/code_block_builder.dart
+import 'package:flutter/material.dart';
+import 'package:flutter_markdown/flutter_markdown.dart';
+import 'package:markdown/markdown.dart' as md;
+import 'code_block.dart';
+
+class CodeBlockBuilder extends MarkdownElementBuilder {
+  @override
+  Widget visitElementAfter(md.Element element, TextStyle? preferredStyle) {
+    final code = element.textContent;
+    return CopyableCodeBlock(code: code);
+  }
+}
+import 'dart:async';
+
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:promts_application_1/features/message/domain/entities/message_entity.dart';
+import 'package:promts_application_1/features/shared/widgets/widget_snack_bar.dart';
 
 class MessageActions extends StatefulWidget {
   final MessageEntity message;
@@ -3130,6 +3474,28 @@ class MessageActions extends StatefulWidget {
 }
 
 class _MessageActionsState extends State<MessageActions> {
+  bool _copied = false;
+  Timer? _timer;
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
+
+  Future<void> _handleCopy() async {
+    await Clipboard.setData(
+        ClipboardData(text: widget.message.text));
+    setState(() => _copied = true);
+
+    WidgetSnackBar.showSuccess(context, "Успешно скопировано");
+
+    _timer?.cancel();
+    _timer = Timer(const Duration(seconds: 2), () {
+      if (mounted) setState(() => _copied = false);
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Row(
@@ -3139,9 +3505,7 @@ class _MessageActionsState extends State<MessageActions> {
         IconButton(
           icon: const Icon(Icons.copy),
           iconSize: 16,
-          onPressed: () {
-            // Пока без реализации
-          },
+          onPressed: _copied ? null : _handleCopy,
         ),
         // Кнопка перегенерации (только для сообщений чат-бота)
         if (!(widget.message.role == "USER"))
@@ -3168,6 +3532,7 @@ class _MessageActionsState extends State<MessageActions> {
 import 'package:flutter/material.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:promts_application_1/features/message/domain/entities/message_entity.dart';
+import 'package:promts_application_1/features/message/view/widgets/code_block_builder.dart';
 
 class TextBubble extends StatelessWidget {
   final MessageEntity message;
@@ -3192,10 +3557,11 @@ class TextBubble extends StatelessWidget {
           MarkdownBody(
             data: message.text,
             selectable: true,
-            styleSheet: MarkdownStyleSheet.fromTheme(Theme.of(context)),
-            sizedImageBuilder: (config) {
-              return Image.network(config.uri.toString());
+            builders: {
+              'pre': CodeBlockBuilder(),
             },
+            styleSheet: MarkdownStyleSheet.fromTheme(Theme.of(context)),
+            sizedImageBuilder: (config) => Image.network(config.uri.toString()),
           ),
         ],
       ),
@@ -3636,7 +4002,6 @@ class NeuroEmptyMessage extends StatelessWidget {
 }
 // lib/features/shared/widgets/memory_update_sheet.dart
 import 'package:flutter/material.dart';
-import 'package:flutter/widgets.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:promts_application_1/features/user/cubit/user_cubit.dart';
 

@@ -5,7 +5,8 @@ import 'package:promts_application_1/features/chat/view/widgets/widget_chat_tile
 
 class WidgetChats extends StatefulWidget {
   final VoidCallback closeChat;
-  const WidgetChats({super.key, required this.closeChat});
+  final int? activeChatId;
+  const WidgetChats({super.key, required this.closeChat, this.activeChatId});
 
   @override
   State<WidgetChats> createState() => _WidgetChatsState();
@@ -50,9 +51,9 @@ class _WidgetChatsState extends State<WidgetChats> {
                 ),
               ),
               WidgetChatTiles(
-                query: _query,
-                closeChat: widget.closeChat,
-              ),
+                  query: _query,
+                  closeChat: widget.closeChat,
+                  activeChatId: widget.activeChatId),
             ],
           ),
         ),

@@ -6,11 +6,11 @@ class AnimatedGradientBackground extends StatefulWidget {
   final Duration duration;
 
   const AnimatedGradientBackground({
-    Key? key,
+    super.key,
     required this.colors,
     required this.child,
     this.duration = const Duration(seconds: 5),
-  }) : super(key: key);
+  });
 
   @override
   State<AnimatedGradientBackground> createState() =>

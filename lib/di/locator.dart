@@ -2,6 +2,7 @@
 import 'package:get_it/get_it.dart';
 import 'package:promts_application_1/core/config/config.dart';
 import 'package:promts_application_1/core/service/network_service.dart';
+import 'package:promts_application_1/core/storage/token_storage.dart';
 import 'package:promts_application_1/features/auth/cubits/auth_cubit.dart';
 import 'package:promts_application_1/features/auth/cubits/login_cubit.dart';
 import 'package:promts_application_1/features/auth/cubits/register_cubit.dart';
@@ -31,8 +32,8 @@ import 'package:promts_application_1/features/user/domain/repositories/user_repo
 
 final getIt = GetIt.instance;
 
-void setup(int appMode, String baseUrl, String jwtToken) {
-  getIt.registerLazySingleton(() => AppConfig(baseUrl, jwtToken));
+void setup(int appMode, String baseUrl, String jwtToken, TokenStorage storage) {
+  getIt.registerLazySingleton(() => AppConfig(baseUrl, jwtToken, storage));
   getIt.registerLazySingleton(() => http.Client());
 
   //NetworkService

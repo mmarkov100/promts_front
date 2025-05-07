@@ -89,8 +89,8 @@ class _MainScreenState extends State<MainScreen> {
       if (mounted) context.go('/chat/${newChat.id}');
 
       setState(() {
-          _isCreatingChat = false;
-        });
+        _isCreatingChat = false;
+      });
 
       await context.read<MessageCubit>().send(
             chatId: newChat.id,
@@ -163,6 +163,7 @@ class _MainScreenState extends State<MainScreen> {
           key: _scaffoldKey,
           drawer: WidgetChats(
             closeChat: _closeChat,
+            activeChatId: widget.openChatId,
           ),
           appBar: MainAppBar(
             onMenuPressed: () {

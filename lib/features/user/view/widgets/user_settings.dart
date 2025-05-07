@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:promts_application_1/core/cubits/data_cubit.dart';
+import 'package:promts_application_1/features/auth/cubits/auth_cubit.dart';
 import 'package:promts_application_1/features/neuro/data/models/neuro_model.dart';
 import 'package:promts_application_1/features/user/cubit/user_cubit.dart';
 import 'package:promts_application_1/features/user/domain/entities/user_entity.dart';
+import 'package:promts_application_1/features/user/view/widgets/exit_confirm.dart';
 
 class UserSettings extends StatefulWidget {
   final UserEntity userEntity;
@@ -33,6 +35,10 @@ class _UserSettingsState extends State<UserSettings> {
   void initState() {
     super.initState();
     _initFromEntity(widget.userEntity);
+  }
+
+  void _logout() {
+    context.read<AuthCubit>().logout();
   }
 
   void _initFromEntity(UserEntity user) {
@@ -208,6 +214,15 @@ class _UserSettingsState extends State<UserSettings> {
         ),
       ),
       actions: [
+        ElevatedButton(
+          onPressed: () {
+            showDialog(
+              context: context,
+              builder: (_) => ExitConfirm(onExit: _logout),
+            );
+          },
+          child: const Text("Выйти"),
+        ),
         TextButton(
           onPressed: () => Navigator.of(context).pop(),
           child: const Text("Отмена"),

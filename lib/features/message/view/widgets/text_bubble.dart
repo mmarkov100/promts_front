@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:promts_application_1/features/message/domain/entities/message_entity.dart';
+import 'package:promts_application_1/features/message/view/widgets/code_block_builder.dart';
 
 class TextBubble extends StatelessWidget {
   final MessageEntity message;
@@ -25,10 +26,11 @@ class TextBubble extends StatelessWidget {
           MarkdownBody(
             data: message.text,
             selectable: true,
-            styleSheet: MarkdownStyleSheet.fromTheme(Theme.of(context)),
-            sizedImageBuilder: (config) {
-              return Image.network(config.uri.toString());
+            builders: {
+              'pre': CodeBlockBuilder(),
             },
+            styleSheet: MarkdownStyleSheet.fromTheme(Theme.of(context)),
+            sizedImageBuilder: (config) => Image.network(config.uri.toString()),
           ),
         ],
       ),
