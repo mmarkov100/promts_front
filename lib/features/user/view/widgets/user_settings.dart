@@ -2,7 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:promts_application_1/core/cubits/data_cubit.dart';
 import 'package:promts_application_1/features/auth/cubits/auth_cubit.dart';
+import 'package:promts_application_1/features/chat/cubits/chat_cubit.dart';
+import 'package:promts_application_1/features/chat/domain/entities/chat_entity.dart';
+import 'package:promts_application_1/features/message/cubits/message_cubit.dart';
+import 'package:promts_application_1/features/neuro/cubits/neuro_cubit.dart';
 import 'package:promts_application_1/features/neuro/data/models/neuro_model.dart';
+import 'package:promts_application_1/features/neuro/domain/entities/neuro_entity.dart';
 import 'package:promts_application_1/features/user/cubit/user_cubit.dart';
 import 'package:promts_application_1/features/user/domain/entities/user_entity.dart';
 import 'package:promts_application_1/features/user/view/widgets/exit_confirm.dart';
@@ -38,6 +43,14 @@ class _UserSettingsState extends State<UserSettings> {
   }
 
   void _logout() {
+    // ignore: invalid_use_of_protected_member, invalid_use_of_visible_for_testing_member
+    context.read<UserCubit>().emit(DataInitial<UserEntity>());
+    // ignore: invalid_use_of_protected_member, invalid_use_of_visible_for_testing_member
+    context.read<ChatCubit>().emit(DataInitial<List<ChatEntity>>());
+    // ignore: invalid_use_of_protected_member, invalid_use_of_visible_for_testing_member
+    context.read<NeuroCubit>().emit(DataInitial<List<NeuroEntity>>());
+    context.read<MessageCubit>().removeMessages();
+
     context.read<AuthCubit>().logout();
   }
 

@@ -26,7 +26,10 @@ class MessageInputField extends StatelessWidget {
     return Container(
       constraints: constraints,
       padding: const EdgeInsets.all(8.0),
-      color: Theme.of(context).colorScheme.surfaceContainerHighest,
+      decoration: BoxDecoration(
+        color: const Color.fromARGB(255, 196, 194, 194),
+        borderRadius: BorderRadius.circular(16),
+      ),
       child: Row(
         children: [
           Expanded(
@@ -34,9 +37,16 @@ class MessageInputField extends StatelessWidget {
               controller: controller,
               decoration: InputDecoration(
                 hintText: hintText,
-                border: const OutlineInputBorder(),
+                labelStyle: const TextStyle(color: Colors.white70),
                 filled: true,
-                fillColor: Theme.of(context).colorScheme.surface,
+                fillColor: Colors.white,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: const BorderSide(color: Colors.white54),
+                ),
               ),
               keyboardType: TextInputType.multiline,
               minLines: minLines,
@@ -50,7 +60,8 @@ class MessageInputField extends StatelessWidget {
               onPressed: onSend,
               tooltip: "Отправить",
             ),
-          if(!enabled) const IconButton(
+          if (!enabled)
+            const IconButton(
               icon: Icon(Icons.send),
               onPressed: null,
               tooltip: "Отправить",

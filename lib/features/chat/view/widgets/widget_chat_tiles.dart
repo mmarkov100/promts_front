@@ -81,18 +81,46 @@ class _WidgetChatTilesState extends State<WidgetChatTiles> {
           final bool isActive = chat.id == widget.activeChatId;
           return ListTile(
             selected: isActive,
-            selectedTileColor: Theme.of(context)
-              .colorScheme.primary.withOpacity(0.15),
+            selectedTileColor:
+                Theme.of(context).colorScheme.primary.withOpacity(0.15),
             leading: chat.starredChat
                 ? const Icon(Icons.star, color: Colors.amber)
                 : const Icon(Icons.chat_bubble_outline),
             title: Text(
-            chat.chatName,
-            style: isActive
-                ? const TextStyle(fontWeight: FontWeight.bold)
-                : null,
-          ),
+              chat.chatName,
+              style: isActive
+                  ? const TextStyle(fontWeight: FontWeight.bold)
+                  : null,
+            ),
             onTap: () => _selectChat(chat),
+            onLongPress: () async {
+              final ok = await showDialog<bool>(
+                context: context,
+                builder: (_) => AlertDialog(
+                  title: const Text('Удалить чат?'),
+                  content: Text('«${chat.chatName}» будет удалён. Продолжить?'),
+                  actions: [
+                    TextButton(
+                        onPressed: () => Navigator.pop(context, false),
+                        child: const Text('Отмена')),
+                    ElevatedButton(
+                      style:
+                          ElevatedButton.styleFrom(backgroundColor: Colors.red),
+                      onPressed: () => Navigator.pop(context, true),
+                      child: const Text('Удалить'),
+                    ),
+                  ],
+                ),
+              );
+
+              if (ok == true) {
+                await context.read<ChatCubit>().deleteChat(chat.id, context);
+                if (chat.id == widget.activeChatId && mounted) {
+                  context.read<MessageCubit>().removeMessages();
+                  context.go('/chat'); // закрываем экран, если он был открыт
+                }
+              }
+            },
           );
         },
       );

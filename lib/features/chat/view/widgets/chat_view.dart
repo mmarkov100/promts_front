@@ -68,101 +68,104 @@ class _ChatViewBodyState extends State<_ChatViewBody> {
   @override
   Widget build(BuildContext context) {
     final bottomInset = MediaQuery.of(context).viewPadding.bottom;
-    return Column(
-      children: [
-        Expanded(
-          child: BlocBuilder<MessageCubit, MessageState>(
-            builder: (context, state) {
-              print("ChatView BlocBuilder state: $state");
-              if (state is MessageLoadingHistory || state is MessageInitial) {
-                return const Center(child: CircularProgressIndicator());
-              }
-              if (state is MessageError) {
-                return Center(
-                    child: Text(
-                        "Ошибка в загрузке сообщений: ${state.message}, перезагрузите страницу"));
-              }
-              if (state is MessageLoaded) {
-                final msgs = state.messages;
-
-                WidgetsBinding.instance.addPostFrameCallback((_) {
-                  if (_scroll.hasClients) {
-                    _scroll.jumpTo(_scroll.position.maxScrollExtent);
-                  }
-                });
-
-                if (msgs.isNotEmpty) {
-                  return SizedBox(
-                    width: 1000,
-                    child: ListView.builder(
-                      controller: _scroll,
-                      itemCount: msgs.length,
-                      itemBuilder: (_, i) =>
-                          WidgetMessageBubble(message: msgs[i]),
-                    ),
-                  );
-                } else if (!state.isGenerating) {
-                  return const Center(
-                      child: Text("Напишите первое сообщение!"));
+    return Padding(
+      padding: const EdgeInsets.all(16.0),
+      child: Column(
+        children: [
+          Expanded(
+            child: BlocBuilder<MessageCubit, MessageState>(
+              builder: (context, state) {
+                print("ChatView BlocBuilder state: $state");
+                if (state is MessageLoadingHistory || state is MessageInitial) {
+                  return const Center(child: CircularProgressIndicator());
                 }
+                if (state is MessageError) {
+                  return Center(
+                      child: Text(
+                          "Ошибка в загрузке сообщений: ${state.message}, перезагрузите страницу"));
+                }
+                if (state is MessageLoaded) {
+                  final msgs = state.messages;
+      
+                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                    if (_scroll.hasClients) {
+                      _scroll.jumpTo(_scroll.position.maxScrollExtent);
+                    }
+                  });
+      
+                  if (msgs.isNotEmpty) {
+                    return SizedBox(
+                      width: 1000,
+                      child: ListView.builder(
+                        controller: _scroll,
+                        itemCount: msgs.length,
+                        itemBuilder: (_, i) =>
+                            WidgetMessageBubble(message: msgs[i]),
+                      ),
+                    );
+                  } else if (!state.isGenerating) {
+                    return const Center(
+                        child: Text("Напишите первое сообщение!"));
+                  }
+                }
+                return const SizedBox.shrink();
+              },
+            ),
+          ),
+          BlocBuilder<MessageCubit, MessageState>(
+            builder: (context, state) {
+              bool isCurrentlyGenerating = false;
+              if (state is MessageLoaded) {
+                isCurrentlyGenerating = state.isGenerating;
+              }
+              if (isCurrentlyGenerating) {
+                return const Padding(
+                  padding: EdgeInsets.only(bottom: 6),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      ),
+                      SizedBox(width: 8),
+                      Text('Ассистент печатает…'),
+                    ],
+                  ),
+                );
               }
               return const SizedBox.shrink();
             },
           ),
-        ),
-        BlocBuilder<MessageCubit, MessageState>(
-          builder: (context, state) {
-            bool isCurrentlyGenerating = false;
-            if (state is MessageLoaded) {
-              isCurrentlyGenerating = state.isGenerating;
-            }
-            if (isCurrentlyGenerating) {
-              return const Padding(
-                padding: EdgeInsets.only(bottom: 6),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    SizedBox(
-                      width: 16,
-                      height: 16,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    ),
-                    SizedBox(width: 8),
-                    Text('Ассистент печатает…'),
-                  ],
-                ),
-              );
-            }
-            return const SizedBox.shrink();
-          },
-        ),
-        Padding(
-          padding: EdgeInsets.fromLTRB(
-            0,
-            0,
-            0,
-            bottomInset + 56 + 8,
+          Padding(
+            padding: EdgeInsets.fromLTRB(
+              0,
+              0,
+              0,
+              bottomInset + 56 + 8,
+            ),
+            child: BlocBuilder<MessageCubit, MessageState>(
+              builder: (context, state) {
+                bool inputFieldEnabled = true;
+                if (state is MessageLoaded) {
+                  inputFieldEnabled = !state.isGenerating;
+                } else if (state is MessageLoadingHistory ||
+                    state is MessageInitial) {
+                  inputFieldEnabled = false;
+                }
+      
+                return MessageInputField(
+                  controller: _input,
+                  hintText: "Введите сообщение",
+                  onSend: _handleSend,
+                  enabled: inputFieldEnabled,
+                );
+              },
+            ),
           ),
-          child: BlocBuilder<MessageCubit, MessageState>(
-            builder: (context, state) {
-              bool inputFieldEnabled = true;
-              if (state is MessageLoaded) {
-                inputFieldEnabled = !state.isGenerating;
-              } else if (state is MessageLoadingHistory ||
-                  state is MessageInitial) {
-                inputFieldEnabled = false;
-              }
-
-              return MessageInputField(
-                controller: _input,
-                hintText: "Введите сообщение",
-                onSend: _handleSend,
-                enabled: inputFieldEnabled,
-              );
-            },
-          ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }

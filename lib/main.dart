@@ -21,7 +21,8 @@ void main() async {
   final savedToken = await storage.read() ?? ''; // Вместо пустой строки просто введи моковый токен 1234jwt, если хочешь зайти вне ака
 
   // 0 - продовый, 1 - тестовый (вообще пока не работает)
-  setup(0, "https://0bd4-104-253-187-142.ngrok-free.app", savedToken, storage);
+  // setup(0, "https://88cc-104-253-187-142.ngrok-free.app", savedToken, storage);
+  setup(0, "http://localhost:8090", savedToken, storage);
 
   final authCubit = getIt<AuthCubit>();
   final loginCubit = getIt<LoginCubit>();

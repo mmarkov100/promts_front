@@ -9,8 +9,13 @@ import 'package:promts_application_1/features/auth/domain/entities/login_entity.
 import 'package:promts_application_1/features/auth/domain/entities/register_entity.dart';
 import 'package:promts_application_1/core/config/config.dart';
 import 'package:promts_application_1/core/cubits/data_cubit.dart';
+import 'package:promts_application_1/features/chat/cubits/chat_cubit.dart';
+import 'package:promts_application_1/features/message/cubits/message_cubit.dart';
+import 'package:promts_application_1/features/neuro/cubits/neuro_cubit.dart';
+import 'package:promts_application_1/features/shared/widgets/beauty_box_decoration.dart';
 import 'package:promts_application_1/features/shared/widgets/widget_snack_bar.dart';
 import 'package:animated_gradient_background/animated_gradient_background.dart';
+import 'package:promts_application_1/features/user/cubit/user_cubit.dart';
 
 class LoginPageScreen extends StatefulWidget {
   const LoginPageScreen({super.key});
@@ -72,15 +77,27 @@ class _LoginPageScreenState extends State<LoginPageScreen> {
     return MultiBlocListener(
         listeners: [
           BlocListener<LoginCubit, DataState<LoginEntity>>(
-            listener: (context, state) {
+            listener: (context, state) async {
               if (state is DataLoading<LoginEntity>) {
                 setState(() {
                   _isLoading = true;
                 });
               } else if (state is DataLoaded<LoginEntity>) {
                 final token = state.data.token;
-                getIt<AppConfig>().setJwtToken(token);
+                await getIt<AppConfig>().setJwtToken(token);
                 context.read<AuthCubit>().fetch();
+                context
+                    .read<UserCubit>()
+                    .fetch(); // свежие данные о пользователе
+                context
+                    .read<ChatCubit>()
+                    .fetchChats(); // список чатов нового юзера
+                context
+                    .read<NeuroCubit>()
+                    .fetch(); // список доступных нейросетей
+                context
+                    .read<MessageCubit>()
+                    .removeMessages(); // очистить старую историю
                 context.go('/chat');
               } else if (state is DataError<LoginEntity>) {
                 WidgetSnackBar.showError(context, state.message);
@@ -127,18 +144,8 @@ class _LoginPageScreenState extends State<LoginPageScreen> {
                   padding: const EdgeInsets.all(16.0),
                   child: Container(
                     padding: const EdgeInsets.all(24),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: Colors.white.withOpacity(0.3)),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.3),
-                          blurRadius: 12,
-                          offset: const Offset(0, 6),
-                        ),
-                      ],
-                    ),
+                    decoration:
+                        BeautyBoxDecoration().buildBoxDecoration(context),
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [

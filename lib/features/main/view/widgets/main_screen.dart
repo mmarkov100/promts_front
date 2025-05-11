@@ -76,6 +76,7 @@ class _MainScreenState extends State<MainScreen> {
 
       final body = {
         'modelUriId': _draft['modelUriId'] ?? user.standartModelUriId,
+        'message': text,
         'temperature': _draft['temperature'] ?? 1.0,
         'context': _draft['context'] ?? '',
         'useMemory': _draft['useMemory'] ?? user.memoryEnabled,
