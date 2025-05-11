@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
+import 'package:promts_application_1/features/chat/cubits/chat_cubit.dart';
 import 'package:promts_application_1/features/shared/widgets/widget_snack_bar.dart';
 
 /// Абстрактный диалог настроек чата:
@@ -189,6 +192,35 @@ class _AbstractChatSettingsDialogState
         TextButton(
           onPressed: _isSaving ? null : () => Navigator.of(context).pop(),
           child: const Text('Отмена'),
+        ),
+        TextButton(
+          style: TextButton.styleFrom(foregroundColor: Colors.red),
+          onPressed: () async {
+            final ok = await showDialog<bool>(
+              context: context,
+              builder: (_) => AlertDialog(
+                title: const Text('Удалить чат?'),
+                content: const Text(
+                    'История сообщений будет безвозвратно потеряна. Продолжить?'),
+                actions: [
+                  TextButton(
+                    child: const Text('Отмена'),
+                    onPressed: () => Navigator.pop(context, false),
+                  ),
+                  ElevatedButton(
+                    child: const Text('Удалить', style: TextStyle(color: Colors.red),),
+                    onPressed: () => Navigator.pop(context, true),
+                  ),
+                ],
+              ),
+            );
+
+            if (ok == true) {
+              await context.read<ChatCubit>().deleteChat(widget.chatId!, context);
+              if (context.mounted) context.go('/chat');
+            }
+          },
+          child: const Text('Удалить'),
         ),
         _isSaving
             ? const SizedBox(

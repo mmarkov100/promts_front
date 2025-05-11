@@ -44,6 +44,8 @@ dependencies:
   go_router: ^15.1.1
   intl: ^0.20.2
   animated_gradient_background: 0.0.1
+  shared_preferences: ^2.5.3
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

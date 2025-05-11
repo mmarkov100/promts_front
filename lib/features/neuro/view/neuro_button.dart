@@ -67,7 +67,7 @@ class _NeuroButtonState extends State<NeuroButton> {
                 initialUpdateMemory: c.updateMemory,
                 initialModelId: _selectedNeuro?.id,
                 onSave: (data) async {
-                  await context.read<ChatCubit>().saveSettings(data);
+                  await context.read<ChatCubit>().saveSettings(data, context);
 
                   if (data['modelUriId'] != null) {
                     widget.onChatCreateSettings(

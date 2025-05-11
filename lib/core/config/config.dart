@@ -1,17 +1,20 @@
+// lib/core/config/config.dart
+import '../storage/token_storage.dart';
+
 class AppConfig {
   final String _baseUrl;
-  late String _jwtToken;
-  AppConfig(this._baseUrl, this._jwtToken);
+  String _jwtToken;
+  final TokenStorage _storage;
 
-  String getBaseUrl() {
-    return _baseUrl;
-  }
+  AppConfig(this._baseUrl, this._jwtToken, this._storage);
 
-  String getJwtToken() {
-    return _jwtToken;
-  }
+  String getBaseUrl() => _baseUrl;
+  String getJwtToken() => _jwtToken;
 
-  void setJwtToken(String token) {
+  Future<void> setJwtToken(String token) async {
     _jwtToken = token;
+    await _storage.write(token);          // сохраняем диск/Keychain
   }
+
+  Future<void> clearJwtToken() => setJwtToken('');
 }

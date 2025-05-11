@@ -76,6 +76,7 @@ class _MainScreenState extends State<MainScreen> {
 
       final body = {
         'modelUriId': _draft['modelUriId'] ?? user.standartModelUriId,
+        'message': text,
         'temperature': _draft['temperature'] ?? 1.0,
         'context': _draft['context'] ?? '',
         'useMemory': _draft['useMemory'] ?? user.memoryEnabled,
@@ -89,8 +90,8 @@ class _MainScreenState extends State<MainScreen> {
       if (mounted) context.go('/chat/${newChat.id}');
 
       setState(() {
-          _isCreatingChat = false;
-        });
+        _isCreatingChat = false;
+      });
 
       await context.read<MessageCubit>().send(
             chatId: newChat.id,
@@ -163,6 +164,7 @@ class _MainScreenState extends State<MainScreen> {
           key: _scaffoldKey,
           drawer: WidgetChats(
             closeChat: _closeChat,
+            activeChatId: widget.openChatId,
           ),
           appBar: MainAppBar(
             onMenuPressed: () {

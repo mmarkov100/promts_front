@@ -1,6 +1,9 @@
+// lib/features/chat/cubits/chat_cubit.dart
+import 'package:flutter/material.dart';
 import 'package:promts_application_1/core/cubits/data_cubit.dart';
 import 'package:promts_application_1/features/chat/domain/entities/chat_entity.dart';
 import 'package:promts_application_1/features/chat/domain/repositories/chat_repository.dart';
+import 'package:promts_application_1/features/shared/widgets/widget_snack_bar.dart';
 
 class ChatCubit extends DataCubit<List<ChatEntity>> {
   final ChatRepository repository;
@@ -10,7 +13,8 @@ class ChatCubit extends DataCubit<List<ChatEntity>> {
 
   void fetchChats() => load(() => repository.fetchChats());
 
-  Future<void> saveSettings(Map<String, dynamic> body) async {
+  Future<void> saveSettings(
+      Map<String, dynamic> body, BuildContext context) async {
     try {
       final updated = await repository.updateChat(body);
 
@@ -21,9 +25,10 @@ class ChatCubit extends DataCubit<List<ChatEntity>> {
         }).toList();
 
         emit(DataLoaded<List<ChatEntity>>(newChats));
+        WidgetSnackBar.showSuccess(context, "Успешное изменение чата");
       }
-    } catch (e, st) {
-      print("Ошибка при обновлении чата: $e\n$st");
+    } catch (e) {
+      WidgetSnackBar.showError(context, "Произошла ошибка в изменении чата");
       emit(DataError<List<ChatEntity>>(e.toString()));
     }
   }
@@ -38,6 +43,24 @@ class ChatCubit extends DataCubit<List<ChatEntity>> {
       emit(DataLoaded<List<ChatEntity>>(current));
     }
     return newChat;
+  }
+
+  Future<void> deleteChat(int chatId, BuildContext context) async {
+    try {
+      await repository.deleteChat(chatId);
+
+      if (state is DataLoaded<List<ChatEntity>>) {
+        final updated = (state as DataLoaded<List<ChatEntity>>)
+            .data
+            .where((c) => c.id != chatId)
+            .toList();
+        emit(DataLoaded(updated));
+        WidgetSnackBar.showSuccess(context, "Успешное удаление чата");
+      }
+    } catch (e) {
+      WidgetSnackBar.showError(context, "Произошла ошибка в удалении чата");
+      // emit(DataError<List<ChatEntity>>(e.toString()));
+    }
   }
 
   void addLocalChat(ChatEntity chat) {
