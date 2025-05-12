@@ -42,7 +42,7 @@ class MessageInputField extends StatelessWidget {
           Expanded(
             child: TextField(
               controller: controller,
-              onSubmitted: (_) => onSend(), // Нажатие Enter → отправка
+              onSubmitted: (_) => onSend(),
               style: const TextStyle(color: Colors.white),
               decoration: InputDecoration(
                 hintText: hintText,
@@ -62,13 +62,13 @@ class MessageInputField extends StatelessWidget {
               keyboardType: TextInputType.text,
               minLines: minLines,
               maxLines: maxLines,
-              textInputAction: TextInputAction.send, // изменяет клавишу на "send"
+              textInputAction: TextInputAction.send,
             ),
           ),
           const SizedBox(width: 8),
           IconButton(
             icon: Icon(Icons.send,
-                color: enabled ? Colors.white : Colors.white24),
+                color: enabled ? const Color.fromARGB(255, 212, 212, 212) : Colors.white24),
             onPressed: enabled ? onSend : null,
             tooltip: "Отправить",
           ),
