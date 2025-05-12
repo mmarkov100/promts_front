@@ -23,6 +23,7 @@ void main() async {
 
   // 0 - продовый, 1 - тестовый (вообще пока не работает)
   setup(0, "https://1960-104-253-187-142.ngrok-free.app", savedToken, storage);
+
   //setup(0, "https://a610-104-253-187-142.ngrok-free.app", "1234jwt");
 
   final authCubit = getIt<AuthCubit>();
