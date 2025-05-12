@@ -48,18 +48,36 @@ class _MainBodyState extends State<MainBody> {
     widget.onChatCreateSettings(data);
   }
 
-  @override
-  Widget build(BuildContext context) {
-    final hasChat = widget.chatEntity != null;
+@override
+Widget build(BuildContext context) {
+  final hasChat = widget.chatEntity != null;
 
-    return Column(
-      children: [
-        Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: BlocBuilder<UserCubit, DataState<UserEntity>>(
+  return Padding(
+    padding: const EdgeInsets.all(16.0),
+    child: Container(
+      width: double.infinity,
+      height: double.infinity,
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.08),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.white.withOpacity(0.2)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.3),
+            blurRadius: 12,
+            offset: const Offset(0, 6),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          BlocBuilder<UserCubit, DataState<UserEntity>>(
             builder: (context, userState) {
               UserEntity? user;
-              if (userState is DataLoaded<UserEntity>) user = userState.data;
+              if (userState is DataLoaded<UserEntity>) {
+                user = userState.data;
+              }
 
               return NeuroButton(
                 currentChat: widget.chatEntity,
@@ -68,22 +86,26 @@ class _MainBodyState extends State<MainBody> {
               );
             },
           ),
-        ),
-        Expanded(
-          child: hasChat
-              ? ChatView(
-                  chat: widget.chatEntity!,
-                  chatId: widget.chatId!,
-                  overrideModelId: _overrideModelId,
-                )
-              : widget.showChat
-                  ? const Center(child: CircularProgressIndicator())
-                  : HomeView(
-                      isCreatingChat: widget.isCreatingChat,
-                      openChatWithMessage: widget.openChatWithMessageWithText,
-                    ),
-        ),
-      ],
-    );
-  }
+          const SizedBox(height: 16),
+          Expanded(
+            child: hasChat
+                ? ChatView(
+                    chat: widget.chatEntity!,
+                    chatId: widget.chatId!,
+                    overrideModelId: _overrideModelId,
+                  )
+                : widget.showChat
+                    ? const Center(child: CircularProgressIndicator())
+                    : HomeView(
+                        isCreatingChat: widget.isCreatingChat,
+                        openChatWithMessage:
+                            widget.openChatWithMessageWithText,
+                      ),
+          ),
+        ],
+      ),
+    ),
+  );
+}
+
 }
