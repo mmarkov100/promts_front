@@ -1,4 +1,3 @@
-// lib/features/shared/widgets/message_input_field.dart
 import 'package:flutter/material.dart';
 
 class MessageInputField extends StatelessWidget {
@@ -25,47 +24,54 @@ class MessageInputField extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       constraints: constraints,
-      padding: const EdgeInsets.all(8.0),
+      padding: const EdgeInsets.all(12.0),
       decoration: BoxDecoration(
-        color: const Color.fromARGB(255, 196, 194, 194),
+        color: Colors.white.withOpacity(0.08),
         borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.white.withOpacity(0.2)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.2),
+            blurRadius: 8,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
       child: Row(
         children: [
           Expanded(
             child: TextField(
               controller: controller,
+              onSubmitted: (_) => onSend(), // Нажатие Enter → отправка
+              style: const TextStyle(color: Colors.white),
               decoration: InputDecoration(
                 hintText: hintText,
-                labelStyle: const TextStyle(color: Colors.white70),
+                hintStyle: const TextStyle(color: Colors.white54),
                 filled: true,
-                fillColor: Colors.white,
+                fillColor: Colors.white.withOpacity(0.1),
+                contentPadding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
                 enabledBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
-                  borderSide: const BorderSide(color: Colors.white54),
+                  borderSide: const BorderSide(color: Colors.white30),
                 ),
               ),
-              keyboardType: TextInputType.multiline,
+              keyboardType: TextInputType.text,
               minLines: minLines,
               maxLines: maxLines,
+              textInputAction: TextInputAction.send, // изменяет клавишу на "send"
             ),
           ),
           const SizedBox(width: 8),
-          if (enabled)
-            IconButton(
-              icon: const Icon(Icons.send),
-              onPressed: onSend,
-              tooltip: "Отправить",
-            ),
-          if (!enabled)
-            const IconButton(
-              icon: Icon(Icons.send),
-              onPressed: null,
-              tooltip: "Отправить",
-            ),
+          IconButton(
+            icon: Icon(Icons.send,
+                color: enabled ? Colors.white : Colors.white24),
+            onPressed: enabled ? onSend : null,
+            tooltip: "Отправить",
+          ),
         ],
       ),
     );
