@@ -1,3 +1,4 @@
+// lib/features/chat/data/datasources/chat_datasource.dart
 import 'package:promts_application_1/core/service/network_service.dart';
 import 'package:promts_application_1/di/locator.dart';
 import 'package:promts_application_1/features/chat/data/models/chat_model.dart';
@@ -6,6 +7,7 @@ abstract class ChatRemoteDataSource {
   Future<List<ChatModel>> fetchChats();
   Future<ChatModel> updateChatSettings(Map<String, dynamic> body);
   Future<ChatModel> createChat(Map<String, dynamic> body);
+  Future<void> deleteChat(int chatId);
 }
 
 class ChatRemoteDataSourceImpl implements ChatRemoteDataSource {
@@ -35,5 +37,11 @@ class ChatRemoteDataSourceImpl implements ChatRemoteDataSource {
       body: body,
       fromJson: ChatModel.fromJson,
     );
+  }
+
+  @override
+  Future<void> deleteChat(int chatId) {
+    return _api.deleteVoid(
+        '/chats/$chatId');
   }
 }

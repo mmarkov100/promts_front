@@ -8,19 +8,33 @@ import 'package:promts_application_1/features/message/cubits/message_cubit.dart'
 
 class WidgetChatTiles extends StatefulWidget {
   final String query;
+  final VoidCallback closeChat;
+  final int? activeChatId;
   const WidgetChatTiles(
-      {super.key, required this.query});
+      {super.key,
+      required this.query,
+      required this.closeChat,
+      this.activeChatId});
 
   @override
   State<WidgetChatTiles> createState() => _WidgetChatTilesState();
 }
 
 class _WidgetChatTilesState extends State<WidgetChatTiles> {
-  
+  bool _isNavigating = false;
+
   void _selectChat(ChatEntity chat) {
+    if (_isNavigating) return;
+    setState(() => _isNavigating = true);
+
+    context.read<MessageCubit>().removeMessages();
     Navigator.of(context).pop();
     context.read<MessageCubit>().fetch(chat.id);
     context.go('/chat/${chat.id}');
+
+    Future.delayed(const Duration(milliseconds: 500), () {
+      if (mounted) setState(() => _isNavigating = false);
+    });
   }
 
   @override
@@ -64,12 +78,49 @@ class _WidgetChatTilesState extends State<WidgetChatTiles> {
         itemCount: filtered.length,
         itemBuilder: (ctx, idx) {
           final chat = filtered[idx];
+          final bool isActive = chat.id == widget.activeChatId;
           return ListTile(
+            selected: isActive,
+            selectedTileColor:
+                Theme.of(context).colorScheme.primary.withOpacity(0.15),
             leading: chat.starredChat
                 ? const Icon(Icons.star, color: Colors.amber)
                 : const Icon(Icons.chat_bubble_outline),
-            title: Text(chat.chatName),
+            title: Text(
+              chat.chatName,
+              style: isActive
+                  ? const TextStyle(fontWeight: FontWeight.bold)
+                  : null,
+            ),
             onTap: () => _selectChat(chat),
+            onLongPress: () async {
+              final ok = await showDialog<bool>(
+                context: context,
+                builder: (_) => AlertDialog(
+                  title: const Text('Удалить чат?'),
+                  content: Text('«${chat.chatName}» будет удалён. Продолжить?'),
+                  actions: [
+                    TextButton(
+                        onPressed: () => Navigator.pop(context, false),
+                        child: const Text('Отмена')),
+                    ElevatedButton(
+                      style:
+                          ElevatedButton.styleFrom(backgroundColor: Colors.red),
+                      onPressed: () => Navigator.pop(context, true),
+                      child: const Text('Удалить'),
+                    ),
+                  ],
+                ),
+              );
+
+              if (ok == true) {
+                await context.read<ChatCubit>().deleteChat(chat.id, context);
+                if (chat.id == widget.activeChatId && mounted) {
+                  context.read<MessageCubit>().removeMessages();
+                  context.go('/chat'); // закрываем экран, если он был открыт
+                }
+              }
+            },
           );
         },
       );

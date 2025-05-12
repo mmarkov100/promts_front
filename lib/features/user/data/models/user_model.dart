@@ -20,10 +20,10 @@ class UserModel extends UserEntity {
       money: (json['money'] as num).toDouble(),
       memory: json['memory'] as String? ?? '',
       // безопасное чтение булевых полей
-      memoryEnabled: json['memoryEnabled'] as bool? ?? false,
-      aiCanUpdateMemory: json['aiCanUpdateMemory'] as bool? ?? false,
+      memoryEnabled: json['memoryEnabled'] as bool?,
+      aiCanUpdateMemory: json['aiCanUpdateMemory'] as bool?,
       // ключ в JSON называется standardModelUriId
-      standartModelUriId: json['standardModelUriId'] as int? ?? 0,
+      standartModelUriId: json['standardModelUriId'] as int?,
     );
   }
 

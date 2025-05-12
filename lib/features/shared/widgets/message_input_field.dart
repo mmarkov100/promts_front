@@ -8,6 +8,7 @@ class MessageInputField extends StatelessWidget {
   final int minLines;
   final int maxLines;
   final BoxConstraints constraints;
+  final bool enabled;
 
   const MessageInputField({
     super.key,
@@ -16,8 +17,8 @@ class MessageInputField extends StatelessWidget {
     required this.onSend,
     this.minLines = 1,
     this.maxLines = 8,
-    this.constraints =
-        const BoxConstraints(maxWidth: 900),
+    this.constraints = const BoxConstraints(maxWidth: 900),
+    required this.enabled,
   });
 
   @override
@@ -25,9 +26,10 @@ class MessageInputField extends StatelessWidget {
     return Container(
       constraints: constraints,
       padding: const EdgeInsets.all(8.0),
-      color: Theme.of(context)
-          .colorScheme
-          .surfaceContainerHighest,
+      decoration: BoxDecoration(
+        color: const Color.fromARGB(255, 196, 194, 194),
+        borderRadius: BorderRadius.circular(16),
+      ),
       child: Row(
         children: [
           Expanded(
@@ -35,9 +37,16 @@ class MessageInputField extends StatelessWidget {
               controller: controller,
               decoration: InputDecoration(
                 hintText: hintText,
-                border: const OutlineInputBorder(),
+                labelStyle: const TextStyle(color: Colors.white70),
                 filled: true,
-                fillColor: Theme.of(context).colorScheme.surface,
+                fillColor: Colors.white,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: const BorderSide(color: Colors.white54),
+                ),
               ),
               keyboardType: TextInputType.multiline,
               minLines: minLines,
@@ -45,11 +54,18 @@ class MessageInputField extends StatelessWidget {
             ),
           ),
           const SizedBox(width: 8),
-          IconButton(
-            icon: const Icon(Icons.send),
-            onPressed: onSend,
-            tooltip: "Отправить",
-          ),
+          if (enabled)
+            IconButton(
+              icon: const Icon(Icons.send),
+              onPressed: onSend,
+              tooltip: "Отправить",
+            ),
+          if (!enabled)
+            const IconButton(
+              icon: Icon(Icons.send),
+              onPressed: null,
+              tooltip: "Отправить",
+            ),
         ],
       ),
     );

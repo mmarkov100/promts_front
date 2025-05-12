@@ -4,9 +4,9 @@ class UserEntity {
   final String role;
   final double money;
   final String memory;
-  final bool memoryEnabled;
-  final bool aiCanUpdateMemory;
-  final int standartModelUriId;
+  final bool? memoryEnabled;
+  final bool? aiCanUpdateMemory;
+  final int? standartModelUriId;
 
   UserEntity({
     required this.id,

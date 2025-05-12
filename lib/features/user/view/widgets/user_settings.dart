@@ -1,9 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:promts_application_1/core/cubits/data_cubit.dart';
+import 'package:promts_application_1/features/auth/cubits/auth_cubit.dart';
+import 'package:promts_application_1/features/chat/cubits/chat_cubit.dart';
+import 'package:promts_application_1/features/chat/domain/entities/chat_entity.dart';
+import 'package:promts_application_1/features/message/cubits/message_cubit.dart';
+import 'package:promts_application_1/features/neuro/cubits/neuro_cubit.dart';
 import 'package:promts_application_1/features/neuro/data/models/neuro_model.dart';
+import 'package:promts_application_1/features/neuro/domain/entities/neuro_entity.dart';
 import 'package:promts_application_1/features/user/cubit/user_cubit.dart';
 import 'package:promts_application_1/features/user/domain/entities/user_entity.dart';
+import 'package:promts_application_1/features/user/view/widgets/exit_confirm.dart';
 
 class UserSettings extends StatefulWidget {
   final UserEntity userEntity;
@@ -35,10 +42,22 @@ class _UserSettingsState extends State<UserSettings> {
     _initFromEntity(widget.userEntity);
   }
 
+  void _logout() {
+    // ignore: invalid_use_of_protected_member, invalid_use_of_visible_for_testing_member
+    context.read<UserCubit>().emit(DataInitial<UserEntity>());
+    // ignore: invalid_use_of_protected_member, invalid_use_of_visible_for_testing_member
+    context.read<ChatCubit>().emit(DataInitial<List<ChatEntity>>());
+    // ignore: invalid_use_of_protected_member, invalid_use_of_visible_for_testing_member
+    context.read<NeuroCubit>().emit(DataInitial<List<NeuroEntity>>());
+    context.read<MessageCubit>().removeMessages();
+
+    context.read<AuthCubit>().logout();
+  }
+
   void _initFromEntity(UserEntity user) {
     _memoryController = TextEditingController(text: user.memory);
-    _memoryEnabled = user.memoryEnabled;
-    _aiCanUpdateMemory = user.aiCanUpdateMemory;
+    _memoryEnabled = user.memoryEnabled!;
+    _aiCanUpdateMemory = user.aiCanUpdateMemory!;
     _selectedModelId = widget.selectedModelId;
   }
 
@@ -208,6 +227,15 @@ class _UserSettingsState extends State<UserSettings> {
         ),
       ),
       actions: [
+        ElevatedButton(
+          onPressed: () {
+            showDialog(
+              context: context,
+              builder: (_) => ExitConfirm(onExit: _logout),
+            );
+          },
+          child: const Text("Выйти"),
+        ),
         TextButton(
           onPressed: () => Navigator.of(context).pop(),
           child: const Text("Отмена"),

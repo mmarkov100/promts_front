@@ -1,3 +1,4 @@
+// lib/features/chat/data/implimentations/chat_repository_impl.dart
 import 'package:promts_application_1/features/chat/data/datasources/chat_datasource.dart';
 import 'package:promts_application_1/features/chat/domain/entities/chat_entity.dart';
 import 'package:promts_application_1/features/chat/domain/repositories/chat_repository.dart';
@@ -19,4 +20,7 @@ class ChatRepositoryImpl implements ChatRepository {
   @override
   Future<ChatEntity> createChat(Map<String, dynamic> body) =>
       remoteDataSource.createChat(body);
+
+  @override
+  Future<void> deleteChat(int chatId) => remoteDataSource.deleteChat(chatId);
 }

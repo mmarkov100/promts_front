@@ -32,7 +32,7 @@ class _MainScreenState extends State<MainScreen> {
   void initState() {
     super.initState();
     final chats = context.read<ChatCubit>().state;
-    if (widget.openChatId != null) {
+    if (widget.openChatId != null && chats is! DataLoaded<List<ChatEntity>>) {
       context.read<MessageCubit>().fetch(widget.openChatId!);
     }
     _syncWithRoute(chats is DataLoaded<List<ChatEntity>> ? chats.data : null);
@@ -59,24 +59,24 @@ class _MainScreenState extends State<MainScreen> {
 
     if (chats != null) {
       _currentChat = chats.firstWhereOrNull((c) => c.id == id);
-
-      // if (_currentChat == null) {
-      //   // ignore: use_build_context_synchronously
-      //   Future.microtask(() => context.go('/chat'));
-      //   return;
-      // }
     } else {
       _currentChat = null;
     }
   }
 
   void _createAndOpenChatWithMessageWithText(String text) async {
-    setState(() => _isCreatingChat = true);
+    setState(() {
+      _isCreatingChat = true;
+    });
     try {
+      // Обнуляем сообщения из прошлого чата
+      context.read<MessageCubit>().removeMessages();
+
       final user = (context.read<UserCubit>().state as DataLoaded).data;
 
       final body = {
         'modelUriId': _draft['modelUriId'] ?? user.standartModelUriId,
+        'message': text,
         'temperature': _draft['temperature'] ?? 1.0,
         'context': _draft['context'] ?? '',
         'useMemory': _draft['useMemory'] ?? user.memoryEnabled,
@@ -89,18 +89,25 @@ class _MainScreenState extends State<MainScreen> {
 
       if (mounted) context.go('/chat/${newChat.id}');
 
+      setState(() {
+        _isCreatingChat = false;
+      });
+
       await context.read<MessageCubit>().send(
             chatId: newChat.id,
             modelUriId: newChat.modelUriId,
             text: text,
             context: context,
           );
-
       _draft.clear();
     } catch (e) {
       WidgetSnackBar.showError(context, e.toString());
     } finally {
-      if (mounted) setState(() => _isCreatingChat = false);
+      if (mounted) {
+        setState(() {
+          _isCreatingChat = false;
+        });
+      }
     }
   }
 
@@ -155,7 +162,10 @@ class _MainScreenState extends State<MainScreen> {
         },
         child: Scaffold(
           key: _scaffoldKey,
-          drawer: const WidgetChats(),
+          drawer: WidgetChats(
+            closeChat: _closeChat,
+            activeChatId: widget.openChatId,
+          ),
           appBar: MainAppBar(
             onMenuPressed: () {
               _scaffoldKey.currentState?.openDrawer();

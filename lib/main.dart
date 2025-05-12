@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:promts_application_1/core/router/router.dart';
+import 'package:promts_application_1/core/storage/token_storage.dart';
 import 'package:promts_application_1/di/locator.dart';
 import 'package:promts_application_1/features/auth/cubits/auth_cubit.dart';
 import 'package:promts_application_1/features/auth/cubits/login_cubit.dart';
@@ -12,12 +13,17 @@ import 'package:promts_application_1/features/user/cubit/user_cubit.dart';
 // ignore: depend_on_referenced_packages
 import 'package:flutter_web_plugins/flutter_web_plugins.dart';
 
-void main() {
+void main() async {
   // Вот эта хуйня отвечает за решетку, если решетка не будет, значит любой переход по ссылке будто снова на сайт заходишь
   setUrlStrategy(PathUrlStrategy());
+
+  final storage = TokenStorage();
+  final savedToken = await storage.read() ?? ''; // Вместо пустой строки просто введи моковый токен 1234jwt, если хочешь зайти вне ака
+
   // 0 - продовый, 1 - тестовый (вообще пока не работает)
 setup(0, "https://0bd4-104-253-187-142.ngrok-free.app", "1234jwt");
   //setup(0, "https://a610-104-253-187-142.ngrok-free.app", "1234jwt");
+
   final authCubit = getIt<AuthCubit>();
   final loginCubit = getIt<LoginCubit>();
   runApp(
