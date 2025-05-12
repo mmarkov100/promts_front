@@ -220,8 +220,8 @@ Widget _buildStyledTextButton(String text, VoidCallback onTap) {
         child: Text(
           text,
           style: const TextStyle(
-            fontSize: 16,
-            color: Colors.white,
+            fontSize: 20,
+            color: Color.fromARGB(255, 235, 235, 235),
             fontWeight: FontWeight.w600,
           ),
         ),
@@ -253,7 +253,7 @@ class _StyledLabel extends StatelessWidget {
       child: Text(
         text,
         style: const TextStyle(
-          fontSize: 14,
+          fontSize: 20,
           color: Colors.white70,
           fontWeight: FontWeight.w500,
         ),
