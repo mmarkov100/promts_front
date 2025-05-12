@@ -27,30 +27,33 @@ class MainAppBar extends StatelessWidget implements PreferredSizeWidget {
     return AppBar(
       automaticallyImplyLeading: false,
       backgroundColor: Colors.transparent,
-        elevation: 0,
+      elevation: 0,
       title: Row(
         children: [
-          IconButton(
-            icon: const Icon(Icons.menu),
-            onPressed: onMenuPressed,
+          // Меню-кнопка
+          _buildStyledIconButton(
+            icon: Icons.menu,
+            tooltip: 'Меню',
+            onTap: onMenuPressed,
           ),
-          TextButton(
-            onPressed: onPromtsPressed,
-            child: const Text(
-              "Promts",
-              style: TextStyle(fontSize: 20, color: Colors.black),
-            ),
-          ),
+          const SizedBox(width: 8),
+
+          // Promts кнопка
+          _buildStyledTextButton("Promts", onPromtsPressed),
+          const SizedBox(width: 8),
+
+          // Название чат-бота
           const Expanded(
-            child: Text(
-              "Обычный чат-бот",
-              textAlign: TextAlign.center,
-              style: TextStyle(fontWeight: FontWeight.w600),
+            child: Center(
+              child: _StyledLabel("Обычный чат-бот"),
             ),
           ),
-          IconButton(
-            icon: const Icon(Icons.person),
-            onPressed: () {
+
+          // Профиль
+          _buildStyledIconButton(
+            icon: Icons.person,
+            tooltip: 'Профиль',
+            onTap: () {
               showDialog(
                 context: context,
                 builder: (_) => BlocBuilder<UserCubit, DataState<UserEntity>>(
@@ -133,9 +136,13 @@ class MainAppBar extends StatelessWidget implements PreferredSizeWidget {
               );
             },
           ),
-          IconButton(
-            icon: const Icon(Icons.android),
-            onPressed: () {
+          const SizedBox(width: 8),
+
+          // Чат-боты
+          _buildStyledIconButton(
+            icon: Icons.android,
+            tooltip: 'Чат-боты',
+            onTap: () {
               showAdaptiveDialog(
                 context: context,
                 builder: (BuildContext dialogContext) {
@@ -150,6 +157,106 @@ class MainAppBar extends StatelessWidget implements PreferredSizeWidget {
             },
           ),
         ],
+      ),
+    );
+  }
+}
+
+Widget _buildStyledIconButton({
+  required IconData icon,
+  required String tooltip,
+  required VoidCallback onTap,
+}) {
+  return MouseRegion(
+    onEnter: (_) => {},
+    onExit: (_) => {},
+    child: GestureDetector(
+      onTap: onTap,
+      child: Tooltip(
+        message: tooltip,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 150),
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: Colors.white.withOpacity(0.08),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: Colors.white.withOpacity(0.3)),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.2),
+                blurRadius: 4,
+                offset: const Offset(1, 1),
+              ),
+            ],
+          ),
+          child: Icon(icon, color: Colors.white, size: 20),
+        ),
+      ),
+    ),
+  );
+}
+
+Widget _buildStyledTextButton(String text, VoidCallback onTap) {
+  return MouseRegion(
+    onEnter: (_) => {},
+    onExit: (_) => {},
+    child: GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 150),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        decoration: BoxDecoration(
+          color: Colors.white.withOpacity(0.08),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: Colors.white.withOpacity(0.3)),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.2),
+              blurRadius: 4,
+              offset: const Offset(1, 1),
+            ),
+          ],
+        ),
+        child: Text(
+          text,
+          style: const TextStyle(
+            fontSize: 16,
+            color: Colors.white,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      ),
+    ),
+  );
+}
+
+class _StyledLabel extends StatelessWidget {
+  final String text;
+  const _StyledLabel(this.text);
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.08),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.white.withOpacity(0.3)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.2),
+            blurRadius: 4,
+            offset: const Offset(1, 1),
+          ),
+        ],
+      ),
+      child: Text(
+        text,
+        style: const TextStyle(
+          fontSize: 14,
+          color: Colors.white70,
+          fontWeight: FontWeight.w500,
+        ),
       ),
     );
   }
