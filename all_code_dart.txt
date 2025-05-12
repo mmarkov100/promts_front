@@ -37,8 +37,8 @@ void main() async {
   final savedToken = await storage.read() ?? ''; // Вместо пустой строки просто введи моковый токен 1234jwt, если хочешь зайти вне ака
 
   // 0 - продовый, 1 - тестовый (вообще пока не работает)
-  // setup(0, "https://88cc-104-253-187-142.ngrok-free.app", savedToken, storage);
-  setup(0, "http://localhost:8090", savedToken, storage);
+setup(0, "https://1960-104-253-187-142.ngrok-free.app", savedToken, storage);
+  //setup(0, "https://a610-104-253-187-142.ngrok-free.app", "1234jwt");
 
   final authCubit = getIt<AuthCubit>();
   final loginCubit = getIt<LoginCubit>();
@@ -823,9 +823,13 @@ import 'package:promts_application_1/features/auth/domain/entities/login_entity.
 import 'package:promts_application_1/features/auth/domain/entities/register_entity.dart';
 import 'package:promts_application_1/core/config/config.dart';
 import 'package:promts_application_1/core/cubits/data_cubit.dart';
+import 'package:promts_application_1/features/chat/cubits/chat_cubit.dart';
+import 'package:promts_application_1/features/message/cubits/message_cubit.dart';
+import 'package:promts_application_1/features/neuro/cubits/neuro_cubit.dart';
 import 'package:promts_application_1/features/shared/widgets/beauty_box_decoration.dart';
 import 'package:promts_application_1/features/shared/widgets/widget_snack_bar.dart';
 import 'package:animated_gradient_background/animated_gradient_background.dart';
+import 'package:promts_application_1/features/user/cubit/user_cubit.dart';
 
 class LoginPageScreen extends StatefulWidget {
   const LoginPageScreen({super.key});
@@ -887,15 +891,27 @@ class _LoginPageScreenState extends State<LoginPageScreen> {
     return MultiBlocListener(
         listeners: [
           BlocListener<LoginCubit, DataState<LoginEntity>>(
-            listener: (context, state) {
+            listener: (context, state) async {
               if (state is DataLoading<LoginEntity>) {
                 setState(() {
                   _isLoading = true;
                 });
               } else if (state is DataLoaded<LoginEntity>) {
                 final token = state.data.token;
-                getIt<AppConfig>().setJwtToken(token);
+                await getIt<AppConfig>().setJwtToken(token);
                 context.read<AuthCubit>().fetch();
+                context
+                    .read<UserCubit>()
+                    .fetch(); // свежие данные о пользователе
+                context
+                    .read<ChatCubit>()
+                    .fetchChats(); // список чатов нового юзера
+                context
+                    .read<NeuroCubit>()
+                    .fetch(); // список доступных нейросетей
+                context
+                    .read<MessageCubit>()
+                    .removeMessages(); // очистить старую историю
                 context.go('/chat');
               } else if (state is DataError<LoginEntity>) {
                 WidgetSnackBar.showError(context, state.message);
@@ -942,7 +958,8 @@ class _LoginPageScreenState extends State<LoginPageScreen> {
                   padding: const EdgeInsets.all(16.0),
                   child: Container(
                     padding: const EdgeInsets.all(24),
-                    decoration: BeautyBoxDecoration().buildBoxDecoration(context),
+                    decoration:
+                        BeautyBoxDecoration().buildBoxDecoration(context),
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
@@ -4609,7 +4626,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:promts_application_1/core/cubits/data_cubit.dart';
 import 'package:promts_application_1/features/auth/cubits/auth_cubit.dart';
+import 'package:promts_application_1/features/chat/cubits/chat_cubit.dart';
+import 'package:promts_application_1/features/chat/domain/entities/chat_entity.dart';
+import 'package:promts_application_1/features/message/cubits/message_cubit.dart';
+import 'package:promts_application_1/features/neuro/cubits/neuro_cubit.dart';
 import 'package:promts_application_1/features/neuro/data/models/neuro_model.dart';
+import 'package:promts_application_1/features/neuro/domain/entities/neuro_entity.dart';
 import 'package:promts_application_1/features/user/cubit/user_cubit.dart';
 import 'package:promts_application_1/features/user/domain/entities/user_entity.dart';
 import 'package:promts_application_1/features/user/view/widgets/exit_confirm.dart';
@@ -4645,6 +4667,14 @@ class _UserSettingsState extends State<UserSettings> {
   }
 
   void _logout() {
+    // ignore: invalid_use_of_protected_member, invalid_use_of_visible_for_testing_member
+    context.read<UserCubit>().emit(DataInitial<UserEntity>());
+    // ignore: invalid_use_of_protected_member, invalid_use_of_visible_for_testing_member
+    context.read<ChatCubit>().emit(DataInitial<List<ChatEntity>>());
+    // ignore: invalid_use_of_protected_member, invalid_use_of_visible_for_testing_member
+    context.read<NeuroCubit>().emit(DataInitial<List<NeuroEntity>>());
+    context.read<MessageCubit>().removeMessages();
+
     context.read<AuthCubit>().logout();
   }
 

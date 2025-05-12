@@ -12,6 +12,7 @@ import 'package:promts_application_1/features/shared/widgets/widget_snack_bar.da
 import 'package:promts_application_1/features/user/cubit/user_cubit.dart';
 import 'main_app_bar.dart';
 import 'package:promts_application_1/features/chat/view/widgets/widget_chats.dart';
+import 'package:animated_gradient_background/animated_gradient_background.dart';
 
 class MainScreen extends StatefulWidget {
   final int? openChatId;
@@ -122,45 +123,53 @@ class _MainScreenState extends State<MainScreen> {
   Widget build(BuildContext context) {
     final showChat = widget.openChatId != null;
     return BlocListener<ChatCubit, DataState<List<ChatEntity>>>(
-        listenWhen: (previous, current) {
-          if (previous is! DataLoaded<List<ChatEntity>> &&
-              current is DataLoaded<List<ChatEntity>>) {
-            return true;
-          }
-          if (previous is DataLoaded<List<ChatEntity>> &&
-              current is DataLoaded<List<ChatEntity>>) {
-            final prevList = previous.data;
-            final currList = current.data;
-            return prevList.length != currList.length ||
-                !const ListEquality<ChatEntity>().equals(prevList, currList);
-          }
-          return false;
-        },
-        listener: (context, state) {
-          if (state is! DataLoaded<List<ChatEntity>>) return;
+      listenWhen: (previous, current) {
+        if (previous is! DataLoaded<List<ChatEntity>> &&
+            current is DataLoaded<List<ChatEntity>>) {
+          return true;
+        }
+        if (previous is DataLoaded<List<ChatEntity>> &&
+            current is DataLoaded<List<ChatEntity>>) {
+          final prevList = previous.data;
+          final currList = current.data;
+          return prevList.length != currList.length ||
+              !const ListEquality<ChatEntity>().equals(prevList, currList);
+        }
+        return false;
+      },
+      listener: (context, state) {
+        if (state is! DataLoaded<List<ChatEntity>>) return;
 
-          final chats = state.data;
-          final id = widget.openChatId;
+        final chats = state.data;
+        final id = widget.openChatId;
 
-          if (id == null) {
-            if (_currentChat != null) {
-              setState(() => _currentChat = null);
-            }
-            return;
+        if (id == null) {
+          if (_currentChat != null) {
+            setState(() => _currentChat = null);
           }
+          return;
+        }
 
-          final found = chats.firstWhereOrNull((c) => c.id == id);
-          if (found == null) {
-            // ignore: use_build_context_synchronously
-            Future.microtask(() => context.go('/chat'));
-            return;
-          }
+        final found = chats.firstWhereOrNull((c) => c.id == id);
+        if (found == null) {
+          // ignore: use_build_context_synchronously
+          Future.microtask(() => context.go('/chat'));
+          return;
+        }
 
-          if (found != _currentChat) {
-            setState(() => _currentChat = found);
-          }
-        },
+        if (found != _currentChat) {
+          setState(() => _currentChat = found);
+        }
+      },
+      child: AnimatedGradientBackground(
+        colors: const [
+          Color.fromARGB(255, 183, 183, 183),
+          Color.fromARGB(255, 48, 66, 93),
+          Color.fromARGB(255, 0, 0, 0),
+        ],
+        duration: const Duration(seconds: 5),
         child: Scaffold(
+          backgroundColor: Colors.transparent,
           key: _scaffoldKey,
           drawer: WidgetChats(
             closeChat: _closeChat,
@@ -170,9 +179,7 @@ class _MainScreenState extends State<MainScreen> {
             onMenuPressed: () {
               _scaffoldKey.currentState?.openDrawer();
             },
-            onPromtsPressed: () {
-              _closeChat();
-            },
+            onPromtsPressed: _closeChat,
           ),
           body: MainBody(
             isCreatingChat: _isCreatingChat,
@@ -182,6 +189,8 @@ class _MainScreenState extends State<MainScreen> {
             chatId: widget.openChatId,
             onChatCreateSettings: _updateDraft,
           ),
-        ));
+        ),
+      ),
+    );
   }
 }
