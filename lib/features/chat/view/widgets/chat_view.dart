@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'dart:async';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:promts_application_1/features/chat/domain/entities/chat_entity.dart';
 import 'package:promts_application_1/features/message/cubits/message_cubit.dart';
@@ -86,13 +87,13 @@ class _ChatViewBodyState extends State<_ChatViewBody> {
                 }
                 if (state is MessageLoaded) {
                   final msgs = state.messages;
-      
+
                   WidgetsBinding.instance.addPostFrameCallback((_) {
                     if (_scroll.hasClients) {
                       _scroll.jumpTo(_scroll.position.maxScrollExtent);
                     }
                   });
-      
+
                   if (msgs.isNotEmpty) {
                     return SizedBox(
                       width: 1000,
@@ -114,26 +115,8 @@ class _ChatViewBodyState extends State<_ChatViewBody> {
           ),
           BlocBuilder<MessageCubit, MessageState>(
             builder: (context, state) {
-              bool isCurrentlyGenerating = false;
-              if (state is MessageLoaded) {
-                isCurrentlyGenerating = state.isGenerating;
-              }
-              if (isCurrentlyGenerating) {
-                return const Padding(
-                  padding: EdgeInsets.only(bottom: 6),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      SizedBox(
-                        width: 16,
-                        height: 16,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      ),
-                      SizedBox(width: 8),
-                      Text('Ассистент печатает…'),
-                    ],
-                  ),
-                );
+              if (state is MessageLoaded && state.isGenerating) {
+                return const TypingIndicator();
               }
               return const SizedBox.shrink();
             },
@@ -154,7 +137,7 @@ class _ChatViewBodyState extends State<_ChatViewBody> {
                     state is MessageInitial) {
                   inputFieldEnabled = false;
                 }
-      
+
                 return MessageInputField(
                   controller: _input,
                   hintText: "Введите сообщение",
@@ -169,3 +152,57 @@ class _ChatViewBodyState extends State<_ChatViewBody> {
     );
   }
 }
+
+class TypingIndicator extends StatefulWidget {
+  const TypingIndicator({super.key});
+
+  @override
+  State<TypingIndicator> createState() => _TypingIndicatorState();
+}
+
+class _TypingIndicatorState extends State<TypingIndicator> {
+  int _dotCount = 0;
+  Timer? _timer;
+
+  @override
+  void initState() {
+    super.initState();
+    _timer = Timer.periodic(const Duration(milliseconds: 500), (timer) {
+      setState(() {
+        _dotCount = (_dotCount + 1) % 4;
+      });
+    });
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final dots = '.' * _dotCount;
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 6),
+      child: Center(
+        child: Text(
+          'Ассистент печатает$dots',
+          style: const TextStyle(
+            color: Colors.white70,
+            fontSize: 14,
+            fontStyle: FontStyle.italic,
+            shadows: [
+              Shadow(
+                offset: Offset(1, 1),
+                blurRadius: 2,
+                color: Colors.black45,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
