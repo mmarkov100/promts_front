@@ -56,41 +56,53 @@ class _WidgetChatTilesState extends State<WidgetChatTiles> {
   }
 
   Widget chatDataLoaded(DataLoaded<List<ChatEntity>> state) {
-    {
-      final sorted = [...state.data]..sort((a, b) {
-          if (a.starredChat && !b.starredChat) return -1;
-          if (!a.starredChat && b.starredChat) return 1;
-          return b.dateEdit.compareTo(a.dateEdit);
-        });
+    final sorted = [...state.data]..sort((a, b) {
+        if (a.starredChat && !b.starredChat) return -1;
+        if (!a.starredChat && b.starredChat) return 1;
+        return b.dateEdit.compareTo(a.dateEdit);
+      });
 
-      final filtered = widget.query.isEmpty
-          ? sorted
-          : sorted
-              .where(
-                  (chat) => chat.chatName.toLowerCase().contains(widget.query))
-              .toList();
+    final filtered = widget.query.isEmpty
+        ? sorted
+        : sorted
+            .where((chat) => chat.chatName.toLowerCase().contains(widget.query))
+            .toList();
 
-      if (filtered.isEmpty) {
-        return const Center(child: Text('Чатов не найдено'));
-      }
+    if (filtered.isEmpty) {
+      return const Center(
+          child: Text('Чатов не найдено',
+              style: TextStyle(color: Colors.white70)));
+    }
 
-      return ListView.builder(
-        itemCount: filtered.length,
-        itemBuilder: (ctx, idx) {
-          final chat = filtered[idx];
-          final bool isActive = chat.id == widget.activeChatId;
-          return ListTile(
-            selected: isActive,
-            selectedTileColor:
-                Theme.of(context).colorScheme.primary.withOpacity(0.15),
-            leading: chat.starredChat
-                ? const Icon(Icons.star, color: Colors.amber)
-                : const Icon(Icons.chat_bubble_outline),
+    return ListView.builder(
+      itemCount: filtered.length,
+      itemBuilder: (ctx, idx) {
+        final chat = filtered[idx];
+        final bool isActive = chat.id == widget.activeChatId;
+
+        return Container(
+          margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+          decoration: BoxDecoration(
+            color:
+                isActive ? Colors.white.withOpacity(0.08) : Colors.transparent,
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: ListTile(
+            contentPadding:
+                const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            leading: Icon(
+              chat.starredChat ? Icons.star : Icons.chat_bubble_outline,
+              color: chat.starredChat ? Colors.amber : Colors.white54,
+              size: 20,
+            ),
             title: Text(
-              chat.chatName,
-              style: isActive
-                  ? const TextStyle(fontWeight: FontWeight.bold)
-                  : null,
+              chat.chatName.isEmpty ? '(Без названия)' : chat.chatName,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                color: isActive ? Colors.white : Colors.white70,
+                fontWeight: isActive ? FontWeight.bold : FontWeight.normal,
+              ),
             ),
             onTap: () => _selectChat(chat),
             onLongPress: () async {
@@ -101,8 +113,9 @@ class _WidgetChatTilesState extends State<WidgetChatTiles> {
                   content: Text('«${chat.chatName}» будет удалён. Продолжить?'),
                   actions: [
                     TextButton(
-                        onPressed: () => Navigator.pop(context, false),
-                        child: const Text('Отмена')),
+                      onPressed: () => Navigator.pop(context, false),
+                      child: const Text('Отмена'),
+                    ),
                     ElevatedButton(
                       style:
                           ElevatedButton.styleFrom(backgroundColor: Colors.red),
@@ -117,13 +130,13 @@ class _WidgetChatTilesState extends State<WidgetChatTiles> {
                 await context.read<ChatCubit>().deleteChat(chat.id, context);
                 if (chat.id == widget.activeChatId && mounted) {
                   context.read<MessageCubit>().removeMessages();
-                  context.go('/chat'); // закрываем экран, если он был открыт
+                  context.go('/chat');
                 }
               }
             },
-          );
-        },
-      );
-    }
+          ),
+        );
+      },
+    );
   }
 }
