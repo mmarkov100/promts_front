@@ -71,13 +71,49 @@ class MainAppBar extends StatelessWidget implements PreferredSizeWidget {
                           BlocBuilder<UserCubit, DataState<UserEntity>>(
                         builder: (context, state) {
                           if (state is DataLoading<UserEntity>) {
-                            return const AlertDialog(
-                              title: Text("Загрузка профиля"),
-                              content: SizedBox(
-                                width: 400,
-                                height: 450,
-                                child:
-                                    Center(child: CircularProgressIndicator()),
+                            return Dialog(
+                              backgroundColor: Colors.white.withOpacity(0.05),
+                              shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(20)),
+                              child: Container(
+                                padding: const EdgeInsets.all(24),
+                                constraints: const BoxConstraints(
+                                    maxWidth: 420, maxHeight: 300),
+                                decoration: BoxDecoration(
+                                  color: Colors.white.withOpacity(0.05),
+                                  borderRadius: BorderRadius.circular(20),
+                                  border: Border.all(
+                                      color: Colors.white.withOpacity(0.12)),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Colors.black.withOpacity(0.25),
+                                      blurRadius: 20,
+                                      offset: const Offset(0, 4),
+                                    ),
+                                  ],
+                                ),
+                                child: const Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    const Text(
+                                      "Загрузка профиля",
+                                      style: TextStyle(
+                                        fontSize: 18,
+                                        fontWeight: FontWeight.w600,
+                                        color: Colors.white,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 32),
+                                    const SizedBox(
+                                      width: 40,
+                                      height: 40,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 3,
+                                        color: Colors.deepPurpleAccent,
+                                      ),
+                                    ),
+                                  ],
+                                ),
                               ),
                             );
                           }

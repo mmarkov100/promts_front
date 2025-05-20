@@ -106,133 +106,213 @@ class _AbstractChatSettingsDialogState
     }
   }
 
+  Widget _buildSwitchTile(
+      String title, bool value, ValueChanged<bool> onChanged) {
+    return SwitchListTile(
+      title: Text(title, style: const TextStyle(color: Colors.white)),
+      value: value,
+      onChanged: onChanged,
+      activeColor: Colors.lightBlueAccent,
+      contentPadding: EdgeInsets.zero,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    return AlertDialog(
-      title: Text(widget.title),
-      content: SizedBox(
-        width: 400,
-        child: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // [ID чата и (опционально) дата создания]
-              if (widget.chatId != null)
-                Row(
-                  children: [
-                    const Text('ID чата: '),
-                    Text(widget.chatId.toString(),
-                        style:
-                            TextStyle(color: Theme.of(context).primaryColor)),
-                    if (widget.showDate) ...[
-                      const SizedBox(width: 16),
-                      const Text('Создан: '),
-                      Text(widget.dateCreate ?? '-',
-                          style: const TextStyle(fontSize: 12)),
-                    ],
-                  ],
-                ),
-              const SizedBox(height: 12),
+    return Dialog(
+      backgroundColor: const Color.fromARGB(255, 0, 0, 0).withOpacity(0.6),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      child: Container(
+        padding: const EdgeInsets.all(24),
+        constraints: const BoxConstraints(maxWidth: 420),
+        decoration: BoxDecoration(
+          color: Colors.white.withOpacity(0.05),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: Colors.white.withOpacity(0.12)),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.3),
+              blurRadius: 20,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(widget.title,
+                style: const TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white)),
+            const SizedBox(height: 16),
 
-              // Температура
+            const SizedBox(height: 12),
+            Container(
+              width: double.infinity,
+              height: 2,
+              decoration: BoxDecoration(
+                color: const Color.fromARGB(255, 255, 255, 255),
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            const SizedBox(height: 16),
+
+            if (widget.chatId != null)
               Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Text('Температура:'),
-                  DropdownButton<double>(
-                    value: _temperature,
-                    items: _tempOptions
-                        .map((t) => DropdownMenuItem(
-                            value: t, child: Text(t.toString())))
-                        .toList(),
-                    onChanged: (v) => setState(() => _temperature = v!),
-                  ),
+                  const Text('ID чата: ',
+                      style: TextStyle(color: Colors.white70)),
+                  Text('${widget.chatId}',
+                      style: const TextStyle(color: Colors.blueAccent)),
+                  if (widget.showDate) ...[
+                    const SizedBox(width: 16),
+                    const Text('Создан: ',
+                        style: TextStyle(color: Colors.white70)),
+                    Text(widget.dateCreate ?? '-',
+                        style: const TextStyle(
+                            color: Colors.white54, fontSize: 12)),
+                  ],
                 ],
               ),
-              const SizedBox(height: 12),
 
-              // Контекст
-              const Align(
-                  alignment: Alignment.centerLeft, child: Text('Контекст:')),
-              TextField(
-                controller: _contextCtrl,
-                decoration: const InputDecoration(border: OutlineInputBorder()),
-                minLines: 3,
-                maxLines: 6,
-              ),
-              const SizedBox(height: 12),
+            const SizedBox(height: 16),
 
-              // Switch-поля
-              SwitchListTile(
-                title: const Text('Использовать память'),
-                value: _useMemory,
-                onChanged: (v) => setState(() => _useMemory = v),
-              ),
-              SwitchListTile(
-                title: const Text('Обновлять память'),
-                value: _updateMemory,
-                onChanged: (v) => setState(() => _updateMemory = v),
-              ),
-
-              // Звездочка
-              if (widget.showStar)
-                SwitchListTile(
-                  title: const Text('Закрепить чат'),
-                  value: _starred,
-                  onChanged: (v) => setState(() => _starred = v),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text('Температура:',
+                    style: TextStyle(color: Colors.white)),
+                DropdownButton<double>(
+                  value: _temperature,
+                  dropdownColor: Colors.black87,
+                  style: const TextStyle(color: Colors.white),
+                  items: _tempOptions
+                      .map((t) => DropdownMenuItem(
+                            value: t,
+                            child: Text(t.toString()),
+                          ))
+                      .toList(),
+                  onChanged: (v) => setState(() => _temperature = v!),
                 ),
+              ],
+            ),
 
-              // здесь можно DropdownButton<NeuroEntity> c cubit-ом, пример пропускаем
-              const SizedBox(height: 8),
-            ],
-          ),
+            const SizedBox(height: 12),
+
+            const Align(
+                alignment: Alignment.centerLeft,
+                child:
+                    Text('Контекст:', style: TextStyle(color: Colors.white))),
+            const SizedBox(height: 4),
+            TextField(
+              controller: _contextCtrl,
+              style: const TextStyle(color: Colors.white),
+              minLines: 3,
+              maxLines: 6,
+              decoration: InputDecoration(
+                filled: true,
+                fillColor: Colors.white.withOpacity(0.06),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderSide: BorderSide(color: Colors.white.withOpacity(0.2)),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+            ),
+            const SizedBox(height: 12),
+
+            // Переключатели
+            _buildSwitchTile('Использовать память', _useMemory,
+                (v) => setState(() => _useMemory = v)),
+            _buildSwitchTile('Обновлять память', _updateMemory,
+                (v) => setState(() => _updateMemory = v)),
+            if (widget.showStar)
+              _buildSwitchTile('Закрепить чат', _starred,
+                  (v) => setState(() => _starred = v)),
+
+            const SizedBox(height: 16),
+
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                TextButton(
+                  onPressed:
+                      _isSaving ? null : () => Navigator.of(context).pop(),
+                  child: const Text('Отмена',
+                      style: TextStyle(color: Colors.white70)),
+                ),
+                TextButton(
+                  style: TextButton.styleFrom(foregroundColor: Colors.red),
+                  onPressed: () async {
+                    final ok = await showDialog<bool>(
+                      context: context,
+                      builder: (_) => AlertDialog(
+                        title: const Text('Удалить чат?'),
+                        content: const Text(
+                            'История сообщений будет безвозвратно потеряна. Продолжить?'),
+                        actions: [
+                          TextButton(
+                            onPressed: () => Navigator.pop(context, false),
+                            style: TextButton.styleFrom(
+                              foregroundColor:
+                                  const Color.fromARGB(179, 0, 0, 0),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
+                            child: const Text('Отмена'),
+                          ),
+                          ElevatedButton(
+                            onPressed: () => Navigator.pop(context, true),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.red.withOpacity(0.8),
+                              foregroundColor:
+                                  const Color.fromARGB(255, 0, 0, 0),
+                              shadowColor:
+                                  const Color.fromARGB(255, 255, 255, 255)
+                                      .withOpacity(0.2),
+                              elevation: 4,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
+                            child: const Text('Удалить'),
+                          ),
+                        ],
+                      ),
+                    );
+
+                    if (ok == true) {
+                      await context
+                          .read<ChatCubit>()
+                          .deleteChat(widget.chatId!, context);
+                      if (context.mounted) context.go('/chat');
+                    }
+                  },
+                  child: const Text('Удалить'),
+                ),
+                _isSaving
+                    ? const SizedBox(
+                        width: 24,
+                        height: 24,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.white.withOpacity(0.1),
+                          foregroundColor: Colors.white,
+                        ),
+                        onPressed: _handleSave,
+                        child: const Text('Сохранить'),
+                      ),
+              ],
+            ),
+          ],
         ),
       ),
-      actions: [
-        TextButton(
-          onPressed: _isSaving ? null : () => Navigator.of(context).pop(),
-          child: const Text('Отмена'),
-        ),
-        TextButton(
-          style: TextButton.styleFrom(foregroundColor: Colors.red),
-          onPressed: () async {
-            final ok = await showDialog<bool>(
-              context: context,
-              builder: (_) => AlertDialog(
-                title: const Text('Удалить чат?'),
-                content: const Text(
-                    'История сообщений будет безвозвратно потеряна. Продолжить?'),
-                actions: [
-                  TextButton(
-                    child: const Text('Отмена'),
-                    onPressed: () => Navigator.pop(context, false),
-                  ),
-                  ElevatedButton(
-                    child: const Text('Удалить', style: TextStyle(color: Colors.red),),
-                    onPressed: () => Navigator.pop(context, true),
-                  ),
-                ],
-              ),
-            );
-
-            if (ok == true) {
-              await context.read<ChatCubit>().deleteChat(widget.chatId!, context);
-              if (context.mounted) context.go('/chat');
-            }
-          },
-          child: const Text('Удалить'),
-        ),
-        _isSaving
-            ? const SizedBox(
-                width: 24,
-                height: 24,
-                child: CircularProgressIndicator(strokeWidth: 2),
-              )
-            : ElevatedButton(
-                onPressed: _handleSave,
-                child: const Text('Сохранить'),
-              ),
-      ],
     );
   }
 }

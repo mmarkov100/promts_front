@@ -39,7 +39,7 @@ class _WidgetChatBotsState extends State<WidgetChatBots> {
       "totalMessages": 0,
       "isSelectedByRedact": false
     },
-            {
+    {
       "id": 4,
       "chatBotName": "Новый помощник",
       "chatBotDesc": "Описание нового помощника.",
@@ -47,7 +47,7 @@ class _WidgetChatBotsState extends State<WidgetChatBots> {
       "totalMessages": 0,
       "isSelectedByRedact": false
     },
-        {
+    {
       "id": 5,
       "chatBotName": "Новый помощник",
       "chatBotDesc": "Описание нового помощника.",
@@ -55,7 +55,7 @@ class _WidgetChatBotsState extends State<WidgetChatBots> {
       "totalMessages": 0,
       "isSelectedByRedact": false
     },
-        {
+    {
       "id": 6,
       "chatBotName": "Новый помощник",
       "chatBotDesc": "Описание нового помощника.",
@@ -63,7 +63,7 @@ class _WidgetChatBotsState extends State<WidgetChatBots> {
       "totalMessages": 0,
       "isSelectedByRedact": false
     },
-        {
+    {
       "id": 7,
       "chatBotName": "Новый помощник",
       "chatBotDesc": "Описание нового помощника.",
@@ -71,7 +71,7 @@ class _WidgetChatBotsState extends State<WidgetChatBots> {
       "totalMessages": 0,
       "isSelectedByRedact": false
     },
-        {
+    {
       "id": 8,
       "chatBotName": "Новый помощник",
       "chatBotDesc": "Описание нового помощника.",
@@ -79,7 +79,7 @@ class _WidgetChatBotsState extends State<WidgetChatBots> {
       "totalMessages": 0,
       "isSelectedByRedact": false
     },
-        {
+    {
       "id": 9,
       "chatBotName": "Новый помощник",
       "chatBotDesc": "Описание нового помощника.",
@@ -87,7 +87,7 @@ class _WidgetChatBotsState extends State<WidgetChatBots> {
       "totalMessages": 0,
       "isSelectedByRedact": false
     },
-        {
+    {
       "id": 10,
       "chatBotName": "Новый помощник",
       "chatBotDesc": "Описание нового помощника.",
@@ -95,7 +95,7 @@ class _WidgetChatBotsState extends State<WidgetChatBots> {
       "totalMessages": 0,
       "isSelectedByRedact": false
     },
-        {
+    {
       "id": 11,
       "chatBotName": "Новый помощник",
       "chatBotDesc": "Описание нового помощника.",
@@ -103,7 +103,7 @@ class _WidgetChatBotsState extends State<WidgetChatBots> {
       "totalMessages": 0,
       "isSelectedByRedact": false
     },
-        {
+    {
       "id": 12,
       "chatBotName": "Новый помощник",
       "chatBotDesc": "Описание нового помощника.",
@@ -111,7 +111,7 @@ class _WidgetChatBotsState extends State<WidgetChatBots> {
       "totalMessages": 0,
       "isSelectedByRedact": false
     },
-        {
+    {
       "id": 13,
       "chatBotName": "Новый помощник",
       "chatBotDesc": "Описание нового помощника.",
@@ -158,243 +158,261 @@ class _WidgetChatBotsState extends State<WidgetChatBots> {
   }
 
   /// Просмотр информации о чат-боте (иконка "!")
-void _showBotInfo(Map<String, dynamic> bot) {
-  showDialog(
-    context: context,
-    builder: (BuildContext context) {
-      // Извлекаем данные из `bot`
-      final chatBotName = bot["chatBotName"] ?? "Без названия";
-      final chatBotDesc = bot["chatBotDesc"] ?? "";
-      final totalMessages = bot["totalMessages"] ?? 0;
-      final messagesToday = bot["messagesToday"] ?? 0;
-      final canUseMemory = bot["canUseMemory"] ?? false;
-      final canUpdateMemory = bot["canUpdateMemory"] ?? false;
-      const modelName = "Yandex GPT 5 Pro"; 
-      // ^ Или если в bot есть поле bot["modelUriName"], используйте его
-      const dateCreate = "3.03.2025"; 
-      // ^ Замените на реальное поле, если есть bot["dateCreate"], 
-      //   иначе можно оставить статическое
+  void _showBotInfo(Map<String, dynamic> bot) {
+    showDialog(
+      context: context,
+      barrierColor: Colors.black.withOpacity(0.4),
+      builder: (BuildContext context) {
+        final chatBotName = bot["chatBotName"] ?? "Без названия";
+        final chatBotDesc = bot["chatBotDesc"] ?? "";
+        final totalMessages = bot["totalMessages"] ?? 0;
+        final messagesToday = bot["messagesToday"] ?? 0;
+        final canUseMemory = bot["canUseMemory"] ?? false;
+        final canUpdateMemory = bot["canUpdateMemory"] ?? false;
+        final modelName = bot["modelUriName"] ?? "Yandex GPT 5 Pro";
+        final dateCreate = bot["dateCreate"] ?? "3.03.2025";
+        final contextChat = bot["context"] ?? "";
 
-      final contextChat = bot["context"] ?? ""; 
-      // ^ Если в bot хранится контекст под другим ключом, подставьте его.
-
-      return AlertDialog(
-        title: const Text("Характеристики чат-бота"),
-        content: SizedBox(
-          width:400,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // Название
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text("Название:"),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: TextField(
-                      readOnly: true,
-                      controller: TextEditingController(text: chatBotName),
-                      decoration: const InputDecoration(
-                        isDense: true,
-                        border: OutlineInputBorder(),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 10),
-
-              // Описание
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text("Описание:"),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: TextField(
-                      readOnly: true,
-                      controller: TextEditingController(text: chatBotDesc),
-                      decoration: const InputDecoration(
-                        border: OutlineInputBorder(),
-                      ),
-                      minLines: 3,
-                      maxLines: 3,
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 8),
-
-              // Кол-во сообщений за все время
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  const Text("Кол-во сообщений за все время:"),
-                  Text("$totalMessages"),
-                ],
-              ),
-              const SizedBox(height: 6),
-
-              // Кол-во сообщений за день
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  const Text("Кол-во сообщений за день:"),
-                  Text("$messagesToday"),
-                ],
-              ),
-              const SizedBox(height: 10),
-
-              // Контекст чата (текст)
-              const Text("Контекст чата:"),
-              const SizedBox(height: 6),
-              TextField(
-                readOnly: true,
-                controller: TextEditingController(text: contextChat),
-                decoration: const InputDecoration(
-                  border: OutlineInputBorder(),
+        return Dialog(
+          backgroundColor: Colors.transparent,
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(20),
+            child: Container(
+              padding: const EdgeInsets.all(24),
+              constraints: const BoxConstraints(maxWidth: 480),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    Colors.black.withOpacity(0.45),
+                    Colors.black.withOpacity(0.3),
+                  ],
                 ),
-                minLines: 3,
-                maxLines: 3,
-              ),
-              const SizedBox(height: 8),
-
-              // Использовать ли память (Switch, read-only)
-              Row(
-                children: [
-                  const Expanded(child: Text("Использовать ли память в чате?")),
-                  Switch(
-                    value: canUseMemory,
-                    onChanged: null, // null => Switch недоступен для изменения
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: Colors.white.withOpacity(0.1)),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.9),
+                    blurRadius: 20,
+                    offset: const Offset(0, 6),
                   ),
                 ],
               ),
-              const SizedBox(height: 6),
-
-              // Может ли чат изменять память (Switch, read-only)
-              Row(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Expanded(child: Text("Может ли чат изменять память пользователя?")),
-                  Switch(
-                    value: canUpdateMemory,
-                    onChanged: null,
+                  const Text(
+                    "Характеристики чат-бота",
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  _infoField("Название:", chatBotName),
+                  _infoField("Описание:", chatBotDesc, multiline: true),
+                  _infoRow("Кол-во сообщений за всё время:", "$totalMessages"),
+                  _infoRow("Кол-во сообщений за день:", "$messagesToday"),
+                  _infoField("Контекст чата:", contextChat, multiline: true),
+                  _switchTile("Использовать ли память в чате?", canUseMemory),
+                  _switchTile("Может ли чат изменять память пользователя?",
+                      canUpdateMemory),
+                  _infoRow("Исп-мая нейросеть:", modelName),
+                  _infoRow("Дата создания:", dateCreate),
+                  const SizedBox(height: 24),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      TextButton(
+                        onPressed: () => Navigator.of(context).pop(),
+                        style: TextButton.styleFrom(
+                            foregroundColor: Colors.white60),
+                        child: const Text("Отмена"),
+                      ),
+                      ElevatedButton(
+                        onPressed: () {
+                          Navigator.of(context).pop();
+                          // Здесь: логика перехода в чат или создания нового
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.white.withOpacity(0.1),
+                          foregroundColor: Colors.white,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                        child: const Text("Начать общаться!"),
+                      ),
+                    ],
                   ),
                 ],
               ),
-              const SizedBox(height: 10),
-
-              // Используемая нейросеть
-              const Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text("Исп-мая нейросеть:"),
-                  Text(modelName),
-                ],
-              ),
-              const SizedBox(height: 10),
-
-              // Дата создания
-              const Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text("Дата создания:"),
-                  Text(dateCreate),
-                ],
-              ),
-              const SizedBox(height: 16),
-            ],
+            ),
           ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text("Отмена"),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              // Логика "Начать общаться!"
-              Navigator.of(context).pop();
-              // Например, можно создать чат по этому боту или перейти на экран чата
-            },
-            child: const Text("Начать общаться!"),
-          ),
-        ],
-      );
-    },
-  );
-}
+        );
+      },
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
     return SafeArea(
-      child: Column(
-        children: [
-          // Заголовок (необязательно)
-          const ListTile(
-            title: Text(
+      child: Container(
+        constraints: const BoxConstraints(maxWidth: 600, maxHeight: 700),
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              Colors.black.withOpacity(0.45),
+              Colors.black.withOpacity(0.3),
+            ],
+          ),
+          borderRadius: BorderRadius.circular(25),
+          border: Border.all(color: Colors.white.withOpacity(0.1)),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.8),
+              blurRadius: 16,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Column(
+          children: [
+            const Text(
               "Список чат-ботов",
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+              ),
             ),
-          ),
-          // Строка поиска + кнопка создания чат-бота + кнопка поиска
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 8.0),
-            child: Row(
-              children: [
-                // Кнопка создания своего чат-бота (слева)
-                ElevatedButton(
-                  onPressed: _createChatBot,
-                  child: const Text("+"),
-                ),
-                const SizedBox(width: 8),
-                // Строка поиска чатов по названию
-                Expanded(
-                  child: TextField(
-                    controller: _searchController,
-                    decoration: const InputDecoration(
-                      labelText: "Поиск чат-ботов",
-                      border: OutlineInputBorder(),
+            const SizedBox(height: 12),
+            Expanded(
+              child: ListView.builder(
+                itemCount: _filteredChatBots.length,
+                itemBuilder: (context, index) {
+                  final bot = _filteredChatBots[index];
+                  return Container(
+                    margin: const EdgeInsets.only(bottom: 10),
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.05),
+                      borderRadius: BorderRadius.circular(12),
                     ),
-                    onChanged: (value) => _searchChatBots(),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                // Кнопка поиска
-                IconButton(
-                  icon: const Icon(Icons.search),
-                  onPressed: _searchChatBots,
-                ),
-              ],
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                bot["chatBotName"] ?? "Без названия",
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.white,
+                                  fontSize: 16,
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                bot["chatBotDesc"] ?? "Без описания",
+                                style: const TextStyle(
+                                  color: Colors.white70,
+                                  fontSize: 13,
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                "Сегодня ${bot["messagesToday"] ?? 0} сообщений",
+                                style: const TextStyle(
+                                  color: Colors.white38,
+                                  fontSize: 12,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        IconButton(
+                          icon: const Icon(Icons.info_outline,
+                              color: Colors.white70),
+                          onPressed: () => _showBotInfo(bot),
+                          tooltip: "Подробнее",
+                        ),
+                      ],
+                    ),
+                  );
+                },
+              ),
             ),
-          ),
-          // Список чат-ботов
-          Expanded(
-            child: ListView.builder(
-              itemCount: _filteredChatBots.length,
-              itemBuilder: (context, index) {
-                final bot = _filteredChatBots[index];
-                return ListTile(
-                  title: Text(bot["chatBotName"] ?? "Без названия"),
-                  subtitle: Text(
-                    (bot["chatBotDesc"] ?? "Без описания") +
-                        "\nСегодня ${bot["messagesToday"]} сообщений",
-                  ),
-                  // Кнопка для просмотра информации о чат-боте (иконка "!")
-                  trailing: IconButton(
-                    icon: const Icon(Icons.info_outline),
-                    onPressed: () => _showBotInfo(bot),
-                  ),
-                  onTap: () {
-                    // Закрываем Drawer
-                    Navigator.of(context).pop();
-                  },
-                );
-              },
-            ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
+}
+
+Widget _infoRow(String label, String value) {
+  return Padding(
+    padding: const EdgeInsets.symmetric(vertical: 6),
+    child: Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(label, style: const TextStyle(color: Colors.white70)),
+        Flexible(
+          child: Text(
+            value,
+            style: const TextStyle(color: Colors.white),
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+      ],
+    ),
+  );
+}
+
+Widget _infoField(String label, String value, {bool multiline = false}) {
+  return Padding(
+    padding: const EdgeInsets.only(bottom: 12),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(label, style: const TextStyle(color: Colors.white70)),
+        const SizedBox(height: 4),
+        TextField(
+          controller: TextEditingController(text: value),
+          readOnly: true,
+          minLines: multiline ? 3 : 1,
+          maxLines: multiline ? 5 : 1,
+          style: const TextStyle(color: Colors.white),
+          decoration: InputDecoration(
+            filled: true,
+            fillColor: Colors.white.withOpacity(0.06),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: Colors.white.withOpacity(0.2)),
+            ),
+          ),
+        ),
+      ],
+    ),
+  );
+}
+
+Widget _switchTile(String label, bool value) {
+  return SwitchListTile(
+    value: value,
+    onChanged: null,
+    title: Text(label, style: const TextStyle(color: Colors.white)),
+    activeColor: Colors.lightBlueAccent,
+    contentPadding: EdgeInsets.zero,
+  );
 }
