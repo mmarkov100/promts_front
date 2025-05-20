@@ -43,14 +43,20 @@ class _MessageActionsState extends State<MessageActions> {
       children: [
         // Кнопка копирования (всегда)
         IconButton(
-          icon: const Icon(Icons.copy),
+          icon: const Icon(
+            Icons.copy,
+            color: Colors.white70,
+            ),
           iconSize: 16,
           onPressed: _copied ? null : _handleCopy,
         ),
         // Кнопка перегенерации (только для сообщений чат-бота)
         if (!(widget.message.role == "USER"))
           IconButton(
-            icon: const Icon(Icons.autorenew), // "зацикленная стрелка"
+            icon: const Icon(
+              Icons.autorenew,
+              color: Colors.white70,
+              ), // "зацикленная стрелка"
             iconSize: 16,
             onPressed: () {
               // Пока без реализации

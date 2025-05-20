@@ -11,28 +11,39 @@ class TextBubble extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final bgColor = isUser ? Colors.blue[100] : Colors.grey[300];
-
     return Container(
-      padding: const EdgeInsets.all(10),
+      padding: const EdgeInsets.all(14),
       constraints: const BoxConstraints(maxWidth: 550),
       decoration: BoxDecoration(
-        color: bgColor,
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          MarkdownBody(
-            data: message.text,
-            selectable: true,
-            builders: {
-              'pre': CodeBlockBuilder(),
-            },
-            styleSheet: MarkdownStyleSheet.fromTheme(Theme.of(context)),
-            sizedImageBuilder: (config) => Image.network(config.uri.toString()),
+        color: Colors.white.withOpacity(0.08),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: Colors.white.withOpacity(0.2)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.15),
+            blurRadius: 6,
+            offset: const Offset(1, 1),
           ),
         ],
+      ),
+      child: MarkdownBody(
+        data: message.text,
+        selectable: true,
+        builders: {
+          'pre': CodeBlockBuilder(),
+        },
+        styleSheet: MarkdownStyleSheet.fromTheme(Theme.of(context)).copyWith(
+          p: const TextStyle(
+            color: Colors.white,
+            fontSize: 14,
+            height: 1.5,
+          ),
+          code: const TextStyle(
+            backgroundColor: Colors.transparent,
+            color: Colors.lightGreenAccent,
+          ),
+        ),
+        sizedImageBuilder: (config) => Image.network(config.uri.toString()),
       ),
     );
   }

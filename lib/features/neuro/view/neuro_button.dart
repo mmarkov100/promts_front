@@ -164,70 +164,117 @@ class _NeuroButtonState extends State<NeuroButton> {
                   }
                 }
               }
-              return Row(
-                children: [
-                  Flexible(
-                    child: ConstrainedBox(
-                      constraints:
-                          const BoxConstraints(maxWidth: 375, minHeight: 50),
-                      child: DropdownButtonHideUnderline(
-                        child: DropdownButton<NeuroEntity>(
-                          isExpanded: true,
-                          value: _selectedNeuro,
-                          hint: const Text(
-                              "Выберите нейросеть"), // вот эта строка
-                          items: neuroList.map((neuro) {
-                            return DropdownMenuItem<NeuroEntity>(
-                              value: neuro,
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  // Название нейросети
-                                  Text(
-                                    neuro.name!,
-                                    style: const TextStyle(
-                                        fontWeight: FontWeight.bold),
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                  // Описание (если есть)
-                                  if (neuro.desc!.isNotEmpty)
-                                    Text(
-                                      neuro.desc!,
-                                      style: TextStyle(
-                                        fontSize: isSmallWidth ? 10 : 12,
-                                        color: Colors.grey,
-                                      ),
-                                      maxLines: 2,
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                ],
-                              ),
-                            );
-                          }).toList(),
-                          onChanged: (neuro) {
-                            if (neuro != null) {
-                              setState(() {
-                                _changedNeuro = true;
-                                _selectedNeuro = neuro;
-                              });
-                              widget.onChatCreateSettings(
-                                  {'modelUriId': neuro.id});
-                            }
-                          },
+
+              return Align(
+                alignment: Alignment.centerLeft,
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 400),
+                  child: Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.08),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: Colors.white.withOpacity(0.2)),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.2),
+                          blurRadius: 6,
+                          offset: const Offset(1, 1),
                         ),
-                      ),
+                      ],
+                    ),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: DropdownButtonHideUnderline(
+                            child: DropdownButton<NeuroEntity>(
+                              isExpanded: true,
+                              dropdownColor: Colors.transparent,
+                              value: _selectedNeuro,
+                              hint: const Text(
+                                "Выберите нейросеть",
+                                style: TextStyle(color: Colors.white70),
+                              ),
+                              icon: const Icon(Icons.keyboard_arrow_down,
+                                  color: Colors.white70),
+                              items: neuroList.map((neuro) {
+                                return DropdownMenuItem<NeuroEntity>(
+                                  value: neuro,
+                                  child: SizedBox(
+                                    height:
+                                        56, // безопасная фиксированная высота
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.center,
+                                      children: [
+                                        FittedBox(
+                                          fit: BoxFit.scaleDown,
+                                          child: Text(
+                                            neuro.name!,
+                                            style: const TextStyle(
+                                              fontWeight: FontWeight.bold,
+                                              color: Colors.white,
+                                            ),
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 4),
+                                        Flexible(
+                                          child: Text(
+                                            neuro.desc ?? '',
+                                            style: const TextStyle(
+                                              fontSize: 12,
+                                              color: Colors.white70,
+                                            ),
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                );
+                              }).toList(),
+                              onChanged: (neuro) {
+                                if (neuro != null) {
+                                  setState(() {
+                                    _changedNeuro = true;
+                                    _selectedNeuro = neuro;
+                                  });
+                                  widget.onChatCreateSettings(
+                                      {'modelUriId': neuro.id});
+                                }
+                              },
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        MouseRegion(
+                          cursor: SystemMouseCursors.click,
+                          child: GestureDetector(
+                            onTap: _openSettingsDialog,
+                            child: Container(
+                              padding: const EdgeInsets.all(8),
+                              decoration: BoxDecoration(
+                                color: Colors.white.withOpacity(0.1),
+                                shape: BoxShape.circle,
+                              ),
+                              child: const Icon(Icons.settings,
+                                  color: Colors.white, size: 20),
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-                  const SizedBox(width: 10),
-                  // Кнопка настроек
-                  IconButton(
-                    icon: const Icon(Icons.settings),
-                    onPressed: _openSettingsDialog,
-                  ),
-                ],
+                ),
               );
             }
+
             return Container();
           });
         } else if (neuroState is DataError<List<NeuroEntity>>) {

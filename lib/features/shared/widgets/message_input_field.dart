@@ -25,18 +25,6 @@ class MessageInputField extends StatelessWidget {
     return Container(
       constraints: constraints,
       padding: const EdgeInsets.all(12.0),
-      decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.08),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.white.withOpacity(0.2)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.2),
-            blurRadius: 8,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
       child: Row(
         children: [
           Expanded(
@@ -68,7 +56,9 @@ class MessageInputField extends StatelessWidget {
           const SizedBox(width: 8),
           IconButton(
             icon: Icon(Icons.send,
-                color: enabled ? const Color.fromARGB(255, 212, 212, 212) : Colors.white24),
+                color: enabled
+                    ? const Color.fromARGB(255, 212, 212, 212)
+                    : Colors.white24),
             onPressed: enabled ? onSend : null,
             tooltip: "Отправить",
           ),

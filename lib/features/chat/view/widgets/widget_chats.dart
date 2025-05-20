@@ -24,37 +24,74 @@ class _WidgetChatsState extends State<WidgetChats> {
     return SizedBox(
       width: 350,
       child: Drawer(
+        backgroundColor: Colors.transparent,
         child: SafeArea(
-          child: Column(
-            children: [
-              ListTile(
-                title: const Text(
-                  "Мои чаты",
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                ),
-                trailing: IconButton(
-                  icon: const Icon(Icons.refresh),
-                  tooltip: 'Обновить чаты',
-                  onPressed: _refreshChats,
-                ),
+          child: Container(
+            margin: const EdgeInsets.all(0),
+            padding: const EdgeInsets.all(16),
+            decoration: const BoxDecoration(
+              color: Color.fromRGBO(0, 0, 0, 0.8), // более плотный, стильный
+              borderRadius: BorderRadius.only(
+                topRight: Radius.circular(16),
+                bottomRight: Radius.circular(16),
               ),
-              Padding(
-                padding: const EdgeInsets.all(8.0),
-                child: TextField(
-                  onChanged: (value) =>
-                      setState(() => _query = value.trim().toLowerCase()),
-                  decoration: const InputDecoration(
-                    labelText: 'Поиск чатов',
-                    prefixIcon: Icon(Icons.search),
-                    border: OutlineInputBorder(),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Заголовок и иконка обновления
+                Row(
+                  children: [
+                    const Text(
+                      "Мои чаты",
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                    ),
+                    const Spacer(),
+                    IconButton(
+                      icon: const Icon(Icons.refresh, color: Colors.white70),
+                      tooltip: 'Обновить чаты',
+                      onPressed: _refreshChats,
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+
+                // Поле поиска
+                Container(
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.08),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: Colors.white.withOpacity(0.2)),
+                  ),
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  child: TextField(
+                    onChanged: (value) =>
+                        setState(() => _query = value.trim().toLowerCase()),
+                    style: const TextStyle(color: Colors.white),
+                    decoration: const InputDecoration(
+                      hintText: 'Поиск чатов',
+                      hintStyle: TextStyle(color: Colors.white54),
+                      icon: Icon(Icons.search, color: Colors.white54),
+                      border: InputBorder.none,
+                    ),
                   ),
                 ),
-              ),
-              WidgetChatTiles(
-                  query: _query,
-                  closeChat: widget.closeChat,
-                  activeChatId: widget.activeChatId),
-            ],
+                const SizedBox(height: 12),
+
+                // Список чатов
+                Expanded(
+                  child: WidgetChatTiles(
+                    query: _query,
+                    closeChat: widget.closeChat,
+                    activeChatId: widget.activeChatId,
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),
