@@ -14,6 +14,98 @@ void registerPlugins([final Registrar? pluginRegistrar]) {
   SharedPreferencesPlugin.registerWith(registrar);
   registrar.registerMessageHandler();
 }
+//
+// Generated file. Do not edit.
+// This file is generated from template in file `flutter_tools/lib/src/flutter_plugins.dart`.
+//
+
+// @dart = 3.5
+
+import 'dart:io'; // flutter_ignore: dart_io_import.
+import 'package:shared_preferences_android/shared_preferences_android.dart';
+import 'package:shared_preferences_foundation/shared_preferences_foundation.dart';
+import 'package:path_provider_linux/path_provider_linux.dart';
+import 'package:shared_preferences_linux/shared_preferences_linux.dart';
+import 'package:shared_preferences_foundation/shared_preferences_foundation.dart';
+import 'package:path_provider_windows/path_provider_windows.dart';
+import 'package:shared_preferences_windows/shared_preferences_windows.dart';
+
+@pragma('vm:entry-point')
+class _PluginRegistrant {
+
+  @pragma('vm:entry-point')
+  static void register() {
+    if (Platform.isAndroid) {
+      try {
+        SharedPreferencesAndroid.registerWith();
+      } catch (err) {
+        print(
+          '`shared_preferences_android` threw an error: $err. '
+          'The app may not function as expected until you remove this plugin from pubspec.yaml'
+        );
+      }
+
+    } else if (Platform.isIOS) {
+      try {
+        SharedPreferencesFoundation.registerWith();
+      } catch (err) {
+        print(
+          '`shared_preferences_foundation` threw an error: $err. '
+          'The app may not function as expected until you remove this plugin from pubspec.yaml'
+        );
+      }
+
+    } else if (Platform.isLinux) {
+      try {
+        PathProviderLinux.registerWith();
+      } catch (err) {
+        print(
+          '`path_provider_linux` threw an error: $err. '
+          'The app may not function as expected until you remove this plugin from pubspec.yaml'
+        );
+      }
+
+      try {
+        SharedPreferencesLinux.registerWith();
+      } catch (err) {
+        print(
+          '`shared_preferences_linux` threw an error: $err. '
+          'The app may not function as expected until you remove this plugin from pubspec.yaml'
+        );
+      }
+
+    } else if (Platform.isMacOS) {
+      try {
+        SharedPreferencesFoundation.registerWith();
+      } catch (err) {
+        print(
+          '`shared_preferences_foundation` threw an error: $err. '
+          'The app may not function as expected until you remove this plugin from pubspec.yaml'
+        );
+      }
+
+    } else if (Platform.isWindows) {
+      try {
+        PathProviderWindows.registerWith();
+      } catch (err) {
+        print(
+          '`path_provider_windows` threw an error: $err. '
+          'The app may not function as expected until you remove this plugin from pubspec.yaml'
+        );
+      }
+
+      try {
+        SharedPreferencesWindows.registerWith();
+      } catch (err) {
+        print(
+          '`shared_preferences_windows` threw an error: $err. '
+          'The app may not function as expected until you remove this plugin from pubspec.yaml'
+        );
+      }
+
+    }
+  }
+}
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:promts_application_1/core/router/router.dart';
@@ -34,10 +126,13 @@ void main() async {
   setUrlStrategy(PathUrlStrategy());
 
   final storage = TokenStorage();
-  final savedToken = await storage.read() ?? ''; // Вместо пустой строки просто введи моковый токен 1234jwt, если хочешь зайти вне ака
+  final savedToken = await storage.read() ??
+      ''; // Вместо пустой строки просто введи моковый токен 1234jwt, если хочешь зайти вне ака
 
   // 0 - продовый, 1 - тестовый (вообще пока не работает)
-setup(0, "https://1960-104-253-187-142.ngrok-free.app", savedToken, storage);
+  // setup(0, "https://1960-104-253-187-142.ngrok-free.app", savedToken, storage);
+  setup(0, "http://localhost:8090", savedToken, storage);
+
   //setup(0, "https://a610-104-253-187-142.ngrok-free.app", "1234jwt");
 
   final authCubit = getIt<AuthCubit>();
@@ -367,95 +462,6 @@ class TokenStorage {
     } else {
       await prefs.setString(_key, token);
     }
-  }
-}
-import 'package:flutter/material.dart';
-
-class AnimatedGradientBackground extends StatefulWidget {
-  final List<Color> colors;
-  final Widget child;
-  final Duration duration;
-
-  const AnimatedGradientBackground({
-    super.key,
-    required this.colors,
-    required this.child,
-    this.duration = const Duration(seconds: 5),
-  });
-
-  @override
-  State<AnimatedGradientBackground> createState() =>
-      _AnimatedGradientBackgroundState();
-}
-
-class _AnimatedGradientBackgroundState
-    extends State<AnimatedGradientBackground> with SingleTickerProviderStateMixin {
-  late AnimationController _controller;
-  late Animation<Alignment> _alignmentBegin;
-  late Animation<Alignment> _alignmentEnd;
-  late List<Color> _colors;
-  int _colorIndex = 0;
-
-  @override
-  void initState() {
-    super.initState();
-    _colors = widget.colors;
-    _controller = AnimationController(
-      vsync: this,
-      duration: widget.duration,
-    )..addStatusListener((status) {
-        if (status == AnimationStatus.completed) {
-          _controller.reset();
-          setState(() {
-            _colorIndex = (_colorIndex + 1) % _colors.length;
-          });
-          _controller.forward();
-        }
-      });
-
-    _alignmentBegin = Tween<Alignment>(
-      begin: Alignment.topLeft,
-      end: Alignment.bottomRight,
-    ).animate(_controller);
-
-    _alignmentEnd = Tween<Alignment>(
-      begin: Alignment.bottomRight,
-      end: Alignment.topLeft,
-    ).animate(_controller);
-
-    _controller.forward();
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  Color _getColor(int offset) {
-    return _colors[(_colorIndex + offset) % _colors.length];
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return AnimatedBuilder(
-      animation: _controller,
-      builder: (context, child) {
-        return Container(
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: _alignmentBegin.value,
-              end: _alignmentEnd.value,
-              colors: [
-                Color.lerp(_getColor(0), _getColor(1), _controller.value)!,
-                Color.lerp(_getColor(1), _getColor(2), _controller.value)!,
-              ],
-            ),
-          ),
-          child: widget.child,
-        );
-      },
-    );
   }
 }
 // lib/di/locator.dart
@@ -1653,6 +1659,7 @@ class ChatSettings extends AbstractChatSettingsDialog {
         );
 }
 import 'package:flutter/material.dart';
+import 'dart:async';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:promts_application_1/features/chat/domain/entities/chat_entity.dart';
 import 'package:promts_application_1/features/message/cubits/message_cubit.dart';
@@ -1740,13 +1747,13 @@ class _ChatViewBodyState extends State<_ChatViewBody> {
                 }
                 if (state is MessageLoaded) {
                   final msgs = state.messages;
-      
+
                   WidgetsBinding.instance.addPostFrameCallback((_) {
                     if (_scroll.hasClients) {
                       _scroll.jumpTo(_scroll.position.maxScrollExtent);
                     }
                   });
-      
+
                   if (msgs.isNotEmpty) {
                     return SizedBox(
                       width: 1000,
@@ -1768,26 +1775,8 @@ class _ChatViewBodyState extends State<_ChatViewBody> {
           ),
           BlocBuilder<MessageCubit, MessageState>(
             builder: (context, state) {
-              bool isCurrentlyGenerating = false;
-              if (state is MessageLoaded) {
-                isCurrentlyGenerating = state.isGenerating;
-              }
-              if (isCurrentlyGenerating) {
-                return const Padding(
-                  padding: EdgeInsets.only(bottom: 6),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      SizedBox(
-                        width: 16,
-                        height: 16,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      ),
-                      SizedBox(width: 8),
-                      Text('Ассистент печатает…'),
-                    ],
-                  ),
-                );
+              if (state is MessageLoaded && state.isGenerating) {
+                return const TypingIndicator();
               }
               return const SizedBox.shrink();
             },
@@ -1808,7 +1797,7 @@ class _ChatViewBodyState extends State<_ChatViewBody> {
                     state is MessageInitial) {
                   inputFieldEnabled = false;
                 }
-      
+
                 return MessageInputField(
                   controller: _input,
                   hintText: "Введите сообщение",
@@ -1823,6 +1812,60 @@ class _ChatViewBodyState extends State<_ChatViewBody> {
     );
   }
 }
+
+class TypingIndicator extends StatefulWidget {
+  const TypingIndicator({super.key});
+
+  @override
+  State<TypingIndicator> createState() => _TypingIndicatorState();
+}
+
+class _TypingIndicatorState extends State<TypingIndicator> {
+  int _dotCount = 0;
+  Timer? _timer;
+
+  @override
+  void initState() {
+    super.initState();
+    _timer = Timer.periodic(const Duration(milliseconds: 500), (timer) {
+      setState(() {
+        _dotCount = (_dotCount + 1) % 4;
+      });
+    });
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final dots = '.' * _dotCount;
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 6),
+      child: Center(
+        child: Text(
+          'Ассистент печатает$dots',
+          style: const TextStyle(
+            color: Colors.white70,
+            fontSize: 14,
+            fontStyle: FontStyle.italic,
+            shadows: [
+              Shadow(
+                offset: Offset(1, 1),
+                blurRadius: 2,
+                color: Colors.black45,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:promts_application_1/features/chat/cubits/chat_cubit.dart';
@@ -2683,16 +2726,20 @@ class _WidgetCreateChatBotsState extends State<WidgetCreateChatBots> {
     );
   }
 }
+import 'dart:async';
+import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:promts_application_1/features/shared/widgets/message_input_field.dart';
 
 class HomeView extends StatefulWidget {
   final ValueChanged<String> openChatWithMessage;
   final bool isCreatingChat;
-  const HomeView(
-      {super.key,
-      required this.openChatWithMessage,
-      required this.isCreatingChat});
+
+  const HomeView({
+    super.key,
+    required this.openChatWithMessage,
+    required this.isCreatingChat,
+  });
 
   @override
   State<HomeView> createState() => _HomeViewState();
@@ -2700,10 +2747,49 @@ class HomeView extends StatefulWidget {
 
 class _HomeViewState extends State<HomeView> {
   final TextEditingController _messageController = TextEditingController();
+  String _fullText = '';
+  String _displayedText = '';
+  Timer? _typingTimer;
+
+  final List<String> _greetings = [
+    "Привет! Ты здесь? Значит, сегодня будет продуктивный день! (Или просто кофе закончился?)☕️",
+    "Добро пожаловать! Мы уже начали без тебя, но сделали вид, что ждали.😏",
+    "О, смотрите кто пришёл! Наш любимый пользователь! (Ну или хотя бы один из них.)❤️",
+    "Приветствие загружено на 100%. Теперь можно начинать!⚡️",
+    "Ты здесь — и это не случайность! (Хотя статистически всё возможно.)🎲",
+    "Привет! Мы не шпионим за тобой… Пока что.👀",
+    "Добро пожаловать! Надеемся, ты в хорошем настроении. Если нет — мы притворимся, что не заметили.😄",
+    "Привет! Ты выглядишь сегодня потрясающе… (Да-да, даже через экран это видно!)✨",
+    "Ого, новый посетитель! Прямо как в лучших веб-сайтах 90-х.🌐",
+    "Здравствуй! Мы бы встали при твоём появлении, но мы же приложение… Так что просто рады тебя видеть!🚀",
+  ];
+
+  @override
+  void initState() {
+    super.initState();
+    _fullText = _greetings[Random().nextInt(_greetings.length)];
+    _startTypingEffect();
+  }
+
+  void _startTypingEffect() {
+    int index = 0;
+    _typingTimer?.cancel();
+    _typingTimer = Timer.periodic(const Duration(milliseconds: 30), (timer) {
+      if (index >= _fullText.length) {
+        timer.cancel();
+        return;
+      }
+      setState(() {
+        _displayedText += _fullText[index];
+      });
+      index++;
+    });
+  }
 
   @override
   void dispose() {
     _messageController.dispose();
+    _typingTimer?.cancel();
     super.dispose();
   }
 
@@ -2723,28 +2809,56 @@ class _HomeViewState extends State<HomeView> {
           Expanded(
             child: Center(
               child: Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [  
-                    if (widget.isCreatingChat)
-                      const SizedBox(
-                        width: 24,
-                        height: 24,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      ) else const Text(
-                        "Приветствую",
-                        style: TextStyle(
-                            fontSize: 18, fontWeight: FontWeight.bold),
+                padding: const EdgeInsets.all(24.0),
+                child: Container(
+                  padding: const EdgeInsets.all(24),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.08),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: Colors.white.withOpacity(0.2)),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.3),
+                        blurRadius: 12,
+                        offset: const Offset(0, 6),
                       ),
-                    const SizedBox(height: 16),
-                    MessageInputField(
-                      controller: _messageController,
-                      hintText: "Введите сообщение",
-                      onSend: _handleSend,
-                      enabled: !widget.isCreatingChat,
-                    ),
-                  ],
+                    ],
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      if (widget.isCreatingChat)
+                        const SizedBox(
+                          width: 24,
+                          height: 24,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      else
+                        Text(
+                          _displayedText,
+                          style: const TextStyle(
+                            fontSize: 16,
+                            color: Color.fromARGB(255, 212, 212, 212),
+                            height: 1.5,
+                            shadows: [
+                              Shadow(
+                                offset: Offset(1.5, 1.5),
+                                blurRadius: 2,
+                                color: Colors.black54,
+                              ),
+                            ],
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                      const SizedBox(height: 24),
+                      MessageInputField(
+                        controller: _messageController,
+                        hintText: "Введите сообщение",
+                        onSend: _handleSend,
+                        enabled: !widget.isCreatingChat,
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),
@@ -2782,29 +2896,34 @@ class MainAppBar extends StatelessWidget implements PreferredSizeWidget {
   Widget build(BuildContext context) {
     return AppBar(
       automaticallyImplyLeading: false,
+      backgroundColor: Colors.transparent,
+      elevation: 0,
       title: Row(
         children: [
-          IconButton(
-            icon: const Icon(Icons.menu),
-            onPressed: onMenuPressed,
+          // Меню-кнопка
+          _buildStyledIconButton(
+            icon: Icons.menu,
+            tooltip: 'Меню',
+            onTap: onMenuPressed,
           ),
-          TextButton(
-            onPressed: onPromtsPressed,
-            child: const Text(
-              "Promts",
-              style: TextStyle(fontSize: 20, color: Colors.black),
-            ),
-          ),
+          const SizedBox(width: 8),
+
+          // Promts кнопка
+          _buildStyledTextButton("Promts", onPromtsPressed),
+          const SizedBox(width: 8),
+
+          // Название чат-бота
           const Expanded(
-            child: Text(
-              "Обычный чат-бот",
-              textAlign: TextAlign.center,
-              style: TextStyle(fontWeight: FontWeight.w600),
+            child: Center(
+              child: _StyledLabel("Обычный чат-бот"),
             ),
           ),
-          IconButton(
-            icon: const Icon(Icons.person),
-            onPressed: () {
+
+          // Профиль
+          _buildStyledIconButton(
+            icon: Icons.person,
+            tooltip: 'Профиль',
+            onTap: () {
               showDialog(
                 context: context,
                 builder: (_) => BlocBuilder<UserCubit, DataState<UserEntity>>(
@@ -2887,9 +3006,13 @@ class MainAppBar extends StatelessWidget implements PreferredSizeWidget {
               );
             },
           ),
-          IconButton(
-            icon: const Icon(Icons.android),
-            onPressed: () {
+          const SizedBox(width: 8),
+
+          // Чат-боты
+          _buildStyledIconButton(
+            icon: Icons.android,
+            tooltip: 'Чат-боты',
+            onTap: () {
               showAdaptiveDialog(
                 context: context,
                 builder: (BuildContext dialogContext) {
@@ -2904,6 +3027,106 @@ class MainAppBar extends StatelessWidget implements PreferredSizeWidget {
             },
           ),
         ],
+      ),
+    );
+  }
+}
+
+Widget _buildStyledIconButton({
+  required IconData icon,
+  required String tooltip,
+  required VoidCallback onTap,
+}) {
+  return MouseRegion(
+    onEnter: (_) => {},
+    onExit: (_) => {},
+    child: GestureDetector(
+      onTap: onTap,
+      child: Tooltip(
+        message: tooltip,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 150),
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: Colors.white.withOpacity(0.08),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: Colors.white.withOpacity(0.3)),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.2),
+                blurRadius: 4,
+                offset: const Offset(1, 1),
+              ),
+            ],
+          ),
+          child: Icon(icon, color: Colors.white, size: 20),
+        ),
+      ),
+    ),
+  );
+}
+
+Widget _buildStyledTextButton(String text, VoidCallback onTap) {
+  return MouseRegion(
+    onEnter: (_) => {},
+    onExit: (_) => {},
+    child: GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 150),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        decoration: BoxDecoration(
+          color: Colors.white.withOpacity(0.08),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: Colors.white.withOpacity(0.3)),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.2),
+              blurRadius: 4,
+              offset: const Offset(1, 1),
+            ),
+          ],
+        ),
+        child: Text(
+          text,
+          style: const TextStyle(
+            fontSize: 20,
+            color: Color.fromARGB(255, 235, 235, 235),
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      ),
+    ),
+  );
+}
+
+class _StyledLabel extends StatelessWidget {
+  final String text;
+  const _StyledLabel(this.text);
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.08),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.white.withOpacity(0.3)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.2),
+            blurRadius: 4,
+            offset: const Offset(1, 1),
+          ),
+        ],
+      ),
+      child: Text(
+        text,
+        style: const TextStyle(
+          fontSize: 20,
+          color: Colors.white70,
+          fontWeight: FontWeight.w500,
+        ),
       ),
     );
   }
@@ -2958,18 +3181,36 @@ class _MainBodyState extends State<MainBody> {
     widget.onChatCreateSettings(data);
   }
 
-  @override
-  Widget build(BuildContext context) {
-    final hasChat = widget.chatEntity != null;
+@override
+Widget build(BuildContext context) {
+  final hasChat = widget.chatEntity != null;
 
-    return Column(
-      children: [
-        Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: BlocBuilder<UserCubit, DataState<UserEntity>>(
+  return Padding(
+    padding: const EdgeInsets.all(16.0),
+    child: Container(
+      width: double.infinity,
+      height: double.infinity,
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.08),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.white.withOpacity(0.2)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.3),
+            blurRadius: 12,
+            offset: const Offset(0, 6),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          BlocBuilder<UserCubit, DataState<UserEntity>>(
             builder: (context, userState) {
               UserEntity? user;
-              if (userState is DataLoaded<UserEntity>) user = userState.data;
+              if (userState is DataLoaded<UserEntity>) {
+                user = userState.data;
+              }
 
               return NeuroButton(
                 currentChat: widget.chatEntity,
@@ -2978,24 +3219,28 @@ class _MainBodyState extends State<MainBody> {
               );
             },
           ),
-        ),
-        Expanded(
-          child: hasChat
-              ? ChatView(
-                  chat: widget.chatEntity!,
-                  chatId: widget.chatId!,
-                  overrideModelId: _overrideModelId,
-                )
-              : widget.showChat
-                  ? const Center(child: CircularProgressIndicator())
-                  : HomeView(
-                      isCreatingChat: widget.isCreatingChat,
-                      openChatWithMessage: widget.openChatWithMessageWithText,
-                    ),
-        ),
-      ],
-    );
-  }
+          const SizedBox(height: 16),
+          Expanded(
+            child: hasChat
+                ? ChatView(
+                    chat: widget.chatEntity!,
+                    chatId: widget.chatId!,
+                    overrideModelId: _overrideModelId,
+                  )
+                : widget.showChat
+                    ? const Center(child: CircularProgressIndicator())
+                    : HomeView(
+                        isCreatingChat: widget.isCreatingChat,
+                        openChatWithMessage:
+                            widget.openChatWithMessageWithText,
+                      ),
+          ),
+        ],
+      ),
+    ),
+  );
+}
+
 }
 import 'package:flutter/material.dart';
 // ignore: depend_on_referenced_packages
@@ -3011,6 +3256,7 @@ import 'package:promts_application_1/features/shared/widgets/widget_snack_bar.da
 import 'package:promts_application_1/features/user/cubit/user_cubit.dart';
 import 'main_app_bar.dart';
 import 'package:promts_application_1/features/chat/view/widgets/widget_chats.dart';
+import 'package:animated_gradient_background/animated_gradient_background.dart';
 
 class MainScreen extends StatefulWidget {
   final int? openChatId;
@@ -3121,45 +3367,53 @@ class _MainScreenState extends State<MainScreen> {
   Widget build(BuildContext context) {
     final showChat = widget.openChatId != null;
     return BlocListener<ChatCubit, DataState<List<ChatEntity>>>(
-        listenWhen: (previous, current) {
-          if (previous is! DataLoaded<List<ChatEntity>> &&
-              current is DataLoaded<List<ChatEntity>>) {
-            return true;
-          }
-          if (previous is DataLoaded<List<ChatEntity>> &&
-              current is DataLoaded<List<ChatEntity>>) {
-            final prevList = previous.data;
-            final currList = current.data;
-            return prevList.length != currList.length ||
-                !const ListEquality<ChatEntity>().equals(prevList, currList);
-          }
-          return false;
-        },
-        listener: (context, state) {
-          if (state is! DataLoaded<List<ChatEntity>>) return;
+      listenWhen: (previous, current) {
+        if (previous is! DataLoaded<List<ChatEntity>> &&
+            current is DataLoaded<List<ChatEntity>>) {
+          return true;
+        }
+        if (previous is DataLoaded<List<ChatEntity>> &&
+            current is DataLoaded<List<ChatEntity>>) {
+          final prevList = previous.data;
+          final currList = current.data;
+          return prevList.length != currList.length ||
+              !const ListEquality<ChatEntity>().equals(prevList, currList);
+        }
+        return false;
+      },
+      listener: (context, state) {
+        if (state is! DataLoaded<List<ChatEntity>>) return;
 
-          final chats = state.data;
-          final id = widget.openChatId;
+        final chats = state.data;
+        final id = widget.openChatId;
 
-          if (id == null) {
-            if (_currentChat != null) {
-              setState(() => _currentChat = null);
-            }
-            return;
+        if (id == null) {
+          if (_currentChat != null) {
+            setState(() => _currentChat = null);
           }
+          return;
+        }
 
-          final found = chats.firstWhereOrNull((c) => c.id == id);
-          if (found == null) {
-            // ignore: use_build_context_synchronously
-            Future.microtask(() => context.go('/chat'));
-            return;
-          }
+        final found = chats.firstWhereOrNull((c) => c.id == id);
+        if (found == null) {
+          // ignore: use_build_context_synchronously
+          Future.microtask(() => context.go('/chat'));
+          return;
+        }
 
-          if (found != _currentChat) {
-            setState(() => _currentChat = found);
-          }
-        },
+        if (found != _currentChat) {
+          setState(() => _currentChat = found);
+        }
+      },
+      child: AnimatedGradientBackground(
+        colors: const [
+          Color.fromARGB(255, 183, 183, 183),
+          Color.fromARGB(255, 48, 66, 93),
+          Color.fromARGB(255, 0, 0, 0),
+        ],
+        duration: const Duration(seconds: 5),
         child: Scaffold(
+          backgroundColor: Colors.transparent,
           key: _scaffoldKey,
           drawer: WidgetChats(
             closeChat: _closeChat,
@@ -3169,9 +3423,7 @@ class _MainScreenState extends State<MainScreen> {
             onMenuPressed: () {
               _scaffoldKey.currentState?.openDrawer();
             },
-            onPromtsPressed: () {
-              _closeChat();
-            },
+            onPromtsPressed: _closeChat,
           ),
           body: MainBody(
             isCreatingChat: _isCreatingChat,
@@ -3181,7 +3433,9 @@ class _MainScreenState extends State<MainScreen> {
             chatId: widget.openChatId,
             onChatCreateSettings: _updateDraft,
           ),
-        ));
+        ),
+      ),
+    );
   }
 }
 import 'package:flutter/widgets.dart';
@@ -4296,7 +4550,6 @@ class _MemoryUpdateSheetState extends State<MemoryUpdateSheet> {
     );
   }
 }
-// lib/features/shared/widgets/message_input_field.dart
 import 'package:flutter/material.dart';
 
 class MessageInputField extends StatelessWidget {
@@ -4323,47 +4576,54 @@ class MessageInputField extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       constraints: constraints,
-      padding: const EdgeInsets.all(8.0),
+      padding: const EdgeInsets.all(12.0),
       decoration: BoxDecoration(
-        color: const Color.fromARGB(255, 196, 194, 194),
+        color: Colors.white.withOpacity(0.08),
         borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.white.withOpacity(0.2)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.2),
+            blurRadius: 8,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
       child: Row(
         children: [
           Expanded(
             child: TextField(
               controller: controller,
+              onSubmitted: (_) => onSend(),
+              style: const TextStyle(color: Colors.white),
               decoration: InputDecoration(
                 hintText: hintText,
-                labelStyle: const TextStyle(color: Colors.white70),
+                hintStyle: const TextStyle(color: Colors.white54),
                 filled: true,
-                fillColor: Colors.white,
+                fillColor: Colors.white.withOpacity(0.1),
+                contentPadding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
                 enabledBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
-                  borderSide: const BorderSide(color: Colors.white54),
+                  borderSide: const BorderSide(color: Colors.white30),
                 ),
               ),
-              keyboardType: TextInputType.multiline,
+              keyboardType: TextInputType.text,
               minLines: minLines,
               maxLines: maxLines,
+              textInputAction: TextInputAction.send,
             ),
           ),
           const SizedBox(width: 8),
-          if (enabled)
-            IconButton(
-              icon: const Icon(Icons.send),
-              onPressed: onSend,
-              tooltip: "Отправить",
-            ),
-          if (!enabled)
-            const IconButton(
-              icon: Icon(Icons.send),
-              onPressed: null,
-              tooltip: "Отправить",
-            ),
+          IconButton(
+            icon: Icon(Icons.send,
+                color: enabled ? const Color.fromARGB(255, 212, 212, 212) : Colors.white24),
+            onPressed: enabled ? onSend : null,
+            tooltip: "Отправить",
+          ),
         ],
       ),
     );
