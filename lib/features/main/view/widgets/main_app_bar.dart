@@ -65,7 +65,93 @@ class MainAppBar extends StatelessWidget implements PreferredSizeWidget {
                   icon: Icons.person,
                   tooltip: 'Профиль',
                   onTap: () {
-                    // showDialog...
+                    showDialog(
+                      context: context,
+                      builder: (_) =>
+                          BlocBuilder<UserCubit, DataState<UserEntity>>(
+                        builder: (context, state) {
+                          if (state is DataLoading<UserEntity>) {
+                            return const AlertDialog(
+                              title: Text("Загрузка профиля"),
+                              content: SizedBox(
+                                width: 400,
+                                height: 450,
+                                child:
+                                    Center(child: CircularProgressIndicator()),
+                              ),
+                            );
+                          }
+                          if (state is DataError<UserEntity>) {
+                            return AlertDialog(
+                              title: const Text("Ошибка"),
+                              content: Text(state.message),
+                              actions: [
+                                TextButton(
+                                  onPressed: () => Navigator.of(context).pop(),
+                                  child: const Text("Закрыть"),
+                                ),
+                              ],
+                            );
+                          }
+                          if (state is DataLoaded<UserEntity>) {
+                            final user = state.data;
+                            return BlocBuilder<NeuroCubit,
+                                DataState<List<NeuroEntity>>>(
+                              builder: (context, neuroState) {
+                                if (neuroState
+                                    is DataLoading<List<NeuroEntity>>) {
+                                  return const AlertDialog(
+                                    title: Text("Загрузка нейросетей"),
+                                    content: SizedBox(
+                                      height: 100,
+                                      child: Center(
+                                          child: CircularProgressIndicator()),
+                                    ),
+                                  );
+                                }
+                                if (neuroState
+                                    is DataError<List<NeuroEntity>>) {
+                                  return AlertDialog(
+                                    title: const Text("Ошибка"),
+                                    content: Text(neuroState.message),
+                                    actions: [
+                                      TextButton(
+                                        onPressed: () =>
+                                            Navigator.of(context).pop(),
+                                        child: const Text("Закрыть"),
+                                      ),
+                                    ],
+                                  );
+                                }
+                                if (neuroState
+                                    is DataLoaded<List<NeuroEntity>>) {
+                                  final List<NeuroModel> neuroList =
+                                      neuroState.data.cast<NeuroModel>();
+                                  final models = neuroList;
+                                  final current = neuroList
+                                      .firstWhere(
+                                          (e) =>
+                                              e.id == user.standartModelUriId,
+                                          orElse: () => neuroList.first)
+                                      .id;
+                                  return UserSettings(
+                                    userEntity: user,
+                                    selectedModelId: current!,
+                                    availableModels: models,
+                                    onSave: (updatedData) {
+                                      Navigator.of(context).pop();
+                                      // …
+                                    },
+                                  );
+                                }
+                                return const SizedBox.shrink();
+                              },
+                            );
+                          }
+                          return const SizedBox.shrink();
+                        },
+                      ),
+                    );
                   },
                 ),
                 const SizedBox(width: 8),
@@ -203,4 +289,3 @@ class _StyledLabel extends StatelessWidget {
     );
   }
 }
-
