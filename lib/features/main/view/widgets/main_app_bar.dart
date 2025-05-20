@@ -24,139 +24,72 @@ class MainAppBar extends StatelessWidget implements PreferredSizeWidget {
 
   @override
   Widget build(BuildContext context) {
-    return AppBar(
-      automaticallyImplyLeading: false,
-      backgroundColor: Colors.transparent,
-      elevation: 0,
-      title: Row(
-        children: [
-          // Меню-кнопка
-          _buildStyledIconButton(
-            icon: Icons.menu,
-            tooltip: 'Меню',
-            onTap: onMenuPressed,
+    return PreferredSize(
+      preferredSize: const Size.fromHeight(kToolbarHeight + 12),
+      child: Container(
+        margin: EdgeInsets.zero,
+        width: double.infinity,
+        decoration: BoxDecoration(
+          color: Colors.white.withOpacity(0.08),
+          borderRadius: const BorderRadius.vertical(
+            bottom: Radius.circular(16),
           ),
-          const SizedBox(width: 8),
-
-          // Promts кнопка
-          _buildStyledTextButton("Promts", onPromtsPressed),
-          const SizedBox(width: 8),
-
-          // Название чат-бота
-          const Expanded(
-            child: Center(
-              child: _StyledLabel("Обычный чат-бот"),
+          border: Border.all(color: Colors.white.withOpacity(0.2)),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.2),
+              blurRadius: 10,
+              offset: const Offset(0, 3),
             ),
-          ),
-
-          // Профиль
-          _buildStyledIconButton(
-            icon: Icons.person,
-            tooltip: 'Профиль',
-            onTap: () {
-              showDialog(
-                context: context,
-                builder: (_) => BlocBuilder<UserCubit, DataState<UserEntity>>(
-                  builder: (context, state) {
-                    if (state is DataLoading<UserEntity>) {
-                      return const AlertDialog(
-                        title: Text("Загрузка профиля"),
-                        content: SizedBox(
-                          width: 400,
-                          height: 450,
-                          child: Center(child: CircularProgressIndicator()),
-                        ),
-                      );
-                    }
-                    if (state is DataError<UserEntity>) {
-                      return AlertDialog(
-                        title: const Text("Ошибка"),
-                        content: Text(state.message),
-                        actions: [
-                          TextButton(
-                            onPressed: () => Navigator.of(context).pop(),
-                            child: const Text("Закрыть"),
-                          ),
-                        ],
-                      );
-                    }
-                    if (state is DataLoaded<UserEntity>) {
-                      final user = state.data;
-                      return BlocBuilder<NeuroCubit,
-                          DataState<List<NeuroEntity>>>(
-                        builder: (context, neuroState) {
-                          if (neuroState is DataLoading<List<NeuroEntity>>) {
-                            return const AlertDialog(
-                              title: Text("Загрузка нейросетей"),
-                              content: SizedBox(
-                                height: 100,
-                                child:
-                                    Center(child: CircularProgressIndicator()),
-                              ),
-                            );
-                          }
-                          if (neuroState is DataError<List<NeuroEntity>>) {
-                            return AlertDialog(
-                              title: const Text("Ошибка"),
-                              content: Text(neuroState.message),
-                              actions: [
-                                TextButton(
-                                  onPressed: () => Navigator.of(context).pop(),
-                                  child: const Text("Закрыть"),
-                                ),
-                              ],
-                            );
-                          }
-                          if (neuroState is DataLoaded<List<NeuroEntity>>) {
-                            final List<NeuroModel> neuroList =
-                                neuroState.data.cast<NeuroModel>();
-                            final models = neuroList;
-                            final current = neuroList
-                                .firstWhere(
-                                    (e) => e.id == user.standartModelUriId,
-                                    orElse: () => neuroList.first)
-                                .id;
-                            return UserSettings(
-                              userEntity: user,
-                              selectedModelId: current!,
-                              availableModels: models,
-                              onSave: (updatedData) {
-                                Navigator.of(context).pop();
-                                // …
-                              },
-                            );
-                          }
-                          return const SizedBox.shrink();
-                        },
-                      );
-                    }
-                    return const SizedBox.shrink();
+          ],
+        ),
+        child: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12),
+            child: Row(
+              children: [
+                _buildStyledIconButton(
+                  icon: Icons.menu,
+                  tooltip: 'Меню',
+                  onTap: onMenuPressed,
+                ),
+                const SizedBox(width: 8),
+                _buildStyledTextButton("Promts", onPromtsPressed),
+                const SizedBox(width: 8),
+                const Expanded(
+                  child: Center(
+                    child: _StyledLabel("Обычный чат-бот"),
+                  ),
+                ),
+                _buildStyledIconButton(
+                  icon: Icons.person,
+                  tooltip: 'Профиль',
+                  onTap: () {
+                    // showDialog...
                   },
                 ),
-              );
-            },
+                const SizedBox(width: 8),
+                _buildStyledIconButton(
+                  icon: Icons.android,
+                  tooltip: 'Чат-боты',
+                  onTap: () {
+                    showAdaptiveDialog(
+                      context: context,
+                      builder: (BuildContext dialogContext) {
+                        return const Dialog(
+                          child: SizedBox(
+                            width: 600,
+                            child: WidgetChatBots(),
+                          ),
+                        );
+                      },
+                    );
+                  },
+                ),
+              ],
+            ),
           ),
-          const SizedBox(width: 8),
-
-          // Чат-боты
-          _buildStyledIconButton(
-            icon: Icons.android,
-            tooltip: 'Чат-боты',
-            onTap: () {
-              showAdaptiveDialog(
-                context: context,
-                builder: (BuildContext dialogContext) {
-                  return const Dialog(
-                    child: SizedBox(
-                      width: 600,
-                      child: WidgetChatBots(),
-                    ),
-                  );
-                },
-              );
-            },
-          ),
-        ],
+        ),
       ),
     );
   }
@@ -236,28 +169,38 @@ class _StyledLabel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-      decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.08),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.white.withOpacity(0.3)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.2),
-            blurRadius: 4,
-            offset: const Offset(1, 1),
+    final maxWidth = MediaQuery.of(context).size.width * 0.3;
+
+    return ConstrainedBox(
+      constraints: BoxConstraints(maxWidth: maxWidth),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        decoration: BoxDecoration(
+          color: Colors.white.withOpacity(0.08),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: Colors.white.withOpacity(0.3)),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.2),
+              blurRadius: 4,
+              offset: const Offset(1, 1),
+            ),
+          ],
+        ),
+        child: FittedBox(
+          fit: BoxFit.scaleDown,
+          alignment: Alignment.centerLeft,
+          child: Text(
+            text,
+            style: const TextStyle(
+              fontSize: 14,
+              color: Colors.white70,
+              fontWeight: FontWeight.w500,
+            ),
           ),
-        ],
-      ),
-      child: Text(
-        text,
-        style: const TextStyle(
-          fontSize: 20,
-          color: Colors.white70,
-          fontWeight: FontWeight.w500,
         ),
       ),
     );
   }
 }
+
