@@ -22,7 +22,7 @@ class _WidgetChatsState extends State<WidgetChats> {
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      width: 350,
+      width: 300,
       child: Drawer(
         backgroundColor: Colors.transparent,
         child: SafeArea(

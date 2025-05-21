@@ -32,90 +32,26 @@ class _WidgetChatBotsState extends State<WidgetChatBots> {
     },
     {
       "id": 3,
-      "chatBotName": "Новый помощник",
-      "chatBotDesc": "Описание нового помощника.",
-      "messagesToday": 0,
-      "totalMessages": 0,
+      "chatBotName": "Шеф-повар",
+      "chatBotDesc": "Помогает с рецептами самых разных блюд.",
+      "messagesToday": 11,
+      "totalMessages": 114,
       "isSelectedByRedact": false
     },
     {
       "id": 4,
-      "chatBotName": "Новый помощник",
-      "chatBotDesc": "Описание нового помощника.",
-      "messagesToday": 0,
-      "totalMessages": 0,
-      "isSelectedByRedact": false
+      "chatBotName": "Астролог",
+      "chatBotDesc": "Поможет узнать гороскоп по вашему знаку задиака и не только.",
+      "messagesToday": 124,
+      "totalMessages": 1183,
+      "isSelectedByRedact": true
     },
     {
       "id": 5,
-      "chatBotName": "Новый помощник",
-      "chatBotDesc": "Описание нового помощника.",
-      "messagesToday": 0,
-      "totalMessages": 0,
-      "isSelectedByRedact": false
-    },
-    {
-      "id": 6,
-      "chatBotName": "Новый помощник",
-      "chatBotDesc": "Описание нового помощника.",
-      "messagesToday": 0,
-      "totalMessages": 0,
-      "isSelectedByRedact": false
-    },
-    {
-      "id": 7,
-      "chatBotName": "Новый помощник",
-      "chatBotDesc": "Описание нового помощника.",
-      "messagesToday": 0,
-      "totalMessages": 0,
-      "isSelectedByRedact": false
-    },
-    {
-      "id": 8,
-      "chatBotName": "Новый помощник",
-      "chatBotDesc": "Описание нового помощника.",
-      "messagesToday": 0,
-      "totalMessages": 0,
-      "isSelectedByRedact": false
-    },
-    {
-      "id": 9,
-      "chatBotName": "Новый помощник",
-      "chatBotDesc": "Описание нового помощника.",
-      "messagesToday": 0,
-      "totalMessages": 0,
-      "isSelectedByRedact": false
-    },
-    {
-      "id": 10,
-      "chatBotName": "Новый помощник",
-      "chatBotDesc": "Описание нового помощника.",
-      "messagesToday": 0,
-      "totalMessages": 0,
-      "isSelectedByRedact": false
-    },
-    {
-      "id": 11,
-      "chatBotName": "Новый помощник",
-      "chatBotDesc": "Описание нового помощника.",
-      "messagesToday": 0,
-      "totalMessages": 0,
-      "isSelectedByRedact": false
-    },
-    {
-      "id": 12,
-      "chatBotName": "Новый помощник",
-      "chatBotDesc": "Описание нового помощника.",
-      "messagesToday": 0,
-      "totalMessages": 0,
-      "isSelectedByRedact": false
-    },
-    {
-      "id": 13,
-      "chatBotName": "Новый помощник",
-      "chatBotDesc": "Описание нового помощника.",
-      "messagesToday": 0,
-      "totalMessages": 0,
+      "chatBotName": "Советчик по путеществиям",
+      "chatBotDesc": "Поможет узнать куда летают отдыхать люди в этом году.",
+      "messagesToday": 192,
+      "totalMessages": 1841,
       "isSelectedByRedact": false
     },
   ];
@@ -200,55 +136,67 @@ class _WidgetChatBotsState extends State<WidgetChatBots> {
                   ),
                 ],
               ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Text(
-                    "Характеристики чат-бота",
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
-                    ),
-                  ),
-                  const SizedBox(height: 20),
-                  _infoField("Название:", chatBotName),
-                  _infoField("Описание:", chatBotDesc, multiline: true),
-                  _infoRow("Кол-во сообщений за всё время:", "$totalMessages"),
-                  _infoRow("Кол-во сообщений за день:", "$messagesToday"),
-                  _infoField("Контекст чата:", contextChat, multiline: true),
-                  _switchTile("Использовать ли память в чате?", canUseMemory),
-                  _switchTile("Может ли чат изменять память пользователя?",
-                      canUpdateMemory),
-                  _infoRow("Исп-мая нейросеть:", modelName),
-                  _infoRow("Дата создания:", dateCreate),
-                  const SizedBox(height: 24),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              child: ConstrainedBox(
+                constraints: BoxConstraints(
+                  maxWidth: 480,
+                  maxHeight:
+                      MediaQuery.of(context).size.height * 0.85, // адаптация
+                ),
+                child: SingleChildScrollView(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
                     children: [
-                      TextButton(
-                        onPressed: () => Navigator.of(context).pop(),
-                        style: TextButton.styleFrom(
-                            foregroundColor: Colors.white60),
-                        child: const Text("Отмена"),
-                      ),
-                      ElevatedButton(
-                        onPressed: () {
-                          Navigator.of(context).pop();
-                          // Здесь: логика перехода в чат или создания нового
-                        },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.white.withOpacity(0.1),
-                          foregroundColor: Colors.white,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
+                      const Text(
+                        "Характеристики чат-бота",
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
                         ),
-                        child: const Text("Начать общаться!"),
+                      ),
+                      const SizedBox(height: 20),
+                      _infoField("Название:", chatBotName),
+                      _infoField("Описание:", chatBotDesc, multiline: true),
+                      _infoRow(
+                          "Кол-во сообщений за всё время:", "$totalMessages"),
+                      _infoRow("Кол-во сообщений за день:", "$messagesToday"),
+                      _infoField("Контекст чата:", contextChat,
+                          multiline: true),
+                      _switchTile(
+                          "Использовать ли память в чате?", canUseMemory),
+                      _switchTile("Может ли чат изменять память пользователя?",
+                          canUpdateMemory),
+                      _infoRow("Исп-мая нейросеть:", modelName),
+                      _infoRow("Дата создания:", dateCreate),
+                      const SizedBox(height: 24),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          TextButton(
+                            onPressed: () => Navigator.of(context).pop(),
+                            style: TextButton.styleFrom(
+                                foregroundColor: Colors.white60),
+                            child: const Text("Отмена"),
+                          ),
+                          ElevatedButton(
+                            onPressed: () {
+                              Navigator.of(context).pop();
+                              // логика перехода
+                            },
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.white.withOpacity(0.1),
+                              foregroundColor: Colors.white,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
+                            child: const Text("Начать общаться!"),
+                          ),
+                        ],
                       ),
                     ],
                   ),
-                ],
+                ),
               ),
             ),
           ),

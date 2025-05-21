@@ -58,7 +58,7 @@ class MainAppBar extends StatelessWidget implements PreferredSizeWidget {
                 const SizedBox(width: 8),
                 const Expanded(
                   child: Center(
-                    child: _StyledLabel("Обычный чат-бот"),
+                    // child: _StyledLabel("Обычный чат-бот"),
                   ),
                 ),
                 _buildStyledIconButton(
