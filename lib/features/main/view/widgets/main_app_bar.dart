@@ -6,12 +6,14 @@ import 'package:promts_application_1/features/neuro/data/models/neuro_model.dart
 import 'package:promts_application_1/features/neuro/domain/entities/neuro_entity.dart';
 import 'package:promts_application_1/features/user/cubit/user_cubit.dart';
 import 'package:promts_application_1/features/user/domain/entities/user_entity.dart';
+import 'package:promts_application_1/features/user/view/widgets/exit_confirm.dart';
 import 'package:promts_application_1/features/user/view/widgets/user_settings.dart';
 import '../../../chatbot/view/widgets/widget_chat_bots.dart';
 
 class MainAppBar extends StatelessWidget implements PreferredSizeWidget {
   final VoidCallback onMenuPressed;
   final VoidCallback onPromtsPressed;
+  final VoidCallback logout;
   final ValueChanged<Map<String, dynamic>> onChatCreateSettings;
 
   const MainAppBar({
@@ -19,6 +21,7 @@ class MainAppBar extends StatelessWidget implements PreferredSizeWidget {
     required this.onMenuPressed,
     required this.onPromtsPressed,
     required this.onChatCreateSettings,
+    required this.logout,
   });
 
   @override
@@ -128,6 +131,24 @@ class MainAppBar extends StatelessWidget implements PreferredSizeWidget {
                                   onPressed: () => Navigator.of(context).pop(),
                                   child: const Text("Закрыть"),
                                 ),
+                                ElevatedButton(
+                                  onPressed: () {
+                                    showDialog(
+                                      context: context,
+                                      builder: (_) =>
+                                          ExitConfirm(onExit: logout),
+                                    );
+                                  },
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor:
+                                        Colors.white.withOpacity(0.1),
+                                    foregroundColor: Colors.white,
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                  ),
+                                  child: const Text("Выйти"),
+                                ),
                               ],
                             );
                           }
@@ -157,6 +178,25 @@ class MainAppBar extends StatelessWidget implements PreferredSizeWidget {
                                         onPressed: () =>
                                             Navigator.of(context).pop(),
                                         child: const Text("Закрыть"),
+                                      ),
+                                      ElevatedButton(
+                                        onPressed: () {
+                                          showDialog(
+                                            context: context,
+                                            builder: (_) =>
+                                                ExitConfirm(onExit: logout),
+                                          );
+                                        },
+                                        style: ElevatedButton.styleFrom(
+                                          backgroundColor:
+                                              Colors.white.withOpacity(0.1),
+                                          foregroundColor: Colors.white,
+                                          shape: RoundedRectangleBorder(
+                                            borderRadius:
+                                                BorderRadius.circular(12),
+                                          ),
+                                        ),
+                                        child: const Text("Выйти"),
                                       ),
                                     ],
                                   );
@@ -204,8 +244,10 @@ class MainAppBar extends StatelessWidget implements PreferredSizeWidget {
                           child: SizedBox(
                             width: 600,
                             child: WidgetChatBots(
+                              closeChat: onPromtsPressed,
                               onBotSelected: (settings) {
-                                onChatCreateSettings(settings); // кладём всё в _draft
+                                onChatCreateSettings(
+                                    settings); // кладём всё в _draft
                                 Navigator.of(dialogCtx)
                                     .pop(); // закрываем список ботов
                               },

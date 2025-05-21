@@ -5,7 +5,9 @@ import 'package:promts_application_1/features/shared/widgets/widget_snack_bar.da
 
 class WidgetChatBots extends StatefulWidget {
   final ValueChanged<Map<String, dynamic>>? onBotSelected;
-  const WidgetChatBots({super.key, this.onBotSelected});
+  final VoidCallback closeChat;
+  const WidgetChatBots(
+      {super.key, this.onBotSelected, required this.closeChat});
 
   @override
   State<WidgetChatBots> createState() => _WidgetChatBotsState();
@@ -201,9 +203,8 @@ class _WidgetChatBotsState extends State<WidgetChatBots> {
                                 if (bot['temperature'] != null)
                                   'temperature': bot['temperature'],
                               };
-
-                              widget.onBotSelected
-                                  ?.call(settings); // ⬅️ передаём наверх
+                              widget.onBotSelected?.call(settings);
+                              widget.closeChat();
                               WidgetSnackBar.showSuccess(
                                   context, "Чат-бот успешно выбран");
                               Navigator.of(context).pop(); // Info-диалог
@@ -254,6 +255,13 @@ class _WidgetChatBotsState extends State<WidgetChatBots> {
               style: TextStyle(
                 fontSize: 20,
                 fontWeight: FontWeight.bold,
+                color: Colors.white,
+              ),
+            ),
+            const Text(
+              "Временная реализация, работает только когда закрыт чат",
+              style: TextStyle(
+                fontSize: 10,
                 color: Colors.white,
               ),
             ),

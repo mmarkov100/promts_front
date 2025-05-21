@@ -12,7 +12,7 @@ class ApiService {
 
   Map<String, String> get _headers => {
         'Content-Type': 'application/json',
-        'Authorization': 'Bearer ${_config.getJwtToken()}',
+        'Authorization': _config.getJwtToken(),
       };
 
   Uri _makeUri(String path, [Map<String, dynamic>? query]) {

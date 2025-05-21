@@ -2619,11 +2619,15 @@ class _WidgetChatTilesState extends State<WidgetChatTiles> {
   }
 }
 import 'package:flutter/material.dart';
+import 'package:promts_application_1/features/shared/widgets/widget_snack_bar.dart';
 // Импортируем ваш файл с диалогом "Создание чат-бота"
 // Убедитесь, что путь верный, например:
 
 class WidgetChatBots extends StatefulWidget {
-  const WidgetChatBots({super.key});
+  final ValueChanged<Map<String, dynamic>>? onBotSelected;
+  final VoidCallback closeChat;
+  const WidgetChatBots(
+      {super.key, this.onBotSelected, required this.closeChat});
 
   @override
   State<WidgetChatBots> createState() => _WidgetChatBotsState();
@@ -2640,7 +2644,8 @@ class _WidgetChatBotsState extends State<WidgetChatBots> {
       "chatBotDesc": "Помогает с вопросами по Python, Java и другим языкам.",
       "messagesToday": 123,
       "totalMessages": 1000,
-      "isSelectedByRedact": true
+      "isSelectedByRedact": true,
+      "context": "Ты специализируешься на помощь в программировании"
     },
     {
       "id": 2,
@@ -2648,7 +2653,9 @@ class _WidgetChatBotsState extends State<WidgetChatBots> {
       "chatBotDesc": "Помогает с вопросами по инвестициям и бюджету.",
       "messagesToday": 87,
       "totalMessages": 500,
-      "isSelectedByRedact": false
+      "isSelectedByRedact": false,
+      "context":
+          "Помогай пользователю решать финансовые проблемы, давай советы на этот счет"
     },
     {
       "id": 3,
@@ -2656,15 +2663,20 @@ class _WidgetChatBotsState extends State<WidgetChatBots> {
       "chatBotDesc": "Помогает с рецептами самых разных блюд.",
       "messagesToday": 11,
       "totalMessages": 114,
-      "isSelectedByRedact": false
+      "isSelectedByRedact": false,
+      "context":
+          "Давай подробные рецепты разных блюд, предлагай пользователю какие-то рецепты"
     },
     {
       "id": 4,
       "chatBotName": "Астролог",
-      "chatBotDesc": "Поможет узнать гороскоп по вашему знаку задиака и не только.",
+      "chatBotDesc":
+          "Поможет узнать гороскоп по вашему знаку задиака и не только.",
       "messagesToday": 124,
       "totalMessages": 1183,
-      "isSelectedByRedact": true
+      "isSelectedByRedact": true,
+      "context":
+          "Ты - астролог, ты гадаешь по пользователю и даешь ему советы от звезд"
     },
     {
       "id": 5,
@@ -2672,7 +2684,8 @@ class _WidgetChatBotsState extends State<WidgetChatBots> {
       "chatBotDesc": "Поможет узнать куда летают отдыхать люди в этом году.",
       "messagesToday": 192,
       "totalMessages": 1841,
-      "isSelectedByRedact": false
+      "isSelectedByRedact": false,
+      "context": "Ты советчик по путешествиям"
     },
   ];
 
@@ -2799,18 +2812,23 @@ class _WidgetChatBotsState extends State<WidgetChatBots> {
                             child: const Text("Отмена"),
                           ),
                           ElevatedButton(
+                            child: const Text('Начать общаться'),
                             onPressed: () {
-                              Navigator.of(context).pop();
-                              // логика перехода
+                              final settings = {
+                                'context': contextChat,
+                                'useMemory': canUseMemory,
+                                'updateMemory': canUpdateMemory,
+                                if (bot['modelUriId'] != null)
+                                  'modelUriId': bot['modelUriId'],
+                                if (bot['temperature'] != null)
+                                  'temperature': bot['temperature'],
+                              };
+                              widget.closeChat();
+                              widget.onBotSelected?.call(settings);
+                              WidgetSnackBar.showSuccess(
+                                  context, "Чат-бот успешно выбран");
+                              Navigator.of(context).pop(); // Info-диалог
                             },
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.white.withOpacity(0.1),
-                              foregroundColor: Colors.white,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                            ),
-                            child: const Text("Начать общаться!"),
                           ),
                         ],
                       ),
@@ -2857,6 +2875,13 @@ class _WidgetChatBotsState extends State<WidgetChatBots> {
               style: TextStyle(
                 fontSize: 20,
                 fontWeight: FontWeight.bold,
+                color: Colors.white,
+              ),
+            ),
+            const Text(
+              "Временная реализация",
+              style: TextStyle(
+                fontSize: 10,
                 color: Colors.white,
               ),
             ),
@@ -3408,11 +3433,13 @@ import '../../../chatbot/view/widgets/widget_chat_bots.dart';
 class MainAppBar extends StatelessWidget implements PreferredSizeWidget {
   final VoidCallback onMenuPressed;
   final VoidCallback onPromtsPressed;
+  final ValueChanged<Map<String, dynamic>> onChatCreateSettings;
 
   const MainAppBar({
     super.key,
     required this.onMenuPressed,
     required this.onPromtsPressed,
+    required this.onChatCreateSettings,
   });
 
   @override
@@ -3454,8 +3481,8 @@ class MainAppBar extends StatelessWidget implements PreferredSizeWidget {
                 const SizedBox(width: 8),
                 const Expanded(
                   child: Center(
-                    // child: _StyledLabel("Обычный чат-бот"),
-                  ),
+                      // child: _StyledLabel("Обычный чат-бот"),
+                      ),
                 ),
                 _buildStyledIconButton(
                   icon: Icons.person,
@@ -3593,11 +3620,18 @@ class MainAppBar extends StatelessWidget implements PreferredSizeWidget {
                   onTap: () {
                     showAdaptiveDialog(
                       context: context,
-                      builder: (BuildContext dialogContext) {
-                        return const Dialog(
+                      builder: (dialogCtx) {
+                        return Dialog(
                           child: SizedBox(
                             width: 600,
-                            child: WidgetChatBots(),
+                            child: WidgetChatBots(
+                              closeChat: onPromtsPressed,
+                              onBotSelected: (settings) {
+                                onChatCreateSettings(settings); // кладём всё в _draft
+                                Navigator.of(dialogCtx)
+                                    .pop(); // закрываем список ботов
+                              },
+                            ),
                           ),
                         );
                       },
@@ -3754,6 +3788,7 @@ class MainBody extends StatefulWidget {
 
 class _MainBodyState extends State<MainBody> {
   int? _overrideModelId;
+  final _neuroKey = GlobalKey<NeuroButtonState>();
 
   @override
   void didUpdateWidget(covariant MainBody old) {
@@ -3767,70 +3802,72 @@ class _MainBodyState extends State<MainBody> {
     if (data.containsKey('modelUriId')) {
       setState(() => _overrideModelId = data['modelUriId'] as int?);
     }
-    // Чтобы сохранить прежнее поведение, прокидываем наружу
-    widget.onChatCreateSettings(data);
+    // ➊ передаём данные прямо во внутреннее состояние NeuroButton
+    _neuroKey.currentState?.applyDraft(data);
+
+    widget.onChatCreateSettings(data); // старое поведение
   }
 
-@override
-Widget build(BuildContext context) {
-  final hasChat = widget.chatEntity != null;
+  @override
+  Widget build(BuildContext context) {
+    final hasChat = widget.chatEntity != null;
 
-  return Padding(
-    padding: const EdgeInsets.all(16.0),
-    child: Container(
-      width: double.infinity,
-      height: double.infinity,
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.08),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.white.withOpacity(0.2)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.3),
-            blurRadius: 12,
-            offset: const Offset(0, 6),
-          ),
-        ],
+    return Padding(
+      padding: const EdgeInsets.all(16.0),
+      child: Container(
+        width: double.infinity,
+        height: double.infinity,
+        padding: const EdgeInsets.all(24),
+        decoration: BoxDecoration(
+          color: Colors.white.withOpacity(0.08),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: Colors.white.withOpacity(0.2)),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.3),
+              blurRadius: 12,
+              offset: const Offset(0, 6),
+            ),
+          ],
+        ),
+        child: Column(
+          children: [
+            BlocBuilder<UserCubit, DataState<UserEntity>>(
+              builder: (context, userState) {
+                UserEntity? user;
+                if (userState is DataLoaded<UserEntity>) {
+                  user = userState.data;
+                }
+
+                return NeuroButton(
+                  key: _neuroKey,
+                  currentChat: widget.chatEntity,
+                  currentUser: user,
+                  onChatCreateSettings: _handleDraft,
+                );
+              },
+            ),
+            const SizedBox(height: 16),
+            Expanded(
+              child: hasChat
+                  ? ChatView(
+                      chat: widget.chatEntity!,
+                      chatId: widget.chatId!,
+                      overrideModelId: _overrideModelId,
+                    )
+                  : widget.showChat
+                      ? const Center(child: CircularProgressIndicator())
+                      : HomeView(
+                          isCreatingChat: widget.isCreatingChat,
+                          openChatWithMessage:
+                              widget.openChatWithMessageWithText,
+                        ),
+            ),
+          ],
+        ),
       ),
-      child: Column(
-        children: [
-          BlocBuilder<UserCubit, DataState<UserEntity>>(
-            builder: (context, userState) {
-              UserEntity? user;
-              if (userState is DataLoaded<UserEntity>) {
-                user = userState.data;
-              }
-
-              return NeuroButton(
-                currentChat: widget.chatEntity,
-                currentUser: user,
-                onChatCreateSettings: _handleDraft,
-              );
-            },
-          ),
-          const SizedBox(height: 16),
-          Expanded(
-            child: hasChat
-                ? ChatView(
-                    chat: widget.chatEntity!,
-                    chatId: widget.chatId!,
-                    overrideModelId: _overrideModelId,
-                  )
-                : widget.showChat
-                    ? const Center(child: CircularProgressIndicator())
-                    : HomeView(
-                        isCreatingChat: widget.isCreatingChat,
-                        openChatWithMessage:
-                            widget.openChatWithMessageWithText,
-                      ),
-          ),
-        ],
-      ),
-    ),
-  );
-}
-
+    );
+  }
 }
 import 'package:flutter/material.dart';
 // ignore: depend_on_referenced_packages
@@ -4014,6 +4051,7 @@ class _MainScreenState extends State<MainScreen> {
               _scaffoldKey.currentState?.openDrawer();
             },
             onPromtsPressed: _closeChat,
+            onChatCreateSettings: _updateDraft,
           ),
           body: MainBody(
             isCreatingChat: _isCreatingChat,
@@ -4748,10 +4786,10 @@ class NeuroButton extends StatefulWidget {
       required this.onChatCreateSettings});
 
   @override
-  State<NeuroButton> createState() => _NeuroButtonState();
+  State<NeuroButton> createState() => NeuroButtonState();
 }
 
-class _NeuroButtonState extends State<NeuroButton> {
+class NeuroButtonState extends State<NeuroButton> {
   NeuroEntity? _selectedNeuro;
   NeuroEntity? _standardNeuro;
   String _chatCreateContext = "";
@@ -4774,6 +4812,29 @@ class _NeuroButtonState extends State<NeuroButton> {
             neuroList.firstWhereOrNull((e) => e.id == id) ?? _standardNeuro;
       });
     }
+  }
+
+  void applyDraft(Map<String, dynamic> data) {
+    setState(() {
+      if (data.containsKey('context')) {
+        _chatCreateContext = data['context'] as String;
+      }
+      if (data.containsKey('useMemory')) {
+        _chatCreateUseMemory = data['useMemory'] as bool;
+      }
+      if (data.containsKey('updateMemory')) {
+        _chatUpdateMemory = data['updateMemory'] as bool;
+      }
+      if (data.containsKey('temperature')) {
+        _chatCreateTemperature =
+            (data['temperature'] as num).toDouble();
+      }
+      if (data.containsKey('modelUriId')) {
+        _selectedNeuro = neuroList
+            .firstWhereOrNull((e) => e.id == data['modelUriId']) ??
+            _selectedNeuro;
+      }
+    });
   }
 
   void _openSettingsDialog() {

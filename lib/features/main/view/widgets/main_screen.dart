@@ -4,12 +4,16 @@ import 'package:collection/collection.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:promts_application_1/core/cubits/data_cubit.dart';
+import 'package:promts_application_1/features/auth/cubits/auth_cubit.dart';
 import 'package:promts_application_1/features/chat/cubits/chat_cubit.dart';
 import 'package:promts_application_1/features/chat/domain/entities/chat_entity.dart';
 import 'package:promts_application_1/features/main/view/widgets/main_body.dart';
 import 'package:promts_application_1/features/message/cubits/message_cubit.dart';
+import 'package:promts_application_1/features/neuro/cubits/neuro_cubit.dart';
+import 'package:promts_application_1/features/neuro/domain/entities/neuro_entity.dart';
 import 'package:promts_application_1/features/shared/widgets/widget_snack_bar.dart';
 import 'package:promts_application_1/features/user/cubit/user_cubit.dart';
+import 'package:promts_application_1/features/user/domain/entities/user_entity.dart';
 import 'main_app_bar.dart';
 import 'package:promts_application_1/features/chat/view/widgets/widget_chats.dart';
 import 'package:animated_gradient_background/animated_gradient_background.dart';
@@ -46,6 +50,18 @@ class _MainScreenState extends State<MainScreen> {
       final chats = context.read<ChatCubit>().state;
       _syncWithRoute(chats is DataLoaded<List<ChatEntity>> ? chats.data : null);
     }
+  }
+
+  void _logout() {
+    // ignore: invalid_use_of_protected_member, invalid_use_of_visible_for_testing_member
+    context.read<UserCubit>().emit(DataInitial<UserEntity>());
+    // ignore: invalid_use_of_protected_member, invalid_use_of_visible_for_testing_member
+    context.read<ChatCubit>().emit(DataInitial<List<ChatEntity>>());
+    // ignore: invalid_use_of_protected_member, invalid_use_of_visible_for_testing_member
+    context.read<NeuroCubit>().emit(DataInitial<List<NeuroEntity>>());
+    context.read<MessageCubit>().removeMessages();
+
+    context.read<AuthCubit>().logout();
   }
 
   void _updateDraft(Map<String, dynamic> data) =>
@@ -181,6 +197,7 @@ class _MainScreenState extends State<MainScreen> {
             },
             onPromtsPressed: _closeChat,
             onChatCreateSettings: _updateDraft,
+            logout: _logout,
           ),
           body: MainBody(
             isCreatingChat: _isCreatingChat,
