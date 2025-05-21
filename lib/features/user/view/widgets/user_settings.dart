@@ -93,173 +93,176 @@ class _UserSettingsState extends State<UserSettings> {
 
     return Dialog(
       backgroundColor: Colors.white.withOpacity(0.05),
+      insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-      child: Container(
-        padding: const EdgeInsets.all(24),
-        constraints: const BoxConstraints(maxWidth: 480, maxHeight: 600),
-        decoration: BoxDecoration(
-
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.8),
-              blurRadius: 20,
-              offset: const Offset(0, 4),
-            ),
-          ],
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Заголовок
-            Row(
-              children: [
-                const Expanded(
-                  child: Text(
-                    "Настройки пользователя",
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 480),
+        child: Container(
+          padding: const EdgeInsets.all(24),
+          decoration: BoxDecoration(
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.8),
+                blurRadius: 20,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Заголовок
+              Row(
+                children: [
+                  const Expanded(
+                    child: Text(
+                      "Настройки пользователя",
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
                     ),
                   ),
-                ),
-                IconButton(
-                  icon: const Icon(Icons.refresh, color: Colors.white70),
-                  tooltip: 'Обновить',
-                  onPressed: _refreshSettings,
-                )
-              ],
-            ),
-            const SizedBox(height: 6),
-            Container(
-              height: 2,
-              width: double.infinity,
-              decoration: BoxDecoration(
-                color: const Color.fromARGB(255, 255, 255, 255),
-                borderRadius: BorderRadius.circular(2),
+                  IconButton(
+                    icon: const Icon(Icons.refresh, color: Colors.white70),
+                    tooltip: 'Обновить',
+                    onPressed: _refreshSettings,
+                  )
+                ],
               ),
-            ),
-            const SizedBox(height: 16),
-
-            _infoRow("Эл. почта:", user.email),
-            _infoRow("ID:", user.id.toString()),
-
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                const Text("Баланс:", style: TextStyle(color: Colors.white70)),
-                Text("${user.money.toStringAsFixed(2)} руб.",
-                    style: const TextStyle(color: Colors.white)),
-                IconButton(
-                  icon: const Icon(Icons.add, color: Colors.white70),
-                  onPressed: () {
-                    // пополнение
-                  },
-                ),
-              ],
-            ),
-
-            const SizedBox(height: 16),
-            _buildSwitch("Использовать ли память в новых чатах?",
-                _memoryEnabled, (val) => setState(() => _memoryEnabled = val)),
-            _buildSwitch(
-                "Могут ли новые чаты изменять память пользователя?",
-                _aiCanUpdateMemory,
-                (val) => setState(() => _aiCanUpdateMemory = val)),
-
-            const SizedBox(height: 16),
-
-            // Модель чата
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                const Text("Модель чата:",
-                    style: TextStyle(color: Colors.white70)),
-                DropdownButton<int>(
-                  value: _selectedModelId,
-                  dropdownColor: Colors.black87,
-                  style: const TextStyle(color: Colors.white),
-                  items: widget.availableModels.map((model) {
-                    return DropdownMenuItem<int>(
-                      value: model.id,
-                      child: Text(model.name!),
-                    );
-                  }).toList(),
-                  onChanged: (val) {
-                    if (val != null) {
-                      setState(() => _selectedModelId = val);
-                    }
-                  },
-                ),
-              ],
-            ),
-
-            const SizedBox(height: 16),
-
-            const Text("Память пользователя:",
-                style: TextStyle(color: Colors.white70)),
-            const SizedBox(height: 6),
-            Expanded(
-              child: TextField(
-                controller: _memoryController,
-                maxLines: null,
-                style: const TextStyle(color: Colors.white),
-                decoration: InputDecoration(
-                  filled: true,
-                  fillColor: Colors.white.withOpacity(0.06),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  enabledBorder: OutlineInputBorder(
-                    borderSide:
-                        BorderSide(color: Colors.white.withOpacity(0.2)),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
+              const SizedBox(height: 6),
+              Container(
+                height: 2,
+                width: double.infinity,
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(2),
                 ),
               ),
-            ),
+              const SizedBox(height: 16),
 
-            const SizedBox(height: 20),
+              // ✅ Прокручиваемая часть
+              Flexible(
+                child: SingleChildScrollView(
+                  child: Column(
+                    children: [
+                      _infoRow("Эл. почта:", user.email),
+                      _infoRow("ID:", user.id.toString()),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const Text("Баланс:",
+                              style: TextStyle(color: Colors.white70)),
+                          Text("${user.money.toStringAsFixed(2)} руб.",
+                              style: const TextStyle(color: Colors.white)),
+                          IconButton(
+                            icon: const Icon(Icons.add, color: Colors.white70),
+                            onPressed: () {},
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+                      _buildSwitch(
+                          "Использовать ли память в новых чатах?",
+                          _memoryEnabled,
+                          (val) => setState(() => _memoryEnabled = val)),
+                      _buildSwitch(
+                          "Могут ли новые чаты изменять память пользователя?",
+                          _aiCanUpdateMemory,
+                          (val) => setState(() => _aiCanUpdateMemory = val)),
+                      const SizedBox(height: 16),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const Text("Модель чата:",
+                              style: TextStyle(color: Colors.white70)),
+                          DropdownButton<int>(
+                            value: _selectedModelId,
+                            dropdownColor: Colors.black87,
+                            style: const TextStyle(color: Colors.white),
+                            items: widget.availableModels.map((model) {
+                              return DropdownMenuItem<int>(
+                                value: model.id,
+                                child: Text(model.name!),
+                              );
+                            }).toList(),
+                            onChanged: (val) {
+                              if (val != null) {
+                                setState(() => _selectedModelId = val);
+                              }
+                            },
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+                      const Text("Память пользователя:",
+                          style: TextStyle(color: Colors.white70)),
+                      const SizedBox(height: 6),
+                      TextField(
+                        controller: _memoryController,
+                        maxLines: null,
+                        style: const TextStyle(color: Colors.white),
+                        decoration: InputDecoration(
+                          filled: true,
+                          fillColor: Colors.white.withOpacity(0.06),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          enabledBorder: OutlineInputBorder(
+                            borderSide: BorderSide(
+                                color: Colors.white.withOpacity(0.2)),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 24),
+                    ],
+                  ),
+                ),
+              ),
 
-            // Кнопки
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                ElevatedButton(
-                  onPressed: () {
-                    showDialog(
-                      context: context,
-                      builder: (_) => ExitConfirm(onExit: _logout),
-                    );
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.white.withOpacity(0.1),
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
+              // Кнопки
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  ElevatedButton(
+                    onPressed: () {
+                      showDialog(
+                        context: context,
+                        builder: (_) => ExitConfirm(onExit: _logout),
+                      );
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.white.withOpacity(0.1),
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
                     ),
+                    child: const Text("Выйти"),
                   ),
-                  child: const Text("Выйти"),
-                ),
-                TextButton(
-                  onPressed: () => Navigator.of(context).pop(),
-                  style: TextButton.styleFrom(foregroundColor: Colors.white54),
-                  child: const Text("Отмена"),
-                ),
-                ElevatedButton(
-                  onPressed: _handleSave,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.white.withOpacity(0.1),
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
+                  TextButton(
+                    onPressed: () => Navigator.of(context).pop(),
+                    style:
+                        TextButton.styleFrom(foregroundColor: Colors.white54),
+                    child: const Text("Отмена"),
+                  ),
+                  ElevatedButton(
+                    onPressed: _handleSave,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.white.withOpacity(0.1),
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
                     ),
+                    child: const Text("Сохранить"),
                   ),
-                  child: const Text("Сохранить"),
-                ),
-              ],
-            )
-          ],
+                ],
+              )
+            ],
+          ),
         ),
       ),
     );
