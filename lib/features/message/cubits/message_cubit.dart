@@ -63,7 +63,7 @@ class MessageCubit extends Cubit<MessageState> {
       chatId: chatId,
       modelUriId: modelUriId,
       oldMessage: false,
-      role: 'user',
+      role: 'USER',
       text: text,
       type: 'MESSAGE', // В соответствии с GET /messages/{chatId}/new
       dateCreate: DateTime.now(),

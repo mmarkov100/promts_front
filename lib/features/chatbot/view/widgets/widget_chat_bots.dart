@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 // Импортируем ваш файл с диалогом "Создание чат-бота"
 // Убедитесь, что путь верный, например:
-import 'package:promts_application_1/features/chatbot/view/widgets/widget_create_chat_bots.dart';
 
 class WidgetChatBots extends StatefulWidget {
   const WidgetChatBots({super.key});
@@ -11,7 +10,7 @@ class WidgetChatBots extends StatefulWidget {
 }
 
 class _WidgetChatBotsState extends State<WidgetChatBots> {
-  final TextEditingController _searchController = TextEditingController();
+  // final TextEditingController _searchController = TextEditingController();
 
   /// Пример данных о чат-ботах (в реальном приложении вы можете получать их с бэкенда).
   final List<Map<String, dynamic>> _allChatBots = [
@@ -132,30 +131,30 @@ class _WidgetChatBotsState extends State<WidgetChatBots> {
   }
 
   /// Логика поиска чат-ботов
-  void _searchChatBots() {
-    final query = _searchController.text.trim().toLowerCase();
-    setState(() {
-      if (query.isEmpty) {
-        _filteredChatBots = List.from(_allChatBots);
-      } else {
-        _filteredChatBots = _allChatBots.where((bot) {
-          final name = bot["chatBotName"]?.toString().toLowerCase() ?? "";
-          return name.contains(query);
-        }).toList();
-      }
-    });
-  }
+  // void _searchChatBots() {
+  //   final query = _searchController.text.trim().toLowerCase();
+  //   setState(() {
+  //     if (query.isEmpty) {
+  //       _filteredChatBots = List.from(_allChatBots);
+  //     } else {
+  //       _filteredChatBots = _allChatBots.where((bot) {
+  //         final name = bot["chatBotName"]?.toString().toLowerCase() ?? "";
+  //         return name.contains(query);
+  //       }).toList();
+  //     }
+  //   });
+  // }
 
-  /// Функция открытия окна "Создание чат-бота"
-  void _createChatBot() {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        // Открываем диалог "Создание чат-бота"
-        return const WidgetCreateChatBots();
-      },
-    );
-  }
+  // /// Функция открытия окна "Создание чат-бота"
+  // void _createChatBot() {
+  //   showDialog(
+  //     context: context,
+  //     builder: (BuildContext context) {
+  //       // Открываем диалог "Создание чат-бота"
+  //       return const WidgetCreateChatBots();
+  //     },
+  //   );
+  // }
 
   /// Просмотр информации о чат-боте (иконка "!")
   void _showBotInfo(Map<String, dynamic> bot) {

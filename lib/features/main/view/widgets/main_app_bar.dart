@@ -95,7 +95,7 @@ class MainAppBar extends StatelessWidget implements PreferredSizeWidget {
                                 child: const Column(
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
-                                    const Text(
+                                    Text(
                                       "Загрузка профиля",
                                       style: TextStyle(
                                         fontSize: 18,
@@ -103,8 +103,8 @@ class MainAppBar extends StatelessWidget implements PreferredSizeWidget {
                                         color: Colors.white,
                                       ),
                                     ),
-                                    const SizedBox(height: 32),
-                                    const SizedBox(
+                                    SizedBox(height: 32),
+                                    SizedBox(
                                       width: 40,
                                       height: 40,
                                       child: CircularProgressIndicator(

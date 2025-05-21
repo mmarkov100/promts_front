@@ -24,7 +24,7 @@ class MessageInputField extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       constraints: constraints,
-      padding: const EdgeInsets.all(12.0),
+      padding: const EdgeInsets.all(4.0),
       child: Row(
         children: [
           Expanded(

@@ -12,7 +12,7 @@ class WidgetMessageBubble extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isUser = message.role == 'user';
+    final isUser = message.role == 'USER';
     return Container(
       key: ValueKey(message.id),
       alignment: isUser ? Alignment.centerRight : Alignment.centerLeft,
