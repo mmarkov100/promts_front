@@ -68,7 +68,6 @@ class _ChatViewBodyState extends State<_ChatViewBody> {
 
   @override
   Widget build(BuildContext context) {
-    final bottomInset = MediaQuery.of(context).viewPadding.bottom;
     return Padding(
       padding: const EdgeInsets.all(16.0),
       child: Column(
@@ -122,11 +121,11 @@ class _ChatViewBodyState extends State<_ChatViewBody> {
             },
           ),
           Padding(
-            padding: EdgeInsets.fromLTRB(
+            padding: const EdgeInsets.fromLTRB(
               0,
               0,
               0,
-              bottomInset + 56 + 8,
+              0,
             ),
             child: BlocBuilder<MessageCubit, MessageState>(
               builder: (context, state) {

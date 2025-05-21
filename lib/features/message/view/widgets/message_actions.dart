@@ -51,26 +51,26 @@ class _MessageActionsState extends State<MessageActions> {
           onPressed: _copied ? null : _handleCopy,
         ),
         // Кнопка перегенерации (только для сообщений чат-бота)
-        if (!(widget.message.role == "USER"))
-          IconButton(
-            icon: const Icon(
-              Icons.autorenew,
-              color: Colors.white70,
-              ), // "зацикленная стрелка"
-            iconSize: 16,
-            onPressed: () {
-              // Пока без реализации
-            },
-          ),
+        // if (!(widget.message.role == "USER"))
+        //   IconButton(
+        //     icon: const Icon(
+        //       Icons.autorenew,
+        //       color: Colors.white70,
+        //       ), // "зацикленная стрелка"
+        //     iconSize: 16,
+        //     onPressed: () {
+        //       // Пока без реализации
+        //     },
+        //   ),
         // Кнопка удаления (только для сообщений пользователя)
-        if (widget.message.role == "USER")
-          IconButton(
-            icon: const Icon(Icons.delete),
-            iconSize: 16,
-            onPressed: () {
-              // Пока без реализации
-            },
-          ),
+        // if (widget.message.role == "USER")
+        //   IconButton(
+        //     icon: const Icon(Icons.delete),
+        //     iconSize: 16,
+        //     onPressed: () {
+        //       // Пока без реализации
+        //     },
+        //   ),
       ],
     );
   }
