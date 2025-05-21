@@ -104,7 +104,9 @@ class _WidgetChatTilesState extends State<WidgetChatTiles> {
                 fontWeight: isActive ? FontWeight.bold : FontWeight.normal,
               ),
             ),
-            onTap: () => _selectChat(chat),
+            onTap: () => {
+              if (!isActive) {_selectChat(chat)} else {null}
+            },
             onLongPress: () async {
               final ok = await showDialog<bool>(
                 context: context,

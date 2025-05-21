@@ -25,7 +25,8 @@ class WidgetMessageBubble extends StatelessWidget {
           const SizedBox(height: 2),
           Text(
             _fmt.format(message.dateCreate),
-            style: const TextStyle(fontSize: 10, color: Color.fromARGB(255, 221, 221, 221)),
+            style: const TextStyle(
+                fontSize: 10, color: Color.fromARGB(255, 221, 221, 221)),
           ),
           MessageActions(message: message),
         ],
