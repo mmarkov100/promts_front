@@ -24,10 +24,10 @@ class NeuroButton extends StatefulWidget {
       required this.onChatCreateSettings});
 
   @override
-  State<NeuroButton> createState() => _NeuroButtonState();
+  State<NeuroButton> createState() => NeuroButtonState();
 }
 
-class _NeuroButtonState extends State<NeuroButton> {
+class NeuroButtonState extends State<NeuroButton> {
   NeuroEntity? _selectedNeuro;
   NeuroEntity? _standardNeuro;
   String _chatCreateContext = "";
@@ -50,6 +50,29 @@ class _NeuroButtonState extends State<NeuroButton> {
             neuroList.firstWhereOrNull((e) => e.id == id) ?? _standardNeuro;
       });
     }
+  }
+
+  void applyDraft(Map<String, dynamic> data) {
+    setState(() {
+      if (data.containsKey('context')) {
+        _chatCreateContext = data['context'] as String;
+      }
+      if (data.containsKey('useMemory')) {
+        _chatCreateUseMemory = data['useMemory'] as bool;
+      }
+      if (data.containsKey('updateMemory')) {
+        _chatUpdateMemory = data['updateMemory'] as bool;
+      }
+      if (data.containsKey('temperature')) {
+        _chatCreateTemperature =
+            (data['temperature'] as num).toDouble();
+      }
+      if (data.containsKey('modelUriId')) {
+        _selectedNeuro = neuroList
+            .firstWhereOrNull((e) => e.id == data['modelUriId']) ??
+            _selectedNeuro;
+      }
+    });
   }
 
   void _openSettingsDialog() {

@@ -31,6 +31,7 @@ class MainBody extends StatefulWidget {
 
 class _MainBodyState extends State<MainBody> {
   int? _overrideModelId;
+  final _neuroKey = GlobalKey<NeuroButtonState>();
 
   @override
   void didUpdateWidget(covariant MainBody old) {
@@ -44,68 +45,70 @@ class _MainBodyState extends State<MainBody> {
     if (data.containsKey('modelUriId')) {
       setState(() => _overrideModelId = data['modelUriId'] as int?);
     }
-    // Чтобы сохранить прежнее поведение, прокидываем наружу
-    widget.onChatCreateSettings(data);
+    // ➊ передаём данные прямо во внутреннее состояние NeuroButton
+    _neuroKey.currentState?.applyDraft(data);
+
+    widget.onChatCreateSettings(data); // старое поведение
   }
 
-@override
-Widget build(BuildContext context) {
-  final hasChat = widget.chatEntity != null;
+  @override
+  Widget build(BuildContext context) {
+    final hasChat = widget.chatEntity != null;
 
-  return Padding(
-    padding: const EdgeInsets.all(16.0),
-    child: Container(
-      width: double.infinity,
-      height: double.infinity,
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.08),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.white.withOpacity(0.2)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.3),
-            blurRadius: 12,
-            offset: const Offset(0, 6),
-          ),
-        ],
+    return Padding(
+      padding: const EdgeInsets.all(16.0),
+      child: Container(
+        width: double.infinity,
+        height: double.infinity,
+        padding: const EdgeInsets.all(24),
+        decoration: BoxDecoration(
+          color: Colors.white.withOpacity(0.08),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: Colors.white.withOpacity(0.2)),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.3),
+              blurRadius: 12,
+              offset: const Offset(0, 6),
+            ),
+          ],
+        ),
+        child: Column(
+          children: [
+            BlocBuilder<UserCubit, DataState<UserEntity>>(
+              builder: (context, userState) {
+                UserEntity? user;
+                if (userState is DataLoaded<UserEntity>) {
+                  user = userState.data;
+                }
+
+                return NeuroButton(
+                  key: _neuroKey,
+                  currentChat: widget.chatEntity,
+                  currentUser: user,
+                  onChatCreateSettings: _handleDraft,
+                );
+              },
+            ),
+            const SizedBox(height: 16),
+            Expanded(
+              child: hasChat
+                  ? ChatView(
+                      chat: widget.chatEntity!,
+                      chatId: widget.chatId!,
+                      overrideModelId: _overrideModelId,
+                    )
+                  : widget.showChat
+                      ? const Center(child: CircularProgressIndicator())
+                      : HomeView(
+                          isCreatingChat: widget.isCreatingChat,
+                          openChatWithMessage:
+                              widget.openChatWithMessageWithText,
+                        ),
+            ),
+          ],
+        ),
       ),
-      child: Column(
-        children: [
-          BlocBuilder<UserCubit, DataState<UserEntity>>(
-            builder: (context, userState) {
-              UserEntity? user;
-              if (userState is DataLoaded<UserEntity>) {
-                user = userState.data;
-              }
-
-              return NeuroButton(
-                currentChat: widget.chatEntity,
-                currentUser: user,
-                onChatCreateSettings: _handleDraft,
-              );
-            },
-          ),
-          const SizedBox(height: 16),
-          Expanded(
-            child: hasChat
-                ? ChatView(
-                    chat: widget.chatEntity!,
-                    chatId: widget.chatId!,
-                    overrideModelId: _overrideModelId,
-                  )
-                : widget.showChat
-                    ? const Center(child: CircularProgressIndicator())
-                    : HomeView(
-                        isCreatingChat: widget.isCreatingChat,
-                        openChatWithMessage:
-                            widget.openChatWithMessageWithText,
-                      ),
-          ),
-        ],
-      ),
-    ),
-  );
-}
-
+    );
+  }
 }

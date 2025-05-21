@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:promts_application_1/features/shared/widgets/widget_snack_bar.dart';
 // Импортируем ваш файл с диалогом "Создание чат-бота"
 // Убедитесь, что путь верный, например:
 
 class WidgetChatBots extends StatefulWidget {
-  const WidgetChatBots({super.key});
+  final ValueChanged<Map<String, dynamic>>? onBotSelected;
+  const WidgetChatBots({super.key, this.onBotSelected});
 
   @override
   State<WidgetChatBots> createState() => _WidgetChatBotsState();
@@ -20,7 +22,8 @@ class _WidgetChatBotsState extends State<WidgetChatBots> {
       "chatBotDesc": "Помогает с вопросами по Python, Java и другим языкам.",
       "messagesToday": 123,
       "totalMessages": 1000,
-      "isSelectedByRedact": true
+      "isSelectedByRedact": true,
+      "context": "Ты специализируешься на помощь в программировании"
     },
     {
       "id": 2,
@@ -28,7 +31,9 @@ class _WidgetChatBotsState extends State<WidgetChatBots> {
       "chatBotDesc": "Помогает с вопросами по инвестициям и бюджету.",
       "messagesToday": 87,
       "totalMessages": 500,
-      "isSelectedByRedact": false
+      "isSelectedByRedact": false,
+      "context":
+          "Помогай пользователю решать финансовые проблемы, давай советы на этот счет"
     },
     {
       "id": 3,
@@ -36,15 +41,20 @@ class _WidgetChatBotsState extends State<WidgetChatBots> {
       "chatBotDesc": "Помогает с рецептами самых разных блюд.",
       "messagesToday": 11,
       "totalMessages": 114,
-      "isSelectedByRedact": false
+      "isSelectedByRedact": false,
+      "context":
+          "Давай подробные рецепты разных блюд, предлагай пользователю какие-то рецепты"
     },
     {
       "id": 4,
       "chatBotName": "Астролог",
-      "chatBotDesc": "Поможет узнать гороскоп по вашему знаку задиака и не только.",
+      "chatBotDesc":
+          "Поможет узнать гороскоп по вашему знаку задиака и не только.",
       "messagesToday": 124,
       "totalMessages": 1183,
-      "isSelectedByRedact": true
+      "isSelectedByRedact": true,
+      "context":
+          "Ты - астролог, ты гадаешь по пользователю и даешь ему советы от звезд"
     },
     {
       "id": 5,
@@ -52,7 +62,8 @@ class _WidgetChatBotsState extends State<WidgetChatBots> {
       "chatBotDesc": "Поможет узнать куда летают отдыхать люди в этом году.",
       "messagesToday": 192,
       "totalMessages": 1841,
-      "isSelectedByRedact": false
+      "isSelectedByRedact": false,
+      "context": "Ты советчик по путешествиям"
     },
   ];
 
@@ -179,18 +190,24 @@ class _WidgetChatBotsState extends State<WidgetChatBots> {
                             child: const Text("Отмена"),
                           ),
                           ElevatedButton(
+                            child: const Text('Начать общаться'),
                             onPressed: () {
-                              Navigator.of(context).pop();
-                              // логика перехода
+                              final settings = {
+                                'context': contextChat,
+                                'useMemory': canUseMemory,
+                                'updateMemory': canUpdateMemory,
+                                if (bot['modelUriId'] != null)
+                                  'modelUriId': bot['modelUriId'],
+                                if (bot['temperature'] != null)
+                                  'temperature': bot['temperature'],
+                              };
+
+                              widget.onBotSelected
+                                  ?.call(settings); // ⬅️ передаём наверх
+                              WidgetSnackBar.showSuccess(
+                                  context, "Чат-бот успешно выбран");
+                              Navigator.of(context).pop(); // Info-диалог
                             },
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.white.withOpacity(0.1),
-                              foregroundColor: Colors.white,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                            ),
-                            child: const Text("Начать общаться!"),
                           ),
                         ],
                       ),

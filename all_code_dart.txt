@@ -14,6 +14,98 @@ void registerPlugins([final Registrar? pluginRegistrar]) {
   SharedPreferencesPlugin.registerWith(registrar);
   registrar.registerMessageHandler();
 }
+//
+// Generated file. Do not edit.
+// This file is generated from template in file `flutter_tools/lib/src/flutter_plugins.dart`.
+//
+
+// @dart = 3.5
+
+import 'dart:io'; // flutter_ignore: dart_io_import.
+import 'package:shared_preferences_android/shared_preferences_android.dart';
+import 'package:shared_preferences_foundation/shared_preferences_foundation.dart';
+import 'package:path_provider_linux/path_provider_linux.dart';
+import 'package:shared_preferences_linux/shared_preferences_linux.dart';
+import 'package:shared_preferences_foundation/shared_preferences_foundation.dart';
+import 'package:path_provider_windows/path_provider_windows.dart';
+import 'package:shared_preferences_windows/shared_preferences_windows.dart';
+
+@pragma('vm:entry-point')
+class _PluginRegistrant {
+
+  @pragma('vm:entry-point')
+  static void register() {
+    if (Platform.isAndroid) {
+      try {
+        SharedPreferencesAndroid.registerWith();
+      } catch (err) {
+        print(
+          '`shared_preferences_android` threw an error: $err. '
+          'The app may not function as expected until you remove this plugin from pubspec.yaml'
+        );
+      }
+
+    } else if (Platform.isIOS) {
+      try {
+        SharedPreferencesFoundation.registerWith();
+      } catch (err) {
+        print(
+          '`shared_preferences_foundation` threw an error: $err. '
+          'The app may not function as expected until you remove this plugin from pubspec.yaml'
+        );
+      }
+
+    } else if (Platform.isLinux) {
+      try {
+        PathProviderLinux.registerWith();
+      } catch (err) {
+        print(
+          '`path_provider_linux` threw an error: $err. '
+          'The app may not function as expected until you remove this plugin from pubspec.yaml'
+        );
+      }
+
+      try {
+        SharedPreferencesLinux.registerWith();
+      } catch (err) {
+        print(
+          '`shared_preferences_linux` threw an error: $err. '
+          'The app may not function as expected until you remove this plugin from pubspec.yaml'
+        );
+      }
+
+    } else if (Platform.isMacOS) {
+      try {
+        SharedPreferencesFoundation.registerWith();
+      } catch (err) {
+        print(
+          '`shared_preferences_foundation` threw an error: $err. '
+          'The app may not function as expected until you remove this plugin from pubspec.yaml'
+        );
+      }
+
+    } else if (Platform.isWindows) {
+      try {
+        PathProviderWindows.registerWith();
+      } catch (err) {
+        print(
+          '`path_provider_windows` threw an error: $err. '
+          'The app may not function as expected until you remove this plugin from pubspec.yaml'
+        );
+      }
+
+      try {
+        SharedPreferencesWindows.registerWith();
+      } catch (err) {
+        print(
+          '`shared_preferences_windows` threw an error: $err. '
+          'The app may not function as expected until you remove this plugin from pubspec.yaml'
+        );
+      }
+
+    }
+  }
+}
 // @dart=3.5
 // Flutter web bootstrap script for package:promts_application_1/main.dart.
 //
@@ -59,6 +151,332 @@ void registerPlugins([final Registrar? pluginRegistrar]) {
   final Registrar registrar = pluginRegistrar ?? webPluginRegistrar;
   SharedPreferencesPlugin.registerWith(registrar);
   registrar.registerMessageHandler();
+}
+// Flutter web plugin registrant file.
+//
+// Generated file. Do not edit.
+//
+
+// ignore_for_file: type=lint
+
+void registerPlugins() {}
+import 'package:flutter/material.dart';
+
+void main() {
+  runApp(const MyApp());
+}
+
+class MyApp extends StatelessWidget {
+  const MyApp({super.key});
+
+  // This widget is the root of your application.
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: 'Flutter Demo',
+      theme: ThemeData(
+        // This is the theme of your application.
+        //
+        // TRY THIS: Try running your application with "flutter run". You'll see
+        // the application has a purple toolbar. Then, without quitting the app,
+        // try changing the seedColor in the colorScheme below to Colors.green
+        // and then invoke "hot reload" (save your changes or press the "hot
+        // reload" button in a Flutter-supported IDE, or press "r" if you used
+        // the command line to start the app).
+        //
+        // Notice that the counter didn't reset back to zero; the application
+        // state is not lost during the reload. To reset the state, use hot
+        // restart instead.
+        //
+        // This works for code too, not just values: Most code changes can be
+        // tested with just a hot reload.
+        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
+        useMaterial3: true,
+      ),
+      home: const MyHomePage(title: 'Flutter Demo Home Page'),
+    );
+  }
+}
+
+class MyHomePage extends StatefulWidget {
+  const MyHomePage({super.key, required this.title});
+
+  // This widget is the home page of your application. It is stateful, meaning
+  // that it has a State object (defined below) that contains fields that affect
+  // how it looks.
+
+  // This class is the configuration for the state. It holds the values (in this
+  // case the title) provided by the parent (in this case the App widget) and
+  // used by the build method of the State. Fields in a Widget subclass are
+  // always marked "final".
+
+  final String title;
+
+  @override
+  State<MyHomePage> createState() => _MyHomePageState();
+}
+
+class _MyHomePageState extends State<MyHomePage> {
+  int _counter = 0;
+
+  void _incrementCounter() {
+    setState(() {
+      // This call to setState tells the Flutter framework that something has
+      // changed in this State, which causes it to rerun the build method below
+      // so that the display can reflect the updated values. If we changed
+      // _counter without calling setState(), then the build method would not be
+      // called again, and so nothing would appear to happen.
+      _counter++;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    // This method is rerun every time setState is called, for instance as done
+    // by the _incrementCounter method above.
+    //
+    // The Flutter framework has been optimized to make rerunning build methods
+    // fast, so that you can just rebuild anything that needs updating rather
+    // than having to individually change instances of widgets.
+    return Scaffold(
+      appBar: AppBar(
+        // TRY THIS: Try changing the color here to a specific color (to
+        // Colors.amber, perhaps?) and trigger a hot reload to see the AppBar
+        // change color while the other colors stay the same.
+        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
+        // Here we take the value from the MyHomePage object that was created by
+        // the App.build method, and use it to set our appbar title.
+        title: Text(widget.title),
+      ),
+      body: Center(
+        // Center is a layout widget. It takes a single child and positions it
+        // in the middle of the parent.
+        child: Column(
+          // Column is also a layout widget. It takes a list of children and
+          // arranges them vertically. By default, it sizes itself to fit its
+          // children horizontally, and tries to be as tall as its parent.
+          //
+          // Column has various properties to control how it sizes itself and
+          // how it positions its children. Here we use mainAxisAlignment to
+          // center the children vertically; the main axis here is the vertical
+          // axis because Columns are vertical (the cross axis would be
+          // horizontal).
+          //
+          // TRY THIS: Invoke "debug painting" (choose the "Toggle Debug Paint"
+          // action in the IDE, or press "p" in the console), to see the
+          // wireframe for each widget.
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: <Widget>[
+            const Text(
+              'You have pushed the button this many times:',
+            ),
+            Text(
+              '$_counter',
+              style: Theme.of(context).textTheme.headlineMedium,
+            ),
+          ],
+        ),
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: _incrementCounter,
+        tooltip: 'Increment',
+        child: const Icon(Icons.add),
+      ), // This trailing comma makes auto-formatting nicer for build methods.
+    );
+  }
+}
+// This is a basic Flutter widget test.
+//
+// To perform an interaction with a widget in your test, use the WidgetTester
+// utility in the flutter_test package. For example, you can send tap and scroll
+// gestures. You can also use WidgetTester to find child widgets in the widget
+// tree, read text, and verify that the values of widget properties are correct.
+
+import 'package:flutter/material.dart';
+import 'package:flutter_test/flutter_test.dart';
+
+import 'package:testproject_f64b4/main.dart';
+
+void main() {
+  testWidgets('Counter increments smoke test', (WidgetTester tester) async {
+    // Build our app and trigger a frame.
+    await tester.pumpWidget(const MyApp());
+
+    // Verify that our counter starts at 0.
+    expect(find.text('0'), findsOneWidget);
+    expect(find.text('1'), findsNothing);
+
+    // Tap the '+' icon and trigger a frame.
+    await tester.tap(find.byIcon(Icons.add));
+    await tester.pump();
+
+    // Verify that our counter has incremented.
+    expect(find.text('0'), findsNothing);
+    expect(find.text('1'), findsOneWidget);
+  });
+}
+// Flutter web plugin registrant file.
+//
+// Generated file. Do not edit.
+//
+
+// ignore_for_file: type=lint
+
+void registerPlugins() {}
+import 'package:flutter/material.dart';
+
+void main() {
+  runApp(const MyApp());
+}
+
+class MyApp extends StatelessWidget {
+  const MyApp({super.key});
+
+  // This widget is the root of your application.
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: 'Flutter Demo',
+      theme: ThemeData(
+        // This is the theme of your application.
+        //
+        // TRY THIS: Try running your application with "flutter run". You'll see
+        // the application has a purple toolbar. Then, without quitting the app,
+        // try changing the seedColor in the colorScheme below to Colors.green
+        // and then invoke "hot reload" (save your changes or press the "hot
+        // reload" button in a Flutter-supported IDE, or press "r" if you used
+        // the command line to start the app).
+        //
+        // Notice that the counter didn't reset back to zero; the application
+        // state is not lost during the reload. To reset the state, use hot
+        // restart instead.
+        //
+        // This works for code too, not just values: Most code changes can be
+        // tested with just a hot reload.
+        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
+        useMaterial3: true,
+      ),
+      home: const MyHomePage(title: 'Flutter Demo Home Page'),
+    );
+  }
+}
+
+class MyHomePage extends StatefulWidget {
+  const MyHomePage({super.key, required this.title});
+
+  // This widget is the home page of your application. It is stateful, meaning
+  // that it has a State object (defined below) that contains fields that affect
+  // how it looks.
+
+  // This class is the configuration for the state. It holds the values (in this
+  // case the title) provided by the parent (in this case the App widget) and
+  // used by the build method of the State. Fields in a Widget subclass are
+  // always marked "final".
+
+  final String title;
+
+  @override
+  State<MyHomePage> createState() => _MyHomePageState();
+}
+
+class _MyHomePageState extends State<MyHomePage> {
+  int _counter = 0;
+
+  void _incrementCounter() {
+    setState(() {
+      // This call to setState tells the Flutter framework that something has
+      // changed in this State, which causes it to rerun the build method below
+      // so that the display can reflect the updated values. If we changed
+      // _counter without calling setState(), then the build method would not be
+      // called again, and so nothing would appear to happen.
+      _counter++;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    // This method is rerun every time setState is called, for instance as done
+    // by the _incrementCounter method above.
+    //
+    // The Flutter framework has been optimized to make rerunning build methods
+    // fast, so that you can just rebuild anything that needs updating rather
+    // than having to individually change instances of widgets.
+    return Scaffold(
+      appBar: AppBar(
+        // TRY THIS: Try changing the color here to a specific color (to
+        // Colors.amber, perhaps?) and trigger a hot reload to see the AppBar
+        // change color while the other colors stay the same.
+        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
+        // Here we take the value from the MyHomePage object that was created by
+        // the App.build method, and use it to set our appbar title.
+        title: Text(widget.title),
+      ),
+      body: Center(
+        // Center is a layout widget. It takes a single child and positions it
+        // in the middle of the parent.
+        child: Column(
+          // Column is also a layout widget. It takes a list of children and
+          // arranges them vertically. By default, it sizes itself to fit its
+          // children horizontally, and tries to be as tall as its parent.
+          //
+          // Column has various properties to control how it sizes itself and
+          // how it positions its children. Here we use mainAxisAlignment to
+          // center the children vertically; the main axis here is the vertical
+          // axis because Columns are vertical (the cross axis would be
+          // horizontal).
+          //
+          // TRY THIS: Invoke "debug painting" (choose the "Toggle Debug Paint"
+          // action in the IDE, or press "p" in the console), to see the
+          // wireframe for each widget.
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: <Widget>[
+            const Text(
+              'You have pushed the button this many times:',
+            ),
+            Text(
+              '$_counter',
+              style: Theme.of(context).textTheme.headlineMedium,
+            ),
+          ],
+        ),
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: _incrementCounter,
+        tooltip: 'Increment',
+        child: const Icon(Icons.add),
+      ), // This trailing comma makes auto-formatting nicer for build methods.
+    );
+  }
+}
+// This is a basic Flutter widget test.
+//
+// To perform an interaction with a widget in your test, use the WidgetTester
+// utility in the flutter_test package. For example, you can send tap and scroll
+// gestures. You can also use WidgetTester to find child widgets in the widget
+// tree, read text, and verify that the values of widget properties are correct.
+
+import 'package:flutter/material.dart';
+import 'package:flutter_test/flutter_test.dart';
+
+import 'package:testproject_f64b4/main.dart';
+
+void main() {
+  testWidgets('Counter increments smoke test', (WidgetTester tester) async {
+    // Build our app and trigger a frame.
+    await tester.pumpWidget(const MyApp());
+
+    // Verify that our counter starts at 0.
+    expect(find.text('0'), findsOneWidget);
+    expect(find.text('1'), findsNothing);
+
+    // Tap the '+' icon and trigger a frame.
+    await tester.tap(find.byIcon(Icons.add));
+    await tester.pump();
+
+    // Verify that our counter has incremented.
+    expect(find.text('0'), findsNothing);
+    expect(find.text('1'), findsOneWidget);
+  });
 }
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -1460,196 +1878,182 @@ class _AbstractChatSettingsDialogState
   Widget build(BuildContext context) {
     return Dialog(
       backgroundColor: const Color.fromARGB(255, 0, 0, 0).withOpacity(0.6),
+      insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-      child: Container(
-        padding: const EdgeInsets.all(24),
-        constraints: const BoxConstraints(maxWidth: 420),
-        decoration: BoxDecoration(
-          color: Colors.white.withOpacity(0.05),
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: Colors.white.withOpacity(0.12)),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.3),
-              blurRadius: 20,
-              offset: const Offset(0, 4),
-            ),
-          ],
+      child: ConstrainedBox(
+        constraints: BoxConstraints(
+          maxWidth: 420,
+          maxHeight: MediaQuery.of(context).size.height * 0.85, // ✅ адаптация
         ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(widget.title,
-                style: const TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white)),
-            const SizedBox(height: 16),
-
-            const SizedBox(height: 12),
-            Container(
-              width: double.infinity,
-              height: 2,
-              decoration: BoxDecoration(
-                color: const Color.fromARGB(255, 255, 255, 255),
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
-            const SizedBox(height: 16),
-
-            if (widget.chatId != null)
-              Row(
-                children: [
-                  const Text('ID чата: ',
-                      style: TextStyle(color: Colors.white70)),
-                  Text('${widget.chatId}',
-                      style: const TextStyle(color: Colors.blueAccent)),
-                  if (widget.showDate) ...[
-                    const SizedBox(width: 16),
-                    const Text('Создан: ',
-                        style: TextStyle(color: Colors.white70)),
-                    Text(widget.dateCreate ?? '-',
-                        style: const TextStyle(
-                            color: Colors.white54, fontSize: 12)),
-                  ],
-                ],
-              ),
-
-            const SizedBox(height: 16),
-
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                const Text('Температура:',
-                    style: TextStyle(color: Colors.white)),
-                DropdownButton<double>(
-                  value: _temperature,
-                  dropdownColor: Colors.black87,
-                  style: const TextStyle(color: Colors.white),
-                  items: _tempOptions
-                      .map((t) => DropdownMenuItem(
-                            value: t,
-                            child: Text(t.toString()),
-                          ))
-                      .toList(),
-                  onChanged: (v) => setState(() => _temperature = v!),
-                ),
-              ],
-            ),
-
-            const SizedBox(height: 12),
-
-            const Align(
-                alignment: Alignment.centerLeft,
-                child:
-                    Text('Контекст:', style: TextStyle(color: Colors.white))),
-            const SizedBox(height: 4),
-            TextField(
-              controller: _contextCtrl,
-              style: const TextStyle(color: Colors.white),
-              minLines: 3,
-              maxLines: 6,
-              decoration: InputDecoration(
-                filled: true,
-                fillColor: Colors.white.withOpacity(0.06),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                enabledBorder: OutlineInputBorder(
-                  borderSide: BorderSide(color: Colors.white.withOpacity(0.2)),
-                  borderRadius: BorderRadius.circular(12),
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Заголовок
+              const Text(
+                "Создание чата",
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
                 ),
               ),
-            ),
-            const SizedBox(height: 12),
-
-            // Переключатели
-            _buildSwitchTile('Использовать память', _useMemory,
-                (v) => setState(() => _useMemory = v)),
-            _buildSwitchTile('Обновлять память', _updateMemory,
-                (v) => setState(() => _updateMemory = v)),
-            if (widget.showStar)
-              _buildSwitchTile('Закрепить чат', _starred,
-                  (v) => setState(() => _starred = v)),
-
-            const SizedBox(height: 16),
-
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                TextButton(
-                  onPressed:
-                      _isSaving ? null : () => Navigator.of(context).pop(),
-                  child: const Text('Отмена',
-                      style: TextStyle(color: Colors.white70)),
+              const SizedBox(height: 16),
+              Container(
+                width: double.infinity,
+                height: 2,
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(2),
                 ),
-                TextButton(
-                  style: TextButton.styleFrom(foregroundColor: Colors.red),
-                  onPressed: () async {
-                    final ok = await showDialog<bool>(
-                      context: context,
-                      builder: (_) => AlertDialog(
-                        title: const Text('Удалить чат?'),
-                        content: const Text(
-                            'История сообщений будет безвозвратно потеряна. Продолжить?'),
-                        actions: [
-                          TextButton(
-                            onPressed: () => Navigator.pop(context, false),
-                            style: TextButton.styleFrom(
-                              foregroundColor:
-                                  const Color.fromARGB(179, 0, 0, 0),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                            ),
-                            child: const Text('Отмена'),
-                          ),
-                          ElevatedButton(
-                            onPressed: () => Navigator.pop(context, true),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.red.withOpacity(0.8),
-                              foregroundColor:
-                                  const Color.fromARGB(255, 0, 0, 0),
-                              shadowColor:
-                                  const Color.fromARGB(255, 255, 255, 255)
-                                      .withOpacity(0.2),
-                              elevation: 4,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                            ),
-                            child: const Text('Удалить'),
+              ),
+              const SizedBox(height: 16),
+
+              // ✅ Прокручиваемая часть
+              Expanded(
+                child: SingleChildScrollView(
+                  child: Column(
+                    children: [
+                      if (widget.chatId != null)
+                        Row(
+                          children: [
+                            const Text('ID чата:',
+                                style: TextStyle(color: Colors.white70)),
+                            Text('${widget.chatId}',
+                                style:
+                                    const TextStyle(color: Colors.blueAccent)),
+                            if (widget.showDate) ...[
+                              const SizedBox(width: 10),
+                              const Text('Создан:',
+                                  style: TextStyle(color: Colors.white70)),
+                              Text(widget.dateCreate ?? '-',
+                                  style: const TextStyle(
+                                      color: Colors.white54, fontSize: 10)),
+                            ],
+                          ],
+                        ),
+                      const SizedBox(height: 16),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const Text('Температура:',
+                              style: TextStyle(color: Colors.white)),
+                          DropdownButton<double>(
+                            value: _temperature,
+                            dropdownColor: Colors.black87,
+                            style: const TextStyle(color: Colors.white),
+                            items: _tempOptions
+                                .map((t) => DropdownMenuItem(
+                                      value: t,
+                                      child: Text(t.toString()),
+                                    ))
+                                .toList(),
+                            onChanged: (v) => setState(() => _temperature = v!),
                           ),
                         ],
                       ),
-                    );
-
-                    if (ok == true) {
-                      await context
-                          .read<ChatCubit>()
-                          .deleteChat(widget.chatId!, context);
-                      if (context.mounted) context.go('/chat');
-                    }
-                  },
-                  child: const Text('Удалить'),
-                ),
-                _isSaving
-                    ? const SizedBox(
-                        width: 24,
-                        height: 24,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : ElevatedButton(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.white.withOpacity(0.1),
-                          foregroundColor: Colors.white,
+                      const SizedBox(height: 12),
+                      const Align(
+                          alignment: Alignment.centerLeft,
+                          child: Text('Контекст:',
+                              style: TextStyle(color: Colors.white))),
+                      const SizedBox(height: 4),
+                      TextField(
+                        controller: _contextCtrl,
+                        style: const TextStyle(color: Colors.white),
+                        minLines: 3,
+                        maxLines: 6,
+                        decoration: InputDecoration(
+                          filled: true,
+                          fillColor: Colors.white.withOpacity(0.06),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          enabledBorder: OutlineInputBorder(
+                            borderSide: BorderSide(
+                                color: Colors.white.withOpacity(0.2)),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
                         ),
-                        onPressed: _handleSave,
-                        child: const Text('Сохранить'),
                       ),
-              ],
-            ),
-          ],
+                      const SizedBox(height: 12),
+                      _buildSwitchTile('Использовать память', _useMemory,
+                          (v) => setState(() => _useMemory = v)),
+                      _buildSwitchTile('Обновлять память', _updateMemory,
+                          (v) => setState(() => _updateMemory = v)),
+                      if (widget.showStar)
+                        _buildSwitchTile('Закрепить чат', _starred,
+                            (v) => setState(() => _starred = v)),
+                      const SizedBox(height: 24),
+                    ],
+                  ),
+                ),
+              ),
+
+              // Кнопки
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  TextButton(
+                    onPressed:
+                        _isSaving ? null : () => Navigator.of(context).pop(),
+                    child: const Text('Отмена',
+                        style: TextStyle(color: Colors.white70)),
+                  ),
+                  TextButton(
+                    style: TextButton.styleFrom(foregroundColor: Colors.red),
+                    onPressed: () async {
+                      final ok = await showDialog<bool>(
+                        context: context,
+                        builder: (_) => AlertDialog(
+                          title: const Text('Удалить чат?'),
+                          content: const Text(
+                              'История сообщений будет безвозвратно потеряна. Продолжить?'),
+                          actions: [
+                            TextButton(
+                              onPressed: () => Navigator.pop(context, false),
+                              child: const Text('Отмена'),
+                            ),
+                            ElevatedButton(
+                              onPressed: () => Navigator.pop(context, true),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.red,
+                                foregroundColor: Colors.white,
+                              ),
+                              child: const Text('Удалить'),
+                            ),
+                          ],
+                        ),
+                      );
+
+                      if (ok == true) {
+                        await context
+                            .read<ChatCubit>()
+                            .deleteChat(widget.chatId!, context);
+                        if (context.mounted) context.go('/chat');
+                      }
+                    },
+                    child: const Text('Удалить'),
+                  ),
+                  _isSaving
+                      ? const SizedBox(
+                          width: 24,
+                          height: 24,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : ElevatedButton(
+                          onPressed: _handleSave,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.white.withOpacity(0.1),
+                            foregroundColor: Colors.white,
+                          ),
+                          child: const Text('Сохранить'),
+                        ),
+                ],
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -1922,7 +2326,7 @@ class _WidgetChatsState extends State<WidgetChats> {
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      width: 350,
+      width: 300,
       child: Drawer(
         backgroundColor: Colors.transparent,
         child: SafeArea(
@@ -2104,7 +2508,9 @@ class _WidgetChatTilesState extends State<WidgetChatTiles> {
                 fontWeight: isActive ? FontWeight.bold : FontWeight.normal,
               ),
             ),
-            onTap: () => _selectChat(chat),
+            onTap: () => {
+              if (!isActive) {_selectChat(chat)} else {null}
+            },
             onLongPress: () async {
               final ok = await showDialog<bool>(
                 context: context,
@@ -2246,90 +2652,26 @@ class _WidgetChatBotsState extends State<WidgetChatBots> {
     },
     {
       "id": 3,
-      "chatBotName": "Новый помощник",
-      "chatBotDesc": "Описание нового помощника.",
-      "messagesToday": 0,
-      "totalMessages": 0,
+      "chatBotName": "Шеф-повар",
+      "chatBotDesc": "Помогает с рецептами самых разных блюд.",
+      "messagesToday": 11,
+      "totalMessages": 114,
       "isSelectedByRedact": false
     },
     {
       "id": 4,
-      "chatBotName": "Новый помощник",
-      "chatBotDesc": "Описание нового помощника.",
-      "messagesToday": 0,
-      "totalMessages": 0,
-      "isSelectedByRedact": false
+      "chatBotName": "Астролог",
+      "chatBotDesc": "Поможет узнать гороскоп по вашему знаку задиака и не только.",
+      "messagesToday": 124,
+      "totalMessages": 1183,
+      "isSelectedByRedact": true
     },
     {
       "id": 5,
-      "chatBotName": "Новый помощник",
-      "chatBotDesc": "Описание нового помощника.",
-      "messagesToday": 0,
-      "totalMessages": 0,
-      "isSelectedByRedact": false
-    },
-    {
-      "id": 6,
-      "chatBotName": "Новый помощник",
-      "chatBotDesc": "Описание нового помощника.",
-      "messagesToday": 0,
-      "totalMessages": 0,
-      "isSelectedByRedact": false
-    },
-    {
-      "id": 7,
-      "chatBotName": "Новый помощник",
-      "chatBotDesc": "Описание нового помощника.",
-      "messagesToday": 0,
-      "totalMessages": 0,
-      "isSelectedByRedact": false
-    },
-    {
-      "id": 8,
-      "chatBotName": "Новый помощник",
-      "chatBotDesc": "Описание нового помощника.",
-      "messagesToday": 0,
-      "totalMessages": 0,
-      "isSelectedByRedact": false
-    },
-    {
-      "id": 9,
-      "chatBotName": "Новый помощник",
-      "chatBotDesc": "Описание нового помощника.",
-      "messagesToday": 0,
-      "totalMessages": 0,
-      "isSelectedByRedact": false
-    },
-    {
-      "id": 10,
-      "chatBotName": "Новый помощник",
-      "chatBotDesc": "Описание нового помощника.",
-      "messagesToday": 0,
-      "totalMessages": 0,
-      "isSelectedByRedact": false
-    },
-    {
-      "id": 11,
-      "chatBotName": "Новый помощник",
-      "chatBotDesc": "Описание нового помощника.",
-      "messagesToday": 0,
-      "totalMessages": 0,
-      "isSelectedByRedact": false
-    },
-    {
-      "id": 12,
-      "chatBotName": "Новый помощник",
-      "chatBotDesc": "Описание нового помощника.",
-      "messagesToday": 0,
-      "totalMessages": 0,
-      "isSelectedByRedact": false
-    },
-    {
-      "id": 13,
-      "chatBotName": "Новый помощник",
-      "chatBotDesc": "Описание нового помощника.",
-      "messagesToday": 0,
-      "totalMessages": 0,
+      "chatBotName": "Советчик по путеществиям",
+      "chatBotDesc": "Поможет узнать куда летают отдыхать люди в этом году.",
+      "messagesToday": 192,
+      "totalMessages": 1841,
       "isSelectedByRedact": false
     },
   ];
@@ -2414,55 +2756,67 @@ class _WidgetChatBotsState extends State<WidgetChatBots> {
                   ),
                 ],
               ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Text(
-                    "Характеристики чат-бота",
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
-                    ),
-                  ),
-                  const SizedBox(height: 20),
-                  _infoField("Название:", chatBotName),
-                  _infoField("Описание:", chatBotDesc, multiline: true),
-                  _infoRow("Кол-во сообщений за всё время:", "$totalMessages"),
-                  _infoRow("Кол-во сообщений за день:", "$messagesToday"),
-                  _infoField("Контекст чата:", contextChat, multiline: true),
-                  _switchTile("Использовать ли память в чате?", canUseMemory),
-                  _switchTile("Может ли чат изменять память пользователя?",
-                      canUpdateMemory),
-                  _infoRow("Исп-мая нейросеть:", modelName),
-                  _infoRow("Дата создания:", dateCreate),
-                  const SizedBox(height: 24),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              child: ConstrainedBox(
+                constraints: BoxConstraints(
+                  maxWidth: 480,
+                  maxHeight:
+                      MediaQuery.of(context).size.height * 0.85, // адаптация
+                ),
+                child: SingleChildScrollView(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
                     children: [
-                      TextButton(
-                        onPressed: () => Navigator.of(context).pop(),
-                        style: TextButton.styleFrom(
-                            foregroundColor: Colors.white60),
-                        child: const Text("Отмена"),
-                      ),
-                      ElevatedButton(
-                        onPressed: () {
-                          Navigator.of(context).pop();
-                          // Здесь: логика перехода в чат или создания нового
-                        },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.white.withOpacity(0.1),
-                          foregroundColor: Colors.white,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
+                      const Text(
+                        "Характеристики чат-бота",
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
                         ),
-                        child: const Text("Начать общаться!"),
+                      ),
+                      const SizedBox(height: 20),
+                      _infoField("Название:", chatBotName),
+                      _infoField("Описание:", chatBotDesc, multiline: true),
+                      _infoRow(
+                          "Кол-во сообщений за всё время:", "$totalMessages"),
+                      _infoRow("Кол-во сообщений за день:", "$messagesToday"),
+                      _infoField("Контекст чата:", contextChat,
+                          multiline: true),
+                      _switchTile(
+                          "Использовать ли память в чате?", canUseMemory),
+                      _switchTile("Может ли чат изменять память пользователя?",
+                          canUpdateMemory),
+                      _infoRow("Исп-мая нейросеть:", modelName),
+                      _infoRow("Дата создания:", dateCreate),
+                      const SizedBox(height: 24),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          TextButton(
+                            onPressed: () => Navigator.of(context).pop(),
+                            style: TextButton.styleFrom(
+                                foregroundColor: Colors.white60),
+                            child: const Text("Отмена"),
+                          ),
+                          ElevatedButton(
+                            onPressed: () {
+                              Navigator.of(context).pop();
+                              // логика перехода
+                            },
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.white.withOpacity(0.1),
+                              foregroundColor: Colors.white,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
+                            child: const Text("Начать общаться!"),
+                          ),
+                        ],
                       ),
                     ],
                   ),
-                ],
+                ),
               ),
             ),
           ),
@@ -2973,68 +3327,69 @@ class _HomeViewState extends State<HomeView> {
 
   @override
   Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final double blockWidth = screenWidth < 500
+        ? screenWidth * 0.95
+        : screenWidth < 1000
+            ? 500
+            : 650;
+
     return SafeArea(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Expanded(
-            child: Center(
-              child: Padding(
-                padding: const EdgeInsets.all(24.0),
-                child: Container(
-                  padding: const EdgeInsets.all(24),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.08),
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: Colors.white.withOpacity(0.2)),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.3),
-                        blurRadius: 12,
-                        offset: const Offset(0, 6),
-                      ),
-                    ],
-                  ),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      if (widget.isCreatingChat)
-                        const SizedBox(
-                          width: 24,
-                          height: 24,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
-                      else
-                        Text(
-                          _displayedText,
-                          style: const TextStyle(
-                            fontSize: 16,
-                            color: Color.fromARGB(255, 212, 212, 212),
-                            height: 1.5,
-                            shadows: [
-                              Shadow(
-                                offset: Offset(1.5, 1.5),
-                                blurRadius: 2,
-                                color: Colors.black54,
-                              ),
-                            ],
-                          ),
-                          textAlign: TextAlign.center,
-                        ),
-                      const SizedBox(height: 24),
-                      MessageInputField(
-                        controller: _messageController,
-                        hintText: "Введите сообщение",
-                        onSend: _handleSend,
-                        enabled: !widget.isCreatingChat,
-                      ),
-                    ],
-                  ),
+      child: Center(
+        child: SizedBox(
+          width: blockWidth, // ✅ это обязательно
+          child: Container(
+            padding: const EdgeInsets.all(24),
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.08),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: Colors.white.withOpacity(0.2)),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.3),
+                  blurRadius: 12,
+                  offset: const Offset(0, 6),
                 ),
-              ),
+              ],
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (widget.isCreatingChat)
+                  const SizedBox(
+                    width: 24,
+                    height: 24,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                else
+                  Text(
+                    _displayedText,
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
+                      fontSize: 14,
+                      color: Color.fromARGB(255, 212, 212, 212),
+                      height: 1.5,
+                      shadows: [
+                        Shadow(
+                          offset: Offset(1.5, 1.5),
+                          blurRadius: 2,
+                          color: Colors.black54,
+                        ),
+                      ],
+                    ),
+                  ),
+                const SizedBox(height: 24),
+                MessageInputField(
+                  controller: _messageController,
+                  hintText: "Введите сообщение",
+                  onSend: _handleSend,
+                  enabled: !widget.isCreatingChat,
+                  constraints: BoxConstraints(maxWidth: blockWidth),
+                ),
+              ],
             ),
           ),
-        ],
+        ),
       ),
     );
   }
@@ -3099,7 +3454,7 @@ class MainAppBar extends StatelessWidget implements PreferredSizeWidget {
                 const SizedBox(width: 8),
                 const Expanded(
                   child: Center(
-                    child: _StyledLabel("Обычный чат-бот"),
+                    // child: _StyledLabel("Обычный чат-бот"),
                   ),
                 ),
                 _buildStyledIconButton(
@@ -4255,7 +4610,8 @@ class WidgetMessageBubble extends StatelessWidget {
           const SizedBox(height: 2),
           Text(
             _fmt.format(message.dateCreate),
-            style: const TextStyle(fontSize: 10, color: Color.fromARGB(255, 221, 221, 221)),
+            style: const TextStyle(
+                fontSize: 10, color: Color.fromARGB(255, 221, 221, 221)),
           ),
           MessageActions(message: message),
         ],
@@ -5324,173 +5680,176 @@ class _UserSettingsState extends State<UserSettings> {
 
     return Dialog(
       backgroundColor: Colors.white.withOpacity(0.05),
+      insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-      child: Container(
-        padding: const EdgeInsets.all(24),
-        constraints: const BoxConstraints(maxWidth: 480, maxHeight: 600),
-        decoration: BoxDecoration(
-
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.8),
-              blurRadius: 20,
-              offset: const Offset(0, 4),
-            ),
-          ],
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Заголовок
-            Row(
-              children: [
-                const Expanded(
-                  child: Text(
-                    "Настройки пользователя",
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 480),
+        child: Container(
+          padding: const EdgeInsets.all(24),
+          decoration: BoxDecoration(
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.8),
+                blurRadius: 20,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Заголовок
+              Row(
+                children: [
+                  const Expanded(
+                    child: Text(
+                      "Настройки пользователя",
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
                     ),
                   ),
-                ),
-                IconButton(
-                  icon: const Icon(Icons.refresh, color: Colors.white70),
-                  tooltip: 'Обновить',
-                  onPressed: _refreshSettings,
-                )
-              ],
-            ),
-            const SizedBox(height: 6),
-            Container(
-              height: 2,
-              width: double.infinity,
-              decoration: BoxDecoration(
-                color: const Color.fromARGB(255, 255, 255, 255),
-                borderRadius: BorderRadius.circular(2),
+                  IconButton(
+                    icon: const Icon(Icons.refresh, color: Colors.white70),
+                    tooltip: 'Обновить',
+                    onPressed: _refreshSettings,
+                  )
+                ],
               ),
-            ),
-            const SizedBox(height: 16),
-
-            _infoRow("Эл. почта:", user.email),
-            _infoRow("ID:", user.id.toString()),
-
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                const Text("Баланс:", style: TextStyle(color: Colors.white70)),
-                Text("${user.money.toStringAsFixed(2)} руб.",
-                    style: const TextStyle(color: Colors.white)),
-                IconButton(
-                  icon: const Icon(Icons.add, color: Colors.white70),
-                  onPressed: () {
-                    // пополнение
-                  },
-                ),
-              ],
-            ),
-
-            const SizedBox(height: 16),
-            _buildSwitch("Использовать ли память в новых чатах?",
-                _memoryEnabled, (val) => setState(() => _memoryEnabled = val)),
-            _buildSwitch(
-                "Могут ли новые чаты изменять память пользователя?",
-                _aiCanUpdateMemory,
-                (val) => setState(() => _aiCanUpdateMemory = val)),
-
-            const SizedBox(height: 16),
-
-            // Модель чата
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                const Text("Модель чата:",
-                    style: TextStyle(color: Colors.white70)),
-                DropdownButton<int>(
-                  value: _selectedModelId,
-                  dropdownColor: Colors.black87,
-                  style: const TextStyle(color: Colors.white),
-                  items: widget.availableModels.map((model) {
-                    return DropdownMenuItem<int>(
-                      value: model.id,
-                      child: Text(model.name!),
-                    );
-                  }).toList(),
-                  onChanged: (val) {
-                    if (val != null) {
-                      setState(() => _selectedModelId = val);
-                    }
-                  },
-                ),
-              ],
-            ),
-
-            const SizedBox(height: 16),
-
-            const Text("Память пользователя:",
-                style: TextStyle(color: Colors.white70)),
-            const SizedBox(height: 6),
-            Expanded(
-              child: TextField(
-                controller: _memoryController,
-                maxLines: null,
-                style: const TextStyle(color: Colors.white),
-                decoration: InputDecoration(
-                  filled: true,
-                  fillColor: Colors.white.withOpacity(0.06),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  enabledBorder: OutlineInputBorder(
-                    borderSide:
-                        BorderSide(color: Colors.white.withOpacity(0.2)),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
+              const SizedBox(height: 6),
+              Container(
+                height: 2,
+                width: double.infinity,
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(2),
                 ),
               ),
-            ),
+              const SizedBox(height: 16),
 
-            const SizedBox(height: 20),
+              // ✅ Прокручиваемая часть
+              Flexible(
+                child: SingleChildScrollView(
+                  child: Column(
+                    children: [
+                      _infoRow("Эл. почта:", user.email),
+                      _infoRow("ID:", user.id.toString()),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const Text("Баланс:",
+                              style: TextStyle(color: Colors.white70)),
+                          Text("${user.money.toStringAsFixed(2)} руб.",
+                              style: const TextStyle(color: Colors.white)),
+                          IconButton(
+                            icon: const Icon(Icons.add, color: Colors.white70),
+                            onPressed: () {},
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+                      _buildSwitch(
+                          "Использовать ли память в новых чатах?",
+                          _memoryEnabled,
+                          (val) => setState(() => _memoryEnabled = val)),
+                      _buildSwitch(
+                          "Могут ли новые чаты изменять память пользователя?",
+                          _aiCanUpdateMemory,
+                          (val) => setState(() => _aiCanUpdateMemory = val)),
+                      const SizedBox(height: 16),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const Text("Модель чата:",
+                              style: TextStyle(color: Colors.white70)),
+                          DropdownButton<int>(
+                            value: _selectedModelId,
+                            dropdownColor: Colors.black87,
+                            style: const TextStyle(color: Colors.white),
+                            items: widget.availableModels.map((model) {
+                              return DropdownMenuItem<int>(
+                                value: model.id,
+                                child: Text(model.name!),
+                              );
+                            }).toList(),
+                            onChanged: (val) {
+                              if (val != null) {
+                                setState(() => _selectedModelId = val);
+                              }
+                            },
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+                      const Text("Память пользователя:",
+                          style: TextStyle(color: Colors.white70)),
+                      const SizedBox(height: 6),
+                      TextField(
+                        controller: _memoryController,
+                        maxLines: null,
+                        style: const TextStyle(color: Colors.white),
+                        decoration: InputDecoration(
+                          filled: true,
+                          fillColor: Colors.white.withOpacity(0.06),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          enabledBorder: OutlineInputBorder(
+                            borderSide: BorderSide(
+                                color: Colors.white.withOpacity(0.2)),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 24),
+                    ],
+                  ),
+                ),
+              ),
 
-            // Кнопки
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                ElevatedButton(
-                  onPressed: () {
-                    showDialog(
-                      context: context,
-                      builder: (_) => ExitConfirm(onExit: _logout),
-                    );
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.white.withOpacity(0.1),
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
+              // Кнопки
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  ElevatedButton(
+                    onPressed: () {
+                      showDialog(
+                        context: context,
+                        builder: (_) => ExitConfirm(onExit: _logout),
+                      );
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.white.withOpacity(0.1),
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
                     ),
+                    child: const Text("Выйти"),
                   ),
-                  child: const Text("Выйти"),
-                ),
-                TextButton(
-                  onPressed: () => Navigator.of(context).pop(),
-                  style: TextButton.styleFrom(foregroundColor: Colors.white54),
-                  child: const Text("Отмена"),
-                ),
-                ElevatedButton(
-                  onPressed: _handleSave,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.white.withOpacity(0.1),
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
+                  TextButton(
+                    onPressed: () => Navigator.of(context).pop(),
+                    style:
+                        TextButton.styleFrom(foregroundColor: Colors.white54),
+                    child: const Text("Отмена"),
+                  ),
+                  ElevatedButton(
+                    onPressed: _handleSave,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.white.withOpacity(0.1),
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
                     ),
+                    child: const Text("Сохранить"),
                   ),
-                  child: const Text("Сохранить"),
-                ),
-              ],
-            )
-          ],
+                ],
+              )
+            ],
+          ),
         ),
       ),
     );

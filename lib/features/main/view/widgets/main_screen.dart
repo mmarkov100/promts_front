@@ -180,6 +180,7 @@ class _MainScreenState extends State<MainScreen> {
               _scaffoldKey.currentState?.openDrawer();
             },
             onPromtsPressed: _closeChat,
+            onChatCreateSettings: _updateDraft,
           ),
           body: MainBody(
             isCreatingChat: _isCreatingChat,

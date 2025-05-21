@@ -12,11 +12,13 @@ import '../../../chatbot/view/widgets/widget_chat_bots.dart';
 class MainAppBar extends StatelessWidget implements PreferredSizeWidget {
   final VoidCallback onMenuPressed;
   final VoidCallback onPromtsPressed;
+  final ValueChanged<Map<String, dynamic>> onChatCreateSettings;
 
   const MainAppBar({
     super.key,
     required this.onMenuPressed,
     required this.onPromtsPressed,
+    required this.onChatCreateSettings,
   });
 
   @override
@@ -58,8 +60,8 @@ class MainAppBar extends StatelessWidget implements PreferredSizeWidget {
                 const SizedBox(width: 8),
                 const Expanded(
                   child: Center(
-                    // child: _StyledLabel("Обычный чат-бот"),
-                  ),
+                      // child: _StyledLabel("Обычный чат-бот"),
+                      ),
                 ),
                 _buildStyledIconButton(
                   icon: Icons.person,
@@ -197,11 +199,17 @@ class MainAppBar extends StatelessWidget implements PreferredSizeWidget {
                   onTap: () {
                     showAdaptiveDialog(
                       context: context,
-                      builder: (BuildContext dialogContext) {
-                        return const Dialog(
+                      builder: (dialogCtx) {
+                        return Dialog(
                           child: SizedBox(
                             width: 600,
-                            child: WidgetChatBots(),
+                            child: WidgetChatBots(
+                              onBotSelected: (settings) {
+                                onChatCreateSettings(settings); // кладём всё в _draft
+                                Navigator.of(dialogCtx)
+                                    .pop(); // закрываем список ботов
+                              },
+                            ),
                           ),
                         );
                       },
